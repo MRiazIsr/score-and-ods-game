@@ -10,8 +10,9 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #1f1f2e;
-    --foreground: #ededed;
+    --foreground: #b5b3b3;
     --card-background: #2d2d3d;
+    --input-background: #3d3d4d;
   }
 }
 
@@ -19,4 +20,51 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: #cdcdcd; /* Set your desired text color */
+  transition: background-color 5000s ease-in-out 0s;
+  box-shadow: 0 0 0px 1000px var(--input-background) inset; /* Set your desired background color */
+  caret-color: #cdcdcd; /* Set cursor color to match text */
+}
+
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 30px var(--input-background) inset !important; /* Set your desired background color */
+  caret-color: #cdcdcd !important; /* Set cursor color */
+}
+@supports (-webkit-appearance: none) {
+  input:-webkit-autofill {
+    background-color: transparent !important;
+    -webkit-background-clip: text !important;
+  }
+}
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #cdcdcd !important; /* Set your desired text color */
+  -webkit-box-shadow: 0 0 0 30px var(--input-background) inset !important; /* Set your desired background color */
+  outline: 2px solid #2196F3 !important; /* Adjust color and width as needed */
+  outline-offset: 1px !important;
+  border-color: #2196F3 !important; /* Match your focus border color */
+}
+input[data-autocompleted] {
+  background-color: var(--input-background) !important; /* Set your desired background color */
+}
+
+input::-ms-clear {
+  display: none;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+input:-webkit-autofill::first-line {
+  font-size: inherit;
+  line-height: inherit;
+  font-family: --montserrat, sans-serif;
+  color: inherit;
 }

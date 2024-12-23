@@ -1,16 +1,18 @@
-import { Card } from "./components/Card";
-import { SubmitButton } from "./components/SubmitButton"
+import { Card } from "./components/ui/Card";
+import { SubmitButton } from "./components/ui/SubmitButton"
 import Link from "next/link";
+import {Input} from "@/app/components/ui/Input";
 
 
 export default function Home() {
   return (
-      <main className="flex min-h-screen items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-950 from-10% via-violet-950 via-30% to-emerald-950 to-90%">
         <Card
             title="TIP MANAGER"
             description="Please Log In "
         >
-            <Input placeholder="Email" />
+            <Input name={'email'} id={'email'} type={'email'} value={''} placeHolder={'email@example.com'}/>
+            <Input name={'password'} id={'password'} type={'password'} value={''} placeHolder={'********'}/>
             <SubmitButton buttonText="Sign In"/>
             <div className={'flex flex-row space-x-2 justify-center'}>
                 <Link
