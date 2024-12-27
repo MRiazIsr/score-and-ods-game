@@ -28,7 +28,7 @@ export function Input({
                 id={inputId}
                 type={type}
                 name={name}
-                value={value}
+                defaultValue={value}
                 placeholder={placeHolder}
                 onChange={onChange}
                 required={required}

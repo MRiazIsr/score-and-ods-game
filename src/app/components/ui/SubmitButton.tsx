@@ -1,9 +1,7 @@
 'use client';  // Add this at the very top of the file
+import { ButtonProps } from "@/app/components/types";
 
-import React, { useState } from 'react';
-
-export const SubmitButton = ({ buttonText }: { buttonText: string }) => {
-    const [isLoading, setIsLoading] = useState(false);
+export const SubmitButton = ({ buttonText, pending }: ButtonProps) => {
 
     return (
         <button
@@ -37,19 +35,19 @@ export const SubmitButton = ({ buttonText }: { buttonText: string }) => {
                 min-w-[120px]
                 relative
             `}
-            disabled={isLoading}
+            disabled={pending}
         >
             <span className={`
                 flex 
                 items-center 
                 justify-center 
                 gap-2
-                ${isLoading ? 'opacity-0' : 'opacity-100'}
+                ${pending ? 'opacity-0' : 'opacity-100'}
             `}>
                 {buttonText}
             </span>
 
-            {isLoading && (
+            {pending && (
                 <span className="absolute inset-0 flex items-center justify-center">
                     <svg className="animate-spin h-5 w-5 text-gray-300" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />

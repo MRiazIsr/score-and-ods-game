@@ -1,8 +1,9 @@
-import { montserrat } from "@/app/ui/fonts";
+import { montserrat } from "@/app/fonts/fonts";
 import "../../globals.css";
 import React from "react";
+import { CardProps } from "@/app/components/types";
 
-export const Card = ({ title, description, children } : { title: string, description: string, children?: React.ReactNode }) => {
+export const Card = ({ title, description, children } : CardProps ) => {
     return (
        <div className={`${montserrat.className} w-1/4 rounded-lg overflow-hidden shadow-xl bg-[var(--card-background)]`}>
            <div className="px-6 py-4 flex flex-col text-center space-y-2">

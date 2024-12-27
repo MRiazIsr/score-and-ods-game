@@ -12,3 +12,14 @@ export interface InputProps {
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     validation?: (value: string) => string;
 }
+
+export interface ButtonProps {
+    buttonText: string,
+    pending: boolean,
+}
+
+export interface CardProps {
+    title: string,
+    description: string,
+    children?: React.ReactNode
+}
