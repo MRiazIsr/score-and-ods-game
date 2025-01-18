@@ -1,16 +1,17 @@
 'use client';
 import { Card } from "@/app/components/ui/Card";
 import { SubmitButton } from "@/app/components/ui/SubmitButton"
-import { ErrorNotification } from '@/app/components/ui/ErrorNotice'
+//import { ErrorNotification } from '@/app/components/ui/ErrorNotice'
 import { Input } from "@/app/components/ui/Input";
 import Link from "next/link";
 import Form from "next/form";
 import { useActionState } from 'react'
+import {signup} from "@/app/actions/auth";
 
 
 
 export default function LoginPage() {
-    const [state, action, pending] = useActionState<LoginState>(login, undefined);
+    const [state, action, pending] = useActionState(signup, undefined);
 
     return (
         <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-950 from-10% via-violet-950 via-30% to-emerald-950 to-90%">
@@ -18,13 +19,22 @@ export default function LoginPage() {
                 title="TIP MANAGER"
                 description="Please Log In "
             >
-                <ErrorNotification
-                    error={state?.errors}
-                    title="Authentication Error"
-                />
                 <Form action={action}>
                     <Input name={'email'} id={'email'} type={'email'} value={''} placeHolder={'email@example.com'}/>
+                    {state?.errors?.email && <p>{state.errors.email}</p>}
+
                     <Input name={'password'} id={'password'} type={'password'} value={''} placeHolder={'********'}/>
+                    {state?.errors?.password && (
+                        <div>
+                            <p>Password must:</p>
+                            <ul>
+                                {state.errors.password.map((error) => (
+                                    <li key={error}>- {error}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     <SubmitButton buttonText="Sign In" pending={pending}/>
                 </Form>
                 <div className={'flex flex-row space-x-2 justify-center'}>
