@@ -1,7 +1,7 @@
-import { montserrat } from "@/app/fonts/fonts";
-import "../../globals.css";
+import { montserrat } from "@/app/client/fonts/fonts";
+import "../../../globals.css";
 import React from "react";
-import { CardProps } from "@/app/components/types";
+import { CardProps } from "@/app/client/components/types";
 
 export const Card = ({ title, description, children } : CardProps ) => {
     return (

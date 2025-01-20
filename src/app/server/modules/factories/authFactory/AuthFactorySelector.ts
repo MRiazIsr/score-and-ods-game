@@ -1,8 +1,9 @@
-import {DynamoDbAuthFactory} from "@/app/modules/factories/authFactory/DynamoDbAuthFactory";
+
+import {DynamoDbAuthFactory} from "@/app/server/modules/factories/authFactory/DynamoDbAuthFactory";
 
 export const selectFactory = (dbType: string = ''): DynamoDbAuthFactory =>
 {
-    switch (dbType) {
+    switch (dbType.toLowerCase()) {
         case 'dynamo':
             return new DynamoDbAuthFactory();
         default:

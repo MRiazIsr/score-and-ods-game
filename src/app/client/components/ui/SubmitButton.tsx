@@ -1,5 +1,5 @@
 'use client';  // Add this at the very top of the file
-import { ButtonProps } from "@/app/components/types";
+import { ButtonProps } from "@/app/client/components/types";
 
 export const SubmitButton = ({ buttonText, pending }: ButtonProps) => {
 

@@ -1,4 +1,4 @@
-import {InputProps} from "@/app/components/types";
+import {InputProps} from "@/app/client/components/types";
 
 export function Input({
                           label,

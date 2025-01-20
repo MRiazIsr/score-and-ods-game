@@ -1,15 +1,28 @@
-import { SignUpFormSchema, FormState } from "@/app/lib/definitions";
-import { selectFactory } from '@/app/modules/factories/authFactory/AuthFactorySelector'
+"use server"
 
-export async function signup(state: FormState, formData: FormData) {
-    const validatedFields = SignUpFormSchema.safeParse({
-        name: formData.get("name"),
-        email: formData.get("email"),
-        password: formData.get("password"),
-    })
+import { SignUpFormSchema, FormState } from "@/app/lib/definitions";
+import { selectFactory } from '@/app/server/modules/factories/authFactory/AuthFactorySelector'
+//import {redirect} from "next/navigation";
+
+export async function signup(state: FormState, formData: FormData): Promise<{
+    message: string;
+    success: boolean;
+    errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
+}> {
+    const formFields = {
+        name: formData.get("name")?.toString(),
+        email: formData.get("email")?.toString(),
+        userName: formData.get("userName")?.toString() ?? '',
+        password: formData.get("password")?.toString() ?? '',
+    }
+
+    console.log(formFields);
+
+    const validatedFields = SignUpFormSchema.safeParse( formFields )
 
     if (!validatedFields.success) {
         return {
+            message: 'Field Validation Error',
             success: false,
             errors: validatedFields.error.flatten().fieldErrors,
         }
@@ -19,10 +32,54 @@ export async function signup(state: FormState, formData: FormData) {
     const authService = authFactory.createAuthService();
     //TODO: add type for user creation result
     try {
-        const userCreationResult = await authService.createUser({
-            username: formData.get("email"),
-            password: formData.get("password"),
-        })
+        const userCreationResult: { message: string } = await authService.createUser( formFields )
+        //redirect('/login')
+        return {
+            success: true,
+            message: userCreationResult.message
+        }
+    } catch (error: unknown) {
+        console.error(error)
+        if (error instanceof Error) {
+            return {
+                success: false,
+                message: error.message
+            }
+        }
+        return {
+            success: false,
+            message: 'An unknown error occurred.'
+        }
+    }
+}
+
+export async function signin(state: FormState, formData: FormData): Promise<{
+    message: string;
+    success: boolean;
+    errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
+}> {
+    const formFields = {
+        name: formData.get("name")?.toString(),
+        email: formData.get("email")?.toString(),
+        userName: formData.get("username")?.toString() ?? '',
+        password: formData.get("password")?.toString() ?? '',
+    }
+
+    const validatedFields = SignUpFormSchema.safeParse({ formFields })
+
+    if (!validatedFields.success) {
+        return {
+            message: 'Field Validation Error',
+            success: false,
+            errors: validatedFields.error.flatten().fieldErrors,
+        }
+    }
+
+    const authFactory = selectFactory(process.env.DB_TYPE)
+    const authService = authFactory.createAuthService();
+    //TODO: add type for user creation result
+    try {
+        const userCreationResult: { message: string } = await authService.createUser( formFields )
 
         return {
             success: true,
@@ -32,7 +89,7 @@ export async function signup(state: FormState, formData: FormData) {
         if (error instanceof Error) {
             return {
                 success: false,
-                error: error.message
+                message: error.message
             }
         }
         return {
