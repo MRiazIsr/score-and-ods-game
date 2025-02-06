@@ -18,12 +18,12 @@ export class DynamoDbUserManager {
         console.log("DynamoDbUserManager userId: ", userId);
 
         const dbUser: DbUser = {
-            PartitionKey: userId,
+            PartitionKey: 'USERID#' + userId,
             SortKey: 'Data',
-            email: user.email ?? '',
-            password: user.password,
             name: user.name ?? '',
+            email: user.email ?? '',
             userName: user.userName,
+            password: user.password,
         }
         console.log("DynamoDbUserManager dbUser: ", dbUser);
 
