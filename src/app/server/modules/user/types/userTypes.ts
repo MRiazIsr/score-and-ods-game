@@ -9,7 +9,7 @@ export type DbUser = {
 
 export type User = {
     name?: string
-    email?: string
+    email: string
     password: string
-    userName: string
+    userName?: string
 }

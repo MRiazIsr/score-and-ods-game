@@ -42,4 +42,6 @@ export class DynamoDbUserManager {
 
         return 'User created successfully';
     }
+
+    public async (userId: string): Promise<boolean> {}
 }

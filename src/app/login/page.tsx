@@ -6,12 +6,12 @@ import { Input } from "@/app/client/components/ui/Input";
 import Link from "next/link";
 import Form from "next/form";
 import { useActionState } from 'react'
-import { signin } from "@/app/actions/auth";
+import { signIn } from "@/app/actions/auth";
 
 
 
 export default function LoginPage() {
-    const [state, action, pending] = useActionState(signin, undefined);
+    const [state, action, pending] = useActionState(signIn, undefined);
 
     return (
         <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-950 from-10% via-violet-950 via-30% to-emerald-950 to-90%">

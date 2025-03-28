@@ -1,10 +1,10 @@
 "use server"
 
-import { SignUpFormSchema, FormState } from "@/app/lib/definitions";
+import {FormState, SignInFormSchema, SignUpFormSchema} from "@/app/lib/definitions";
 import { selectFactory } from '@/app/server/modules/factories/authFactory/AuthFactorySelector'
 //import {redirect} from "next/navigation";
 
-export async function signup(state: FormState, formData: FormData): Promise<{
+export async function signUp(state: FormState, formData: FormData): Promise<{
     message: string;
     success: boolean;
     errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
@@ -13,7 +13,7 @@ export async function signup(state: FormState, formData: FormData): Promise<{
         name: formData.get("name")?.toString(),
         email: formData.get("email")?.toString(),
         userName: formData.get("userName")?.toString() ?? '',
-        password: formData.get("password")?.toString() ?? '',
+        password: formData.get("password")?.toString()
     }
 
     console.log(formFields);
@@ -53,19 +53,19 @@ export async function signup(state: FormState, formData: FormData): Promise<{
     }
 }
 
-export async function signin(state: FormState, formData: FormData): Promise<{
+export async function signIn(state: FormState, formData: FormData): Promise<{
     message: string;
     success: boolean;
     errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
 }> {
     const formFields = {
-        name: formData.get("name")?.toString(),
-        email: formData.get("email")?.toString(),
-        userName: formData.get("username")?.toString() ?? '',
+        userName: formData.get("email")?.toString() ?? '',
         password: formData.get("password")?.toString() ?? '',
     }
 
-    const validatedFields = SignUpFormSchema.safeParse({ formFields })
+    console.log(formFields);
+
+    const validatedFields = SignInFormSchema.safeParse( formFields )
 
     if (!validatedFields.success) {
         return {
@@ -79,7 +79,7 @@ export async function signin(state: FormState, formData: FormData): Promise<{
     const authService = authFactory.createAuthService();
     //TODO: add type for user creation result
     try {
-        const userCreationResult: { message: string } = await authService.createUser( formFields )
+        const userCreationResult: { message: string } = await authService.login( formFields )
 
         return {
             success: true,

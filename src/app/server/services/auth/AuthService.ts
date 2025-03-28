@@ -9,4 +9,12 @@ export class AuthService {
 
         return { message: await userManager.createUser(user) };
     }
+
+    public async login(user: User): Promise<{message: string}> {
+        const authFactory = selectFactory(process.env.DB_TYPE);
+        const userManager = authFactory.createUserManager();
+
+        return { message: await userManager.login}
+        console.log("Creating new user AuthService");
+    }
 }
