@@ -1,6 +1,6 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { PutCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { type PutCommandOutput } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
+import type { PutCommandInput, PutCommandOutput, GetCommandInput, GetCommandOutput } from "@aws-sdk/lib-dynamodb";
 import type { DbUser } from "@/app/server/modules/user/types/userTypes";
 
 
@@ -24,29 +24,61 @@ export class UserModel {
 
     static async saveUserNameRowWithId(userName: string, userId: string): Promise<PutCommandOutput> {
         console.log("Creating new user DynamoDbUserDataAccess");
-
-        const command = new PutCommand({
+        const input: PutCommandInput = {
             TableName: this.tableName,
             Item: {
                 PartitionKey: 'USERNAME#' + userName,
                 SortKey: 'USERID',
                 userId: userId,
             },
-        });
+        }
+        const command = new PutCommand(input);
 
-        const response: PutCommandOutput = await this.documentClient.send(command);
-        console.log(response);
-        return response;
+        return await this.documentClient.send(command);
     }
 
-    static async saveUser(dbUser: DbUser): Promise<PutCommandOutput> {
-        const command = new PutCommand({
+    static async saveUser(user: DbUser): Promise<PutCommandOutput> {
+        const input: PutCommandInput = {
             TableName: this.tableName,
-            Item: dbUser,
-        });
+            Item: {
+                PartitionKey: 'USERID#' + user.userId,
+                SortKey: 'DATA',
+                name: user.name ?? '',
+                email: user.email ?? '',
+                password: user.password,
+                userName: user.userName,
+                userType: user.userType,
+                salt: user.salt,
+            }
+        };
 
-        const response: PutCommandOutput = await this.documentClient.send(command);
-        console.log(response);
-        return response;
+        const command = new PutCommand(input);
+        return await this.documentClient.send(command);
+    }
+
+    static async getUserId(userName: string): Promise<GetCommandOutput> {
+        const input: GetCommandInput = {
+            TableName: this.tableName,
+            Key: {
+                PartitionKey: 'USERNAME#' + userName,
+                SortKey: 'USERID',
+            }
+        }
+
+        const command = new GetCommand(input);
+        return await this.documentClient.send(command);
+    }
+
+    static async getUserDataById(userId: string): Promise<GetCommandOutput> {
+        const input: GetCommandInput = {
+            TableName: this.tableName,
+            Key: {
+                PartitionKey: 'USERID#' + userId,
+                SortKey: 'DATA',
+            }
+        };
+
+        const command = new GetCommand(input);
+        return await this.documentClient.send(command);
     }
 }

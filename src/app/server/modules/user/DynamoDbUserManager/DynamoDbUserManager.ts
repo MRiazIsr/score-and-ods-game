@@ -1,6 +1,8 @@
-//import { randomUUID } from "node:crypto";
-import { IDynamoDbUserDataAccess } from "@/app/server/modules/user/DynamoDbUserManager/IDynamoDbUserDataAccess";
-import type { DbUser, User } from "@/app/server/modules/user/types/userTypes";
+import {IDynamoDbUserDataAccess} from "@/app/server/modules/user/DynamoDbUserManager/IDynamoDbUserDataAccess";
+import type {DbUser, User} from "@/app/server/modules/user/types/userTypes";
+import type {GetCommandOutput} from "@aws-sdk/lib-dynamodb";
+import {UserTypeEntity} from "@/app/server/entities/UserTypesEntity";
+import {Md5} from 'ts-md5'
 
 export class DynamoDbUserManager {
     private dataAccess: IDynamoDbUserDataAccess;
@@ -9,28 +11,31 @@ export class DynamoDbUserManager {
         this.dataAccess = userDataAccess;
     }
 
-    public async createUser(user: User): Promise<string> {
+    public async createUser(user: User): Promise<string>
+    {
         console.log("Creating new user DynamoDbUserManager");
 
         const userId: string = crypto.randomUUID();
-        console.log("Creating new user TEST");
+        const salt: string = crypto.randomUUID();
+        console.log("Creating new user");
 
         console.log("DynamoDbUserManager userId: ", userId);
 
-        const dbUser: DbUser = {
-            PartitionKey: 'USERID#' + userId,
-            SortKey: 'Data',
+        const formatedUser: DbUser = {
+            userId: userId,
             name: user.name ?? '',
             email: user.email ?? '',
             userName: user.userName,
-            password: user.password,
+            password: Md5.hashStr(user.password + salt),
+            userType: user.userType ?? UserTypeEntity.GAMER,
+            salt: salt,
         }
-        console.log("DynamoDbUserManager dbUser: ", dbUser);
+        console.log("DynamoDbUserManager dbUser: ", user);
 
-        const isUserNameSaved = await this.dataAccess.saveUserNameRowWithId(user.userName.toLowerCase(), userId);
+        const isUserNameSaved = await this.dataAccess.saveUserNameRowWithId(formatedUser.userName, userId);
 
         console.log("DynamoDbUserManager isUserNameSaved: ", isUserNameSaved);
-        const isUserSaved = await this.dataAccess.saveUser(dbUser)
+        const isUserSaved = await this.dataAccess.saveUser(formatedUser)
         console.log("DynamoDbUserManager isUserSaved: ", isUserSaved);
 
         if (!isUserNameSaved) {
@@ -43,5 +48,27 @@ export class DynamoDbUserManager {
         return 'User created successfully';
     }
 
-    public async (userId: string): Promise<boolean> {}
+    public async getUserIdByUserName(userName: string): Promise<string>
+    {   const userIdOutput: GetCommandOutput = await this.dataAccess.getUserIdByUserName(userName);
+
+        return userIdOutput.Item?.userId;
+    }
+
+    public async getUserDataById(userId: string): Promise<DbUser>
+    {
+        const userDataOutput = await this.dataAccess.getUserDataById(userId);
+        if (!userDataOutput.Item) {
+            throw new Error("User data not found");
+        }
+
+        return {
+            name: userDataOutput.Item.name,
+            email: userDataOutput.Item.email,
+            userName: userDataOutput.Item.userName,
+            password: userDataOutput.Item.password,
+            salt: userDataOutput.Item.salt,
+            userType: userDataOutput.Item.userId,
+            userId: '',
+        };
+    }
 }

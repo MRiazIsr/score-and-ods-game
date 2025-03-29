@@ -1,14 +1,12 @@
 'use client';
 import { Card } from "@/app/client/components/ui/Card";
 import { SubmitButton } from "@/app/client/components/ui/SubmitButton"
-//import { ErrorNotification } from '@/app/components/ui/ErrorNotice'
 import { Input } from "@/app/client/components/ui/Input";
 import Link from "next/link";
 import Form from "next/form";
 import { useActionState } from 'react'
 import { signIn } from "@/app/actions/auth";
-
-
+import { FormFieldsKeys } from "@/app/server/entities/FormFieldsKeys";
 
 export default function LoginPage() {
     const [state, action, pending] = useActionState(signIn, undefined);
@@ -20,10 +18,10 @@ export default function LoginPage() {
                 description="Please Log In "
             >
                 <Form action={action}>
-                    <Input name={'email'} id={'email'} type={'email'} value={''} placeHolder={'email@example.com'}/>
-                    {state?.errors?.email && <p>{state.errors.email}</p>}
+                    <Input name={FormFieldsKeys.signInGroup.USERNAME} id={'userName'} type={'userName'} value={''} placeHolder={'MyFunnyUserName'}/>
+                    {state?.errors?.userName && <p className="text-red-500">{state.errors.userName}</p>}
 
-                    <Input name={'password'} id={'password'} type={'password'} value={''} placeHolder={'********'}/>
+                    <Input name={FormFieldsKeys.signInGroup.PASSWORD} id={'password'} type={'password'} value={''} placeHolder={'********'}/>
                     {state?.errors?.password && (
                         <div>
                             <p>Password must:</p>
@@ -32,6 +30,11 @@ export default function LoginPage() {
                                     <li key={error}>- {error}</li>
                                 ))}
                             </ul>
+                        </div>
+                    )}
+                    {!state?.success && state?.message && (
+                        <div className='space-y-1'>
+                            <p className="text-red-500"> { state.message } </p>
                         </div>
                     )}
 

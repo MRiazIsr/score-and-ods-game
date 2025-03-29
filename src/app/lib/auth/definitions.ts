@@ -1,8 +1,15 @@
-import { z } from 'zod'
+import { z } from "zod";
+import type { SessionOptions } from "./types";
+import { getRequiredEnv } from "@/app/lib/helpers/envHeplper";
 
 export const SignUpFormSchema = z.object({
+    name: z.string(),
+    email: z
+        .string()
+        .email('Invalid email format'),
     userName: z
         .string()
+        .toLowerCase()
         .min(2, { message: 'Name must be at least 2 characters long.' })
         .trim(),
     password: z
@@ -17,6 +24,7 @@ export const SignUpFormSchema = z.object({
 export const SignInFormSchema = z.object({
     userName: z
         .string()
+        .toLowerCase()
         .min(2, { message: 'User name must be at least 2 characters long.' }),
     password: z
         .string()
@@ -27,11 +35,26 @@ export const SignInFormSchema = z.object({
         .trim()
 })
 
+export const sessionOptions: SessionOptions = {
+    password: getRequiredEnv('SESSION_PASSWORD'),
+    cookieName: getRequiredEnv('SESSION_COOKIE_NAME'),
+    cookieOptions: {
+        secure: process.env.NODE_ENV === 'production',
+    }
+}
+
 export type FormState =
     | {
         errors?: {
             email?: string[],
             password?: string[],
+        }
+        errorCode?: number
+        values?: {
+            name?: string,
+            email?: string,
+            userName?: string,
+            password?: string,
         }
         message?: string,
     }
