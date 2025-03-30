@@ -8,7 +8,7 @@ export interface InputProps {
     placeHolder: string;
     required?: boolean;
     label?: string;
-    error?: string;
+    error?: string[] | string;
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     validation?: (value: string) => string;
 }

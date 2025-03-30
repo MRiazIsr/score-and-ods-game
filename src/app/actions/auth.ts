@@ -1,3 +1,5 @@
+"use server";
+
 import {FormState, SignInFormSchema, SignUpFormSchema} from "@/app/lib/auth/definitions";
 import { selectFactory } from '@/app/server/modules/factories/authFactory/AuthFactorySelector'
 import {SessionUser, User} from "@/app/server/modules/user/types/userTypes";
@@ -5,27 +7,27 @@ import {SafeParseReturnType} from "zod";
 import {DynamoDbAuthFactory} from "@/app/server/modules/factories/authFactory/DynamoDbAuthFactory";
 import {AuthService} from "@/app/server/services/auth/AuthService";
 import {FormFieldsKeys} from "@/app/server/entities/FormFieldsKeys";
-import { getIronSession, IronSession } from "iron-session";
-import { cookies } from "next/headers";
-import { SessionData } from "@/app/lib/auth/types";
-import { sessionOptions } from "@/app/lib/auth/definitions";
+// import { getIronSession, IronSession } from "iron-session";
+// import { cookies } from "next/headers";
+// import { SessionData } from "@/app/lib/auth/types";
+// import { sessionOptions } from "@/app/lib/auth/definitions";
 
-export async function getSession(): Promise<IronSession<SessionData>>
-{
-    const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
-    if (!session.isLoggedIn) {
-        session.isLoggedIn = false;
-        session.user = {
-            name: '',
-            email: '',
-            userId: '',
-            userName: '',
-            userType: 0,
-        };
-    }
-
-    return session;
-}
+// export async function getSession(): Promise<IronSession<SessionData>>
+// {
+//     const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
+//     if (!session.isLoggedIn) {
+//         session.isLoggedIn = false;
+//         session.user = {
+//             name: '',
+//             email: '',
+//             userId: '',
+//             userName: '',
+//             userType: 0,
+//         };
+//     }
+//
+//     return session;
+// }
 
 export async function signUp(state: FormState, formData: FormData): Promise<{
     message: string;
@@ -33,7 +35,6 @@ export async function signUp(state: FormState, formData: FormData): Promise<{
     errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
     values?: { name?: string; email?: string; userName?: string; password?: string };
 }> {
-    "use server";
     const formFields = {
         name: formData.get(FormFieldsKeys.signUpGroup.NAME)?.toString() ?? '',
         email: formData.get(FormFieldsKeys.signUpGroup.EMAIL)?.toString() ?? '',
@@ -99,7 +100,6 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
     success: boolean;
     errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
 }> {
-    "use server"
     const formFields = {
         userName: formData.get(FormFieldsKeys.signInGroup.USERNAME)?.toString() ?? '',
         password: formData.get(FormFieldsKeys.signInGroup.PASSWORD)?.toString() ?? '',
@@ -122,17 +122,17 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
     try {
         const userSignInResult: { status: boolean, message: string, sessionUser: SessionUser } = await authService.signIn( validatedFields.data )
 
-        const session = await getSession();
+        // const session = await getSession();
 
-        session.isLoggedIn = true;
-        session.user = {
-            userName: userSignInResult.sessionUser.userName,
-            userId: userSignInResult.sessionUser.userId,
-            userType: userSignInResult.sessionUser.userType,
-            name: userSignInResult.sessionUser.name,
-            email: userSignInResult.sessionUser.email,
-        };
-        await session.save();
+        // session.isLoggedIn = true;
+        // session.user = {
+        //     userName: userSignInResult.sessionUser.userName,
+        //     userId: userSignInResult.sessionUser.userId,
+        //     userType: userSignInResult.sessionUser.userType,
+        //     name: userSignInResult.sessionUser.name,
+        //     email: userSignInResult.sessionUser.email,
+        // };
+        // await session.save();
 
         return {
             success: true,

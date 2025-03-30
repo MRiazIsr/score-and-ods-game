@@ -1,72 +1,107 @@
 'use client';
 
 import { Card } from "@/app/client/components/ui/Card";
-import { SubmitButton } from "@/app/client/components/ui/SubmitButton"
+import { SubmitButton } from "@/app/client/components/ui/SubmitButton";
 import { Input } from "@/app/client/components/ui/Input";
 import Link from "next/link";
 import Form from "next/form";
-import { useActionState } from 'react'
+import {useActionState, useRef, useState} from 'react';
 import { signUp } from "@/app/actions/auth";
 import { PasswordInput } from "@/app/client/components/ui/PasswordInput";
 import { FormFieldsKeys } from "@/app/server/entities/FormFieldsKeys";
 import { redirect } from "next/navigation";
-
+import { ErrorNotification } from "@/app/client/components/ui/ErrorNotice";
 
 export default function SignUpPage() {
     const [state, action, pending] = useActionState(signUp, undefined);
-
-    if (state?.success) {
-        redirect('/')
-    }
+    // if (state?.success) {
+    //     redirect('/')
+    // }
 
     const signUpFormValues = state?.values || {};
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-950 from-10% via-violet-950 via-30% to-emerald-950 to-90%">
+        <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-950 via-violet-950 to-emerald-950">
             <Card
                 title="TJ Score Game"
-                description="Please Register Your Account "
+                description="Please Register Your Account"
             >
-                <Form action={action}>
-                    <Input name={'name'} id={FormFieldsKeys.signUpGroup.NAME} type={'name'} value={signUpFormValues.name} placeHolder={'Anton'}/>
-                    {state?.errors?.name && <p>{state.errors.name}</p>}
+                {!state?.success && (
+                    <ErrorNotification
+                        key={`${state?.message}-${Date.now()}`}
+                        error={state?.message}
+                    />
+                )}
+                <Form action={action} className="space-y-4">
+                    {/* Name Input */}
+                    <Input
+                        name={'name'}
+                        id={FormFieldsKeys.signUpGroup.NAME}
+                        type={'text'}
+                        value={signUpFormValues.name}
+                        placeHolder={'Anton'}
+                    />
+                    {state?.errors?.name && <p className="text-red-500">{state.errors.name}</p>}
 
-                    <Input name={'email'} id={'email'} type={'email'} value={signUpFormValues.email} placeHolder={'email@example.com'}/>
-                    {state?.errors?.email && <p>{state.errors.email}</p>}
+                    {/* Email Input */}
+                    <Input
+                        name={'email'}
+                        id={'email'}
+                        type={'email'}
+                        value={signUpFormValues.email}
+                        placeHolder={'email@example.com'}
+                    />
+                    {state?.errors?.email && <p className="text-red-500">{state.errors.email}</p>}
 
-                    <Input name={'userName'} id={'userName'} type={'userName'} value={signUpFormValues.userName} placeHolder={'tj'}/>
+                    {/* Username Input */}
+                    <Input
+                        name={'userName'}
+                        id={'userName'}
+                        type={'text'}
+                        value={signUpFormValues.userName}
+                        placeHolder={'tj'}
+                    />
                     {state?.errors?.userName && <p className="text-red-500">{state.errors.userName}</p>}
 
-                    <PasswordInput value={signUpFormValues.password}/>
+                    {/* Password Input */}
+                    <PasswordInput
+                        value={signUpFormValues.password}
+                        error={state?.errors?.password?.[0]}
+                    />
                     {state?.errors?.password && (
-                        <div className='space-y-1'>
-                            <ul>
+                        <div className="space-y-1">
+                            <ul className="list-disc pl-5 space-y-1 text-red-500">
                                 {state.errors.password.map((error) => {
-                                    const text: string = error === 'Required' ? 'Password' : 'Password Required'
-                                    return <li className="text-red-500" key={error}>{text} - {error}</li>
+                                    const text: string = error === 'Required' ? 'Password' : 'Password Required';
+                                    return (
+                                        <li key={error}>
+                                            {text} - {error}
+                                        </li>
+                                    );
                                 })}
                             </ul>
                         </div>
                     )}
-                    {!state?.success && state?.message && (
-                        <div className='space-y-1'>
-                            <p className="text-red-500"> { state.message } </p>
-                        </div>
-                    )}
+
+                    {/* General Error Message */}
+
+                    {/* Submit Button */}
                     <div className="space-x-2 space-y-2">
-                        <SubmitButton buttonText="Sign Up" pending={pending}/>
+                        <SubmitButton buttonText="Sign Up" pending={pending} />
                     </div>
                 </Form>
-                <div className={'flex flex-row space-x-2 justify-center'}>
+
+                {/* Sign In Link */}
+                <div className="flex flex-row space-x-2 justify-center pt-4">
                     <Link
                         href="/login"
                         className="text-blue-500 hover:text-blue-700 text-xs rounded-lg transition-colors"
-                        aria-label="Navigate to About page"
+                        aria-label="Navigate to Login page"
                     >
-                        Sign In
+                        Already have an account? Sign In
                     </Link>
                 </div>
             </Card>
-      </main>
-  );
+        </main>
+    );
 }

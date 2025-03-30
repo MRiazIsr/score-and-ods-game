@@ -1,12 +1,7 @@
 import { redirect } from 'next/navigation';
-import { getSession } from "@/app/actions/auth";
 
 export default async function Home() {
-    const session = await getSession();
-
-    if (!session.isLoggedIn) {
-        redirect('/login');
-    }
+    redirect('/login');
 
     return (
             <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">

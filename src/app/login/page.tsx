@@ -1,51 +1,53 @@
 'use client';
 import { Card } from "@/app/client/components/ui/Card";
-import { SubmitButton } from "@/app/client/components/ui/SubmitButton"
+import { SubmitButton } from "@/app/client/components/ui/SubmitButton";
 import { Input } from "@/app/client/components/ui/Input";
+import { PasswordInput } from "@/app/client/components/ui/PasswordInput";
+import { ErrorNotification } from "@/app/client/components/ui/ErrorNotice";
 import Link from "next/link";
 import Form from "next/form";
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react';
 import { signIn } from "@/app/actions/auth";
 import { FormFieldsKeys } from "@/app/server/entities/FormFieldsKeys";
 
 export default function LoginPage() {
     const [state, action, pending] = useActionState(signIn, undefined);
+    const [errors, setErrors] = useState({});
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-950 from-10% via-violet-950 via-30% to-emerald-950 to-90%">
+        <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-950 via-violet-950 to-emerald-950">
             <Card
                 title="TJ Score Game"
-                description="Please Log In "
+                description="Please Log In"
             >
-                <Form action={action}>
-                    <Input name={FormFieldsKeys.signInGroup.USERNAME} id={'userName'} type={'userName'} value={''} placeHolder={'MyFunnyUserName'}/>
-                    {state?.errors?.userName && <p className="text-red-500">{state.errors.userName}</p>}
+                <ErrorNotification error={state?.message} onClose={() => setErrors({})} />
 
-                    <Input name={FormFieldsKeys.signInGroup.PASSWORD} id={'password'} type={'password'} value={''} placeHolder={'********'}/>
-                    {state?.errors?.password && (
-                        <div>
-                            <p>Password must:</p>
-                            <ul>
-                                {state.errors.password.map((error) => (
-                                    <li key={error}>- {error}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
+                <Form action={action} className="space-y-4">
+                    <Input
+                        name={FormFieldsKeys.signInGroup.USERNAME}
+                        id='userName'
+                        type='text'
+                        placeHolder='MyFunnyUserName'
+                        error={state?.errors?.userName}
+                    />
+
+                    <PasswordInput
+                        value=''
+                        // error={state?.errors?.password?.[0]}
+                    />
+
                     {!state?.success && state?.message && (
-                        <div className='space-y-1'>
-                            <p className="text-red-500"> { state.message } </p>
-                        </div>
+                        <p className="text-red-500 text-sm">{state.message}</p>
                     )}
 
-                    <SubmitButton buttonText="Sign In" pending={pending}/>
-
+                    <SubmitButton buttonText="Sign In" pending={pending} />
                 </Form>
-                <div className={'flex flex-row space-x-2 justify-center'}>
+
+                <div className='flex flex-row space-x-2 justify-center pt-4'>
                     <Link
                         href="/signup"
                         className="text-blue-500 hover:text-blue-700 text-xs rounded-lg transition-colors"
-                        aria-label="Navigate to About page"
+                        aria-label="Navigate to Sign Up page"
                     >
                         Sign Up
                     </Link>
@@ -57,9 +59,9 @@ export default function LoginPage() {
                         About
                     </Link>
                     <Link
-                       href="/forgot-password"
-                       className="text-blue-500 hover:text-blue-700 text-xs rounded-lg transition-colors"
-                       aria-label="Navigate to Forgot Password page"
+                        href="/forgot-password"
+                        className="text-blue-500 hover:text-blue-700 text-xs rounded-lg transition-colors"
+                        aria-label="Navigate to Forgot Password page"
                     >
                         Forgot Password
                     </Link>
@@ -72,6 +74,6 @@ export default function LoginPage() {
                     </Link>
                 </div>
             </Card>
-      </main>
-  );
+        </main>
+    );
 }
