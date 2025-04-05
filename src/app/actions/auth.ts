@@ -7,27 +7,28 @@ import {SafeParseReturnType} from "zod";
 import {DynamoDbAuthFactory} from "@/app/server/modules/factories/authFactory/DynamoDbAuthFactory";
 import {AuthService} from "@/app/server/services/auth/AuthService";
 import {FormFieldsKeys} from "@/app/server/entities/FormFieldsKeys";
-// import { getIronSession, IronSession } from "iron-session";
-// import { cookies } from "next/headers";
-// import { SessionData } from "@/app/lib/auth/types";
-// import { sessionOptions } from "@/app/lib/auth/definitions";
+import { getIronSession, IronSession } from "iron-session";
+import { cookies } from "next/headers";
+import { SessionData } from "@/app/lib/auth/types";
+import { sessionOptions } from "@/app/lib/auth/definitions";
+import {redirect} from "next/navigation";
 
-// export async function getSession(): Promise<IronSession<SessionData>>
-// {
-//     const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
-//     if (!session.isLoggedIn) {
-//         session.isLoggedIn = false;
-//         session.user = {
-//             name: '',
-//             email: '',
-//             userId: '',
-//             userName: '',
-//             userType: 0,
-//         };
-//     }
-//
-//     return session;
-// }
+export async function getSession(): Promise<IronSession<SessionData>>
+{
+    const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
+    if (!session.isLoggedIn) {
+        session.isLoggedIn = false;
+        session.user = {
+            name: '',
+            email: '',
+            userId: '',
+            userName: '',
+            userType: 0,
+        };
+    }
+
+    return session;
+}
 
 export async function signUp(state: FormState, formData: FormData): Promise<{
     message: string;
@@ -107,7 +108,7 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
 
     console.log(formFields);
 
-    const validatedFields: SafeParseReturnType<User, User> = SignInFormSchema.safeParse( formFields )
+    const validatedFields: SafeParseReturnType<User, User> = SignInFormSchema.safeParse(formFields)
 
     if (!validatedFields.success) {
         return {
@@ -120,24 +121,29 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
     const authFactory: DynamoDbAuthFactory = selectFactory(process.env.DB_TYPE)
     const authService: AuthService = authFactory.createAuthService();
     try {
-        const userSignInResult: { status: boolean, message: string, sessionUser: SessionUser } = await authService.signIn( validatedFields.data )
+        const userSignInResult: {
+            status: boolean,
+            message: string,
+            sessionUser: SessionUser
+        } = await authService.signIn(validatedFields.data)
 
-        // const session = await getSession();
+        const session = await getSession();
 
-        // session.isLoggedIn = true;
-        // session.user = {
-        //     userName: userSignInResult.sessionUser.userName,
-        //     userId: userSignInResult.sessionUser.userId,
-        //     userType: userSignInResult.sessionUser.userType,
-        //     name: userSignInResult.sessionUser.name,
-        //     email: userSignInResult.sessionUser.email,
-        // };
-        // await session.save();
+        session.isLoggedIn = true;
+        session.user = {
+            userName: userSignInResult.sessionUser.userName,
+            userId: userSignInResult.sessionUser.userId,
+            userType: userSignInResult.sessionUser.userType,
+            name: userSignInResult.sessionUser.name,
+            email: userSignInResult.sessionUser.email,
+        };
+        await session.save();
 
-        return {
-            success: true,
-            message: userSignInResult.message
-        }
+        // return {
+        //     success: true,
+        //     message: userSignInResult.message
+        // }
+        redirect('/');
     } catch (error: unknown) {
         if (error instanceof Error) {
             return {
@@ -150,4 +156,11 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
             message: 'An unknown error occurred.'
         }
     }
+}
+
+export async function signOut() {
+    const session = await getSession();
+
+    session.destroy();
+    redirect('/');
 }
