@@ -21,7 +21,6 @@ export default function SignUpPage() {
     const signUpFormValues = state?.values || {};
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-blue-950 via-violet-950 to-emerald-950">
             <Card
                 title="TJ Score Game"
                 description="Please Register Your Account"
@@ -102,6 +101,5 @@ export default function SignUpPage() {
                     </Link>
                 </div>
             </Card>
-        </main>
     );
 }

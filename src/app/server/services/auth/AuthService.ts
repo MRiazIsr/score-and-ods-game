@@ -15,7 +15,7 @@ export class AuthService {
         const userManager: DynamoDbUserManager = authFactory.createUserManager();
 
         const userExists: string = await userManager.getUserIdByUserName(user.userName);
-        if (!userExists) {
+        if (userExists) {
             throw new Error(`User with this user name already exists`, { cause: FormFieldsKeys.signUpGroup.USERNAME});
         }
 
