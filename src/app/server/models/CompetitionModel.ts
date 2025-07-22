@@ -32,4 +32,17 @@ export class CompetitionModel {
         const command = new GetCommand(input);
         return await this.documentClient.send(command);
     }
+
+    static async getCompetitionsActiveSeason(competitionId: number): Promise<GetCommandOutput> {
+        const input: GetCommandInput = {
+            TableName: this.tableName,
+            Key: {
+                PartitionKey: `COMPETITION_ID#${competitionId}`,
+                SortKey: `HELPER`
+            }
+        };
+
+        const command = new GetCommand(input);
+        return await this.documentClient.send(command);
+    }
 }

@@ -49,7 +49,8 @@ export class DynamoDbUserManager {
     }
 
     public async getUserIdByUserName(userName: string): Promise<string>
-    {   const userIdOutput: GetCommandOutput = await this.dataAccess.getUserIdByUserName(userName);
+    {
+        const userIdOutput: GetCommandOutput = await this.dataAccess.getUserIdByUserName(userName);
 
         return userIdOutput.Item?.userId;
     }

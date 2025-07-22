@@ -55,6 +55,17 @@ const saveRawMatchesResponseToDynamoDB = async (competitions: Record<string, Mat
         console.log('COMPT_ID', competitionId, 'SEASON', competitionData.filters.season);
         console.log('LENGTH', competitionData.matches?.length || 0);
 
+        const helperItem = {
+            PartitionKey: `COMPETITION_ID#${competitionId}`,
+            SortKey: `HELPER`,
+            ActiveSeason: competitionData.filters.season,
+        }
+
+        const helperCommand = new PutCommand({
+            TableName: process.env.AWS_TABLE_NAME,
+            Item: helperItem
+        });
+
         const item = {
             PartitionKey: `COMPETITION_ID#${competitionId}`,
             SortKey: `MATCHES_DATA#SEASON${competitionData.filters.season}`,
@@ -64,22 +75,18 @@ const saveRawMatchesResponseToDynamoDB = async (competitions: Record<string, Mat
             matchCount: competitionData.matches?.length || 0
         };
 
-        // Validate that required keys have values
-        if (!item.PartitionKey || !item.SortKey) {
-            console.error('Invalid item keys:', { PK: item.PartitionKey, SK: item.SortKey });
-            throw new Error(`Invalid DynamoDB keys for competition ${competitionId}`);
-        }
-
         const command = new PutCommand({
             TableName: process.env.AWS_TABLE_NAME,
             Item: item
         });
 
         try {
+            await docClient.send(helperCommand);
+            console.log(`Successfully saved helper data for competition ${competitionId}`);
             await docClient.send(command);
             console.log(`Successfully saved raw matches data for competition ${competitionId}`);
         } catch (error) {
-            console.error(`Error saving raw matches data for competition ${competitionId}:`, error);
+            console.error(`Error saving raw matches data or help[er data for competition ${competitionId}:`, error);
             throw error;
         }
     }
