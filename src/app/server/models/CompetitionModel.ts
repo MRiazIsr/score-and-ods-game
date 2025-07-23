@@ -33,7 +33,7 @@ export class CompetitionModel {
         return await this.documentClient.send(command);
     }
 
-    static async getCompetitionsActiveSeason(competitionId: number): Promise<GetCommandOutput> {
+    static async getCompetitionHelperData(competitionId: number): Promise<GetCommandOutput> {
         const input: GetCommandInput = {
             TableName: this.tableName,
             Key: {

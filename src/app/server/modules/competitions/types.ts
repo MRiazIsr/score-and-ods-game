@@ -5,7 +5,7 @@ interface Area {
     flag: string;
 }
 
-interface Competition {
+export interface Competition {
     id: number;
     name: string;
     code: string;

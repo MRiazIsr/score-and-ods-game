@@ -3,7 +3,7 @@ import type { SessionUser, User} from "@/app/server/modules/user/types/userTypes
 import { Md5 } from 'ts-md5'
 import { DynamoDbAuthFactory } from "@/app/server/modules/factories/authFactory/DynamoDbAuthFactory";
 import { DynamoDbUserManager } from "@/app/server/modules/user/DynamoDbUserManager/DynamoDbUserManager";
-import { FormFieldsKeys } from "@/app/server/entities/FormFieldsKeys";
+import { FormFieldsKeysEntity } from "@/app/server/entities/FormFieldsKeysEntity";
 import type { DbUser } from "@/app/server/modules/user/types/userTypes";
 
 export class AuthService {
@@ -16,7 +16,7 @@ export class AuthService {
 
         const userExists: string = await userManager.getUserIdByUserName(user.userName);
         if (userExists) {
-            throw new Error(`User with this user name already exists`, { cause: FormFieldsKeys.signUpGroup.USERNAME});
+            throw new Error(`User with this user name already exists`, { cause: FormFieldsKeysEntity.signUpGroup.USERNAME});
         }
 
         return { message: await userManager.createUser(user) };

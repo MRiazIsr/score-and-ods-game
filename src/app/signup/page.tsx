@@ -8,7 +8,7 @@ import Form from "next/form";
 import {useActionState, useRef, useState} from 'react';
 import { signUp } from "@/app/actions/auth";
 import { PasswordInput } from "@/app/client/components/ui/PasswordInput";
-import { FormFieldsKeys } from "@/app/server/entities/FormFieldsKeys";
+import { FormFieldsKeysEntity } from "@/app/server/entities/FormFieldsKeysEntity";
 import { redirect } from "next/navigation";
 import { ErrorNotification } from "@/app/client/components/ui/ErrorNotice";
 
@@ -35,7 +35,7 @@ export default function SignUpPage() {
                     {/* Name Input */}
                     <Input
                         name={'name'}
-                        id={FormFieldsKeys.signUpGroup.NAME}
+                        id={FormFieldsKeysEntity.signUpGroup.NAME}
                         type={'text'}
                         value={signUpFormValues.name}
                         placeHolder={'Anton'}

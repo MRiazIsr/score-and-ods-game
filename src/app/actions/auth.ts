@@ -1,12 +1,12 @@
 "use server";
 
-import {FormState, SignInFormSchema, SignUpFormSchema} from "@/app/lib/auth/definitions";
+import { FormState, SignInFormSchema, SignUpFormSchema } from "@/app/lib/auth/definitions";
 import { selectFactory } from '@/app/server/modules/factories/authFactory/AuthFactorySelector'
-import {SessionUser, User} from "@/app/server/modules/user/types/userTypes";
-import {SafeParseReturnType} from "zod";
-import {DynamoDbAuthFactory} from "@/app/server/modules/factories/authFactory/DynamoDbAuthFactory";
-import {AuthService} from "@/app/server/services/auth/AuthService";
-import {FormFieldsKeys} from "@/app/server/entities/FormFieldsKeys";
+import { SessionUser, User } from "@/app/server/modules/user/types/userTypes";
+import { SafeParseReturnType } from "zod";
+import { DynamoDbAuthFactory } from "@/app/server/modules/factories/authFactory/DynamoDbAuthFactory";
+import { AuthService} from "@/app/server/services/auth/AuthService";
+import { FormFieldsKeysEntity } from "@/app/server/entities/FormFieldsKeysEntity";
 import { getIronSession, IronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { SessionData } from "@/app/lib/auth/types";
@@ -37,10 +37,10 @@ export async function signUp(state: FormState, formData: FormData): Promise<{
     values?: { name?: string; email?: string; userName?: string; password?: string };
 }> {
     const formFields = {
-        name: formData.get(FormFieldsKeys.signUpGroup.NAME)?.toString() ?? '',
-        email: formData.get(FormFieldsKeys.signUpGroup.EMAIL)?.toString() ?? '',
-        userName: formData.get(FormFieldsKeys.signUpGroup.USERNAME)?.toString(),
-        password: formData.get(FormFieldsKeys.signUpGroup.PASSWORD)?.toString()
+        name: formData.get(FormFieldsKeysEntity.signUpGroup.NAME)?.toString() ?? '',
+        email: formData.get(FormFieldsKeysEntity.signUpGroup.EMAIL)?.toString() ?? '',
+        userName: formData.get(FormFieldsKeysEntity.signUpGroup.USERNAME)?.toString(),
+        password: formData.get(FormFieldsKeysEntity.signUpGroup.PASSWORD)?.toString()
     }
 
     console.log(formFields);
@@ -102,8 +102,8 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
     errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
 }> {
     const formFields = {
-        userName: formData.get(FormFieldsKeys.signInGroup.USERNAME)?.toString() ?? '',
-        password: formData.get(FormFieldsKeys.signInGroup.PASSWORD)?.toString() ?? '',
+        userName: formData.get(FormFieldsKeysEntity.signInGroup.USERNAME)?.toString() ?? '',
+        password: formData.get(FormFieldsKeysEntity.signInGroup.PASSWORD)?.toString() ?? '',
     }
 
     console.log(formFields);

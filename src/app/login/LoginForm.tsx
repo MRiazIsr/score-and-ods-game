@@ -8,7 +8,7 @@ import Link from "next/link";
 import Form from "next/form";
 import { useActionState, useState } from 'react';
 import { signIn } from "@/app/actions/auth";
-import { FormFieldsKeys } from "@/app/server/entities/FormFieldsKeys";
+import { FormFieldsKeysEntity } from "@/app/server/entities/FormFieldsKeysEntity";
 
 export default function LoginForm() {
     const [state, action, pending] = useActionState(signIn, undefined);
@@ -23,7 +23,7 @@ export default function LoginForm() {
 
                 <Form action={action} className="space-y-4">
                     <Input
-                        name={FormFieldsKeys.signInGroup.USERNAME}
+                        name={FormFieldsKeysEntity.signInGroup.USERNAME}
                         id='userName'
                         type='text'
                         placeHolder='MyFunnyUserName'

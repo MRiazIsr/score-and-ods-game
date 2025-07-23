@@ -59,6 +59,7 @@ const saveRawMatchesResponseToDynamoDB = async (competitions: Record<string, Mat
             PartitionKey: `COMPETITION_ID#${competitionId}`,
             SortKey: `HELPER`,
             ActiveSeason: competitionData.filters.season,
+            competitionData: competitionData.competition,
         }
 
         const helperCommand = new PutCommand({

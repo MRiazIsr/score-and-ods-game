@@ -9,7 +9,7 @@ export class DynamoDbCompetitionsDataAccess implements IDynamoDbCompetitionsData
         return CompetitionModel.getCompetitionData(competitionId, season);
     }
 
-    async getCompetitionsActiveSeason(competitionId: number): Promise<GetCommandOutput> {
-        return CompetitionModel.getCompetitionsActiveSeason(competitionId);
+    async getCompetitionHelperData(competitionId: number): Promise<GetCommandOutput> {
+        return CompetitionModel.getCompetitionHelperData(competitionId);
     }
 }

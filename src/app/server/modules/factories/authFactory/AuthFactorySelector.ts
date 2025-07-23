@@ -8,5 +8,5 @@ export const selectFactory = (dbType: string = ''): DynamoDbAuthFactory =>
             return new DynamoDbAuthFactory();
         default:
             throw new Error(`Unknown DB type: ${dbType}`);
-        }
+    }
 }

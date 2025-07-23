@@ -20,6 +20,6 @@ export interface ButtonProps {
 
 export interface CardProps {
     title: string,
-    description: string,
+    description?: string,
     children?: React.ReactNode
 }

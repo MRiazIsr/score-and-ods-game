@@ -1,4 +1,4 @@
-export class FormFieldsKeys {
+export class FormFieldsKeysEntity {
     static signUpGroup = {
         NAME: 'name',
         EMAIL: 'email',
