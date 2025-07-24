@@ -27,6 +27,8 @@ export async function getSession(): Promise<IronSession<SessionData>>
         };
     }
 
+    console.log(session);
+
     return session;
 }
 

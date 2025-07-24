@@ -1,3 +1,4 @@
+
 import React from "react";
 
 export interface InputProps {
@@ -22,4 +23,7 @@ export interface CardProps {
     title: string,
     description?: string,
     children?: React.ReactNode
+    pointer?: true
+    variant?: 'form' | 'competition' | 'default'
+    width?: string
 }

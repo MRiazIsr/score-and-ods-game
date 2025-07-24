@@ -13,16 +13,18 @@ export class DynamoDbCompetitionsManager {
     public async getActiveDayMatches(competitionId: number, season: number)
     {
         const competitionRawData: GetCommandOutput = await this.dataAccess.getCompetitionData(competitionId, season);
+        console.log('TEST1 ', competitionRawData.Item);
 
-        const matches: Match[] = competitionRawData.Item?.matches;
+        const matches: Match[] = competitionRawData.Item?.rawData?.matches;
+
         return matches.filter((match: Match) => match.matchday === match.season.currentMatchday);
     }
 
     public async getActiveSeason(competitionId: number): Promise<number>
     {
         const helperCompetitionData: GetCommandOutput = await this.dataAccess.getCompetitionHelperData(competitionId);
-
-        return helperCompetitionData.Item?.activeSeason;
+        console.log('ACTIVE_SEASON_DATA', helperCompetitionData.Item);
+        return helperCompetitionData.Item?.ActiveSeason;
     }
 
     public async getCompetitionData(competitionId: number): Promise<Competition[]>

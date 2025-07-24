@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import type { SessionData } from "@/app/lib/auth/types";
 import { SessionProvider } from "@/app/lib/auth/SessionContext";
+import Header from "./Header";
 
 interface ProtectedLayoutProps {
     children: ReactNode;
@@ -33,6 +34,9 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
 
     return (
         <SessionProvider user={session?.user}>
-            {children}
+            <Header />
+            <main className="flex-grow w-full flex flex-col items-center justify-center">
+                {children}
+            </main>
         </SessionProvider>
     );}

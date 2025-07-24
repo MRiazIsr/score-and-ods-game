@@ -17,13 +17,7 @@ export function useSession() {
     return context;
 }
 
-export function SessionProvider({
-                                    user,
-                                    children,
-                                }: {
-    user: SessionUser;
-    children: React.ReactNode;
-}) {
+export function SessionProvider({user, children,}: { user: SessionUser; children: React.ReactNode; }) {
     return (
         <SessionContext.Provider value={{ user }}>
             {children}

@@ -69,7 +69,7 @@ const saveRawMatchesResponseToDynamoDB = async (competitions: Record<string, Mat
 
         const item = {
             PartitionKey: `COMPETITION_ID#${competitionId}`,
-            SortKey: `MATCHES_DATA#SEASON${competitionData.filters.season}`,
+            SortKey: `MATCHES_DATA#SEASON#${competitionData.filters.season}`,
             competitionId: parseInt(competitionId),
             rawData: competitionData,
             lastUpdated: new Date().toISOString(),

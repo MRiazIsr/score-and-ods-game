@@ -1,4 +1,3 @@
-// app/(protected)/home/page.tsx  – SERVER component (no "use client")
 import { getCompetitions } from "@/app/actions/competitions";
 import HomeClient from "./homeClient";
 

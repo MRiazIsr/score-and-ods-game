@@ -12,13 +12,8 @@ export async function getCompetitions(): Promise<Array<Competition[]>> {
     const competitions = [];
 
     for (const competitionId of CompetitionsEntity.competitionsIdArray) {
-        console.log(competitionId);
-        console.log(await competitionsService.getCompetitionData(competitionId));
-
         competitions.push(await competitionsService.getCompetitionData(competitionId));
     }
-
-    console.log(competitions);
 
     return competitions;
 }
