@@ -27,8 +27,8 @@ export default function HomeClient({ competitions }: Props) {
             <div className="flex flex-wrap gap-8 justify-center">
                 {competitions.map((c) => (
                     <div key={c.id} onClick={() => handleCompetitionClick(c.id)}>
-                        <Card title={c.name} pointer={true} variant="competition">
-                            <div className="w-full h-32 bg-white flex items-center justify-center border-b border-gray-600">
+                        <Card title={c.name} pointer={true} variant="competition" width="w-64">
+                            <div className="w-full h-32 bg-white p-4 flex items-center justify-center border-b border-gray-600">
                                 <Image
                                     src={c.emblem}
                                     alt={c.name}

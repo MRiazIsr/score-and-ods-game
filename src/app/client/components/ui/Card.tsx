@@ -13,7 +13,7 @@ export const Card = ({ title, description, children, pointer, variant = 'default
             case 'form':
                 return 'w-full max-w-lg';
             case 'competition':
-                return 'w-1/4';
+                return 'w-64';
             default:
                 return 'w-auto';
         }
@@ -21,7 +21,6 @@ export const Card = ({ title, description, children, pointer, variant = 'default
 
     // Определяем структуру в зависимости от варианта
     const isCompetitionCard = variant === 'competition';
-    const isFormCard = variant === 'form';
 
     return (
         <div
