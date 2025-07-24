@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import type { SessionData } from "@/app/lib/auth/types";
 import { SessionProvider } from "@/app/lib/auth/SessionContext";
-import Header from "./Header";
+import Header from "./header";
 
 interface ProtectedLayoutProps {
     children: ReactNode;

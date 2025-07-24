@@ -2,9 +2,7 @@ import { ReactNode } from 'react';
 import { getSession } from "@/app/actions/auth";
 import { redirect } from "next/navigation";
 
-export default async function CompetitionLayout({
-  children,
-}: {
+export default async function CompetitionLayout({children}: {
   children: ReactNode;
 }) {
   const session = await getSession();
@@ -14,12 +12,10 @@ export default async function CompetitionLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-950">
       <main className="flex-1 overflow-y-auto p-6 pt-24">
         <div className="container mx-auto max-w-6xl">
           {children}
         </div>
       </main>
-    </div>
   );
 }

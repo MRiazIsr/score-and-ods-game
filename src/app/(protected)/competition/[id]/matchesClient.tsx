@@ -4,7 +4,6 @@ import { Match } from "@/app/server/modules/competitions/types";
 import { Card } from "@/app/client/components/ui/Card";
 import Image from "next/image";
 import { useState } from "react";
-import { montserrat } from "@/app/client/fonts/fonts";
 import { MatchScoreInput } from "@/app/client/components/ui/MatchScoreInput";
 
 interface Props {
@@ -20,13 +19,15 @@ export default function MatchesClient({ matches }: Props) {
       <div className="flex items-center justify-center mb-8">
         {competition && (
           <div className="flex items-center space-x-4">
-            <Image
-              src={competition.emblem}
-              alt={competition.name}
-              width={60}
-              height={60}
-              className="object-contain"
-            />
+            <div className={`bg-amber-50`}>
+              <Image
+                src={competition.emblem}
+                alt={competition.name}
+                width={60}
+                height={60}
+                className="object-contain"
+              />
+            </div>
             <h1 className="text-4xl font-bold text-center text-white">
               {competition.name} Matches
             </h1>
@@ -86,12 +87,14 @@ function MatchCard({ match }: MatchCardProps) {
 
         {/* Score Input */}
         <div className="flex items-center justify-center w-1/3">
-          <MatchScoreInput
-            homeScore={homeScore}
-            awayScore={awayScore}
-            onHomeScoreChange={setHomeScore}
-            onAwayScoreChange={setAwayScore}
-          />
+          <div className="h-24 flex items-start -mt-12"> {/* Еще сильнее увеличенный отрицательный отступ */}
+            <MatchScoreInput
+              homeScore={homeScore}
+              awayScore={awayScore}
+              onHomeScoreChange={setHomeScore}
+              onAwayScoreChange={setAwayScore}
+            />
+          </div>
         </div>
 
         {/* Away Team */}
