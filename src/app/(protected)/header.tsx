@@ -14,9 +14,10 @@ export default function Header() {
     const router = useRouter();
 
     const isHomePage = pathname === "/home";
+    const isScoreboard = pathname === "/scoreboard";
 
-    const handleBackToHome = () => {
-        router.push('/home');
+    const handleNavigation = (path: string) => {
+        router.push(path);
     };
 
     return (
@@ -29,17 +30,25 @@ export default function Header() {
                         Welcome, <span className="text-white font-medium">{session?.user?.name || 'User'}</span>
                     </p>
 
-                    {!isHomePage && (
-                        <>
-                            <div className="h-6 w-px bg-gray-600"></div>
+                    <div className="h-6 w-px bg-gray-600"></div>
+                    <div className="flex space-x-2">
+                        {!isHomePage && (
                             <button
-                                onClick={handleBackToHome}
+                                onClick={() => handleNavigation('/home')}
                                 className="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded flex items-center space-x-1 text-sm"
                             >
                                 <span>Home</span>
                             </button>
-                        </>
-                    )}
+                        )}
+                        {!isScoreboard && (
+                            <button
+                                onClick={() => handleNavigation('/scoreboard')}
+                                className="bg-gray-600 hover:bg-gray-700 text-white py-1 px-3 rounded flex items-center space-x-1 text-sm"
+                            >
+                                <span>Score Board</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <form action={logOut}>

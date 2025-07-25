@@ -7,7 +7,6 @@ export class DynamoDbUserDataAccess implements IDynamoDbUserDataAccess {
 
     async saveUserNameRowWithId(userName: string, userId: string): Promise<PutCommandOutput>
     {
-        console.log("Creating new user DynamoDbUserDataAccess");
         return await UserModel.saveUserNameRowWithId(userName, userId);
     }
 

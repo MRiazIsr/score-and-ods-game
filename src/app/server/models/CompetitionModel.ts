@@ -1,5 +1,14 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {DynamoDBDocumentClient, GetCommand, PutCommand, PutCommandInput, PutCommandOutput} from "@aws-sdk/lib-dynamodb";
+import {
+    DynamoDBDocumentClient,
+    GetCommand,
+    PutCommand,
+    PutCommandInput,
+    PutCommandOutput,
+    ScanCommand,
+    ScanCommandInput,
+    ScanCommandOutput
+} from "@aws-sdk/lib-dynamodb";
 import type { GetCommandInput, GetCommandOutput } from "@aws-sdk/lib-dynamodb";
 
 export class CompetitionModel {

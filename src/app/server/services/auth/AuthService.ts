@@ -10,7 +10,6 @@ export class AuthService {
 
     public async createUser(user: User): Promise<{message: string}>
     {
-        console.log("Creating new user AuthService");
         const authFactory: DynamoDbAuthFactory = selectFactory(process.env.DB_TYPE);
         const userManager: DynamoDbUserManager = authFactory.createUserManager();
 

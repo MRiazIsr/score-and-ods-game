@@ -53,19 +53,28 @@ interface MatchCardProps {
 function MatchCard({ match }: MatchCardProps) {
   const [homeScore, setHomeScore] = useState<number>(match.predictedScore?.home ?? 0);
   const [awayScore, setAwayScore] = useState<number>(match.predictedScore?.away ?? 0);
-
+  const [isPredicted, setIsPredicted] = useState<boolean>(match.predictedScore?.isPredicted ?? false);
+  const [isEditing, setIsEditing] = useState<boolean>(!isPredicted);
   const [state, action, pending] = useActionState(saveMatchScore, undefined);
   const [showMessage, setShowMessage] = useState(false);
 
   useEffect(() => {
     if (state?.message) {
       setShowMessage(true);
+      if (state?.success) {
+        setIsPredicted(true);
+        setIsEditing(false);
+      }
       const timer = setTimeout(() => {
         setShowMessage(false);
       }, 3000);
       return () => clearTimeout(timer);
     }
   }, [state]);
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -108,6 +117,7 @@ function MatchCard({ match }: MatchCardProps) {
                   awayScore={awayScore}
                   onHomeScoreChange={setHomeScore}
                   onAwayScoreChange={setAwayScore}
+                  disabled={!isEditing}
               />
             </div>
           </div>
@@ -139,26 +149,37 @@ function MatchCard({ match }: MatchCardProps) {
               </div>
           )}
 
-          <Form action={action} className="flex justify-center space-x-2">
-            {/* Hidden inputs to pass data */}
-            <input type="hidden" name="competitionId" value={match.competition.id} />
-            <input type="hidden" name="matchId" value={match.id} />
-            <input type="hidden" name="homeScore" value={homeScore} />
-            <input type="hidden" name="awayScore" value={awayScore} />
-            <input type="hidden" name="matchDay" value={match.matchday} />
+          <div className="flex justify-center space-x-2">
+            {isEditing ? (
+                <Form action={action} className="flex justify-center space-x-2">
+                  {/* Hidden inputs to pass data */}
+                  <input type="hidden" name="competitionId" value={match.competition.id} />
+                  <input type="hidden" name="matchId" value={match.id} />
+                  <input type="hidden" name="homeScore" value={homeScore} />
+                  <input type="hidden" name="awayScore" value={awayScore} />
+                  <input type="hidden" name="matchDay" value={match.matchday} />
 
-            <button
-                type="submit"
-                disabled={pending}
-                className={`font-bold py-2 px-6 rounded transition-colors duration-200 ${
-                    pending
-                        ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-            >
-              {pending ? 'Saving...' : 'Save Prediction'}
-            </button>
-          </Form>
+                  <button
+                      type="submit"
+                      disabled={pending}
+                      className={`font-bold py-2 px-6 rounded transition-colors duration-200 ${
+                          pending
+                              ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                  >
+                    {pending ? 'Saving...' : 'Save Prediction'}
+                  </button>
+                </Form>
+            ) : (
+                <button
+                    onClick={handleEditClick}
+                    className="font-bold py-2 px-6 rounded transition-colors duration-200 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Edit
+                </button>
+            )}
+          </div>
         </div>
       </Card>
   );

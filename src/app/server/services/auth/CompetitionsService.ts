@@ -1,5 +1,5 @@
 import { selectFactory } from "@/app/server/modules/factories/competitionsFactory/CompetitionsFactorySelector";
-import { Match, Competition } from "@/app/server/modules/competitions/types";
+import { Match, Competition, ScoreBoardData } from "@/app/server/modules/competitions/types";
 
 
 export class CompetitionsService {
@@ -15,8 +15,6 @@ export class CompetitionsService {
     async getCompetitionData(competitionId: number): Promise<Competition[]> {
         const competitionFactory = selectFactory(process.env.DB_TYPE);
         const competitionsManager = competitionFactory.createCompetitionsManager();
-        console.log(competitionId);
-        console.log(await competitionsManager.getCompetitionData(competitionId));
         return await competitionsManager.getCompetitionData(competitionId);
     }
 
@@ -25,5 +23,11 @@ export class CompetitionsService {
         const competitionsManager = competitionFactory.createCompetitionsManager();
 
         return  await competitionsManager.saveMatchScore(competitionId, matchDay, matchId, score, userId);
+    }
+
+    async getScoreBoardData(competitionId: number): Promise<ScoreBoardData> {
+        const competitionFactory = selectFactory(process.env.DB_TYPE);
+        const competitionsManager = competitionFactory.createCompetitionsManager();
+        return await competitionsManager.getScoreBoardData(competitionId);
     }
 }

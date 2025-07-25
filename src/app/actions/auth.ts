@@ -27,8 +27,6 @@ export async function getSession(): Promise<IronSession<SessionData>>
         };
     }
 
-    console.log(session);
-
     return session;
 }
 
@@ -44,8 +42,6 @@ export async function signUp(state: FormState, formData: FormData): Promise<{
         userName: formData.get(FormFieldsKeysEntity.signUpGroup.USERNAME)?.toString(),
         password: formData.get(FormFieldsKeysEntity.signUpGroup.PASSWORD)?.toString()
     }
-
-    console.log(formFields);
 
     const validatedFields: SafeParseReturnType<User, User> = SignUpFormSchema.safeParse( formFields )
 
@@ -107,8 +103,6 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
         userName: formData.get(FormFieldsKeysEntity.signInGroup.USERNAME)?.toString() ?? '',
         password: formData.get(FormFieldsKeysEntity.signInGroup.PASSWORD)?.toString() ?? '',
     }
-
-    console.log(formFields);
 
     const validatedFields: SafeParseReturnType<User, User> = SignInFormSchema.safeParse(formFields)
 

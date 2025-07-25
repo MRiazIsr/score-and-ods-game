@@ -13,13 +13,8 @@ export class DynamoDbUserManager {
 
     public async createUser(user: User): Promise<string>
     {
-        console.log("Creating new user DynamoDbUserManager");
-
         const userId: string = crypto.randomUUID();
         const salt: string = crypto.randomUUID();
-        console.log("Creating new user");
-
-        console.log("DynamoDbUserManager userId: ", userId);
 
         const formatedUser: DbUser = {
             userId: userId,
@@ -30,13 +25,8 @@ export class DynamoDbUserManager {
             userType: user.userType ?? UserTypeEntity.GAMER,
             salt: salt,
         }
-        console.log("DynamoDbUserManager dbUser: ", user);
-
         const isUserNameSaved = await this.dataAccess.saveUserNameRowWithId(formatedUser.userName, userId);
-
-        console.log("DynamoDbUserManager isUserNameSaved: ", isUserNameSaved);
         const isUserSaved = await this.dataAccess.saveUser(formatedUser)
-        console.log("DynamoDbUserManager isUserSaved: ", isUserSaved);
 
         if (!isUserNameSaved) {
             throw new Error("User name already exists");

@@ -34,8 +34,6 @@ export async function saveMatchScore(prevState: SaveMatchScoreState, formData: F
     const competitionsFactory = selectFactory(process.env.DB_TYPE);
     const competitionsService = competitionsFactory.createCompetitionsService();
 
-    console.log('MATCH_SAVING_DATA', competitionId, matchId, homeScore, awayScore, session);
-
     // Assuming you need to implement this method in your service
     await competitionsService.saveMatchScore(competitionId, matchDay, matchId, { home: homeScore, away: awayScore }, session.user.userId);
 

@@ -1,5 +1,11 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { PutCommand, DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
+import {
+    PutCommand,
+    DynamoDBDocumentClient,
+    GetCommand,
+    ScanCommandOutput,
+    ScanCommandInput, ScanCommand, QueryCommandOutput, QueryCommandInput, QueryCommand
+} from "@aws-sdk/lib-dynamodb";
 import type { PutCommandInput, PutCommandOutput, GetCommandInput, GetCommandOutput } from "@aws-sdk/lib-dynamodb";
 import type { DbUser } from "@/app/server/modules/user/types/userTypes";
 
@@ -23,7 +29,6 @@ export class UserModel {
     })();
 
     static async saveUserNameRowWithId(userName: string, userId: string): Promise<PutCommandOutput> {
-        console.log("Creating new user DynamoDbUserDataAccess");
         const input: PutCommandInput = {
             TableName: this.tableName,
             Item: {
@@ -80,5 +85,37 @@ export class UserModel {
 
         const command = new GetCommand(input);
         return await this.documentClient.send(command);
+    }
+
+
+    static async getAllUsers(): Promise<GetCommandOutput> {
+        const input: GetCommandInput = {
+            TableName: this.tableName,
+            Key: {
+                PartitionKey: "USERS",
+                SortKey: "DATA"
+            },
+        };
+
+        const command = new GetCommand(input);
+        return this.documentClient.send(command);
+    }
+
+    static async getUserPredictions(userId: string, competitionId: number, season: number): Promise<QueryCommandOutput> {
+        const skPrefix = `COMPETITION_ID#${competitionId}SEASON#${season}`;
+
+        const input: QueryCommandInput = {
+            TableName: this.tableName,
+            KeyConditionExpression:
+                "PartitionKey = :pk AND begins_with(SortKey, :sk)",
+            ExpressionAttributeValues: {
+                ":pk": `USER#${userId}`,
+                ":sk": skPrefix
+            },
+            ProjectionExpression: "SortKey, homeScore, awayScore",
+        };
+
+        const command = new QueryCommand(input);
+        return this.documentClient.send(command);
     }
 }

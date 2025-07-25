@@ -86,4 +86,39 @@ export interface MatchesResponse {
 export interface PredictedScore {
     home: number;
     away: number;
+    isPredicted: boolean;
+}
+
+// Scoreboard interfaces
+export interface ScoreBoardEntry {
+    userId: string;
+    userName: string;
+    predictedCount: number;
+    predictedDifference: number;
+    predictedOutcome: number;
+    points: number;
+}
+
+export interface ScoreBoardData {
+    competitionId: number;
+    competitionName: string;
+    entries: ScoreBoardEntry[];
+}
+
+export interface UserPrediction {
+    userId: string;
+    userName: string;
+    matchId: number;
+    predictedHome: number;
+    predictedAway: number;
+    actualHome: number | null;
+    actualAway: number | null;
+    points: number;
+}
+
+export interface MatchResult {
+    matchId: number;
+    homeScore: number | null;
+    awayScore: number | null;
+    status: string;
 }

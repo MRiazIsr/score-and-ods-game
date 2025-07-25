@@ -1,6 +1,11 @@
 import { IDynamoDbCompetitionsDataAccess } from "@/app/server/modules/competitions/DynamoDbCompetitionsManager/IDynamoDbCompetitionsDataAccess"
-import {type GetCommandOutput, PutCommandOutput,} from "@aws-sdk/lib-dynamodb";
+import {
+    type GetCommandOutput,
+    PutCommandOutput,
+    QueryCommandOutput,
+} from "@aws-sdk/lib-dynamodb";
 import { CompetitionModel } from "@/app/server/models/CompetitionModel";
+import { UserModel } from "@/app/server/models/UserModel";
 
 export class DynamoDbCompetitionsDataAccess implements IDynamoDbCompetitionsDataAccess {
 
@@ -18,5 +23,13 @@ export class DynamoDbCompetitionsDataAccess implements IDynamoDbCompetitionsData
 
     async getMatchScoreByUser(userId: string, competitionId: number, season: number, matchDay: number, matchId: number): Promise<GetCommandOutput> {
         return CompetitionModel.getMatchScore(userId, competitionId, season, matchDay, matchId);
+    }
+
+    async getAllUsers(): Promise<GetCommandOutput> {
+        return UserModel.getAllUsers();
+    }
+
+    async getUserPredictions(userId: string, competitionId: number, season: number): Promise<QueryCommandOutput> {
+        return UserModel.getUserPredictions(userId, competitionId, season);
     }
 }

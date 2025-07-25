@@ -14,8 +14,6 @@ export default function HomeClient({ competitions }: Props) {
     const session = useSession();
     const router = useRouter();
 
-    console.log(session);
-
     const handleCompetitionClick = (competitionId: number) => {
         router.push(`/competition/${competitionId}`);
     };
