@@ -1,6 +1,7 @@
-import { getCompetitionMatches } from "@/app/actions/matches";
+import {getCompetitionMatches} from "@/app/actions/matches";
 import MatchesClient from "./matchesClient";
-import { notFound } from "next/navigation";
+import {notFound, redirect} from "next/navigation";
+import {getSession} from "@/app/actions/auth";
 
 interface Props {
   params: {
@@ -9,9 +10,14 @@ interface Props {
 }
 
 export default async function CompetitionPage({ params }: Props) {
-  // В Next.js 15.4 params должен быть разрешен перед использованием
-  const resolvedParams = await Promise.resolve(params);
-  const competitionId = parseInt(resolvedParams.id, 10);
+  const session = await getSession();
+
+  if (!session.isLoggedIn) {
+    redirect('/login');
+  }
+
+  const { id } = await params;
+  const competitionId = parseInt(id, 10);
 
   if (isNaN(competitionId)) {
     notFound();

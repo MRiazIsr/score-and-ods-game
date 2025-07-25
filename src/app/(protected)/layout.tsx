@@ -35,7 +35,7 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
     return (
         <SessionProvider user={session?.user}>
             <Header />
-            <main className="flex-grow w-full flex flex-col items-center justify-center">
+            <main className="flex-grow pt-header w-full flex flex-col items-center justify-center">
                 {children}
             </main>
         </SessionProvider>

@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
+import {DynamoDBDocumentClient, GetCommand, PutCommand, PutCommandInput, PutCommandOutput} from "@aws-sdk/lib-dynamodb";
 import type { GetCommandInput, GetCommandOutput } from "@aws-sdk/lib-dynamodb";
 
 export class CompetitionModel {
@@ -30,7 +30,7 @@ export class CompetitionModel {
         }
 
         const command = new GetCommand(input);
-        return await this.documentClient.send(command);
+        return this.documentClient.send(command);
     }
 
     static async getCompetitionHelperData(competitionId: number): Promise<GetCommandOutput> {
@@ -43,6 +43,34 @@ export class CompetitionModel {
         };
 
         const command = new GetCommand(input);
-        return await this.documentClient.send(command);
+        return this.documentClient.send(command);
+    }
+
+    static async getMatchScore(userId: string, competitionId: number, season: number, matchDay: number, matchId: number): Promise<GetCommandOutput> {
+        const input: GetCommandInput = {
+            TableName: this.tableName,
+            Key: {
+                PartitionKey: `USER#${userId}`,
+                SortKey: `COMPETITION_ID#${competitionId}SEASON#${season}MATCH_DAY#${matchDay}MATCH#${matchId}`,
+            }
+        }
+
+        const command = new GetCommand(input);
+        return this.documentClient.send(command);
+    }
+
+    static async saveMatchScore(competitionId: number, matchDay: number, season: number, matchId: number, score: { away: number; home: number }, userId: string): Promise<PutCommandOutput> {
+        const input: PutCommandInput = {
+            TableName: this.tableName,
+            Item: {
+                PartitionKey: `USER#${userId}`,
+                SortKey: `COMPETITION_ID#${competitionId}SEASON#${season}MATCH_DAY#${matchDay}MATCH#${matchId}`,
+                awayScore: score.away,
+                homeScore: score.home,
+            }
+        }
+
+        const command = new PutCommand(input);
+        return this.documentClient.send(command);
     }
 }

@@ -3,8 +3,10 @@
 import { Match } from "@/app/server/modules/competitions/types";
 import { Card } from "@/app/client/components/ui/Card";
 import Image from "next/image";
-import { useState } from "react";
+import { useActionState, useState, useEffect } from "react";
 import { MatchScoreInput } from "@/app/client/components/ui/MatchScoreInput";
+import { saveMatchScore } from "@/app/actions/matches";
+import Form from "next/form";
 
 interface Props {
   matches: Match[];
@@ -49,8 +51,21 @@ interface MatchCardProps {
 }
 
 function MatchCard({ match }: MatchCardProps) {
-  const [homeScore, setHomeScore] = useState<number>(0);
-  const [awayScore, setAwayScore] = useState<number>(0);
+  const [homeScore, setHomeScore] = useState<number>(match.predictedScore?.home ?? 0);
+  const [awayScore, setAwayScore] = useState<number>(match.predictedScore?.away ?? 0);
+
+  const [state, action, pending] = useActionState(saveMatchScore, undefined);
+  const [showMessage, setShowMessage] = useState(false);
+
+  useEffect(() => {
+    if (state?.message) {
+      setShowMessage(true);
+      const timer = setTimeout(() => {
+        setShowMessage(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [state]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -87,7 +102,7 @@ function MatchCard({ match }: MatchCardProps) {
 
           {/* Score Input */}
           <div className="flex items-center justify-center w-1/3">
-            <div className="h-24 flex items-start -mt-12"> {/* Еще сильнее увеличенный отрицательный отступ */}
+            <div className="h-24 flex items-start -mt-12">
               <MatchScoreInput
                   homeScore={homeScore}
                   awayScore={awayScore}
@@ -113,12 +128,37 @@ function MatchCard({ match }: MatchCardProps) {
         </div>
 
         <div className="mt-4 px-6 pb-4">
-          <div className="flex justify-center space-x-2">
+          {/* Success/Error Message */}
+          {showMessage && state?.message && (
+              <div className={`mb-4 p-3 rounded text-center ${
+                  state.success
+                      ? 'bg-green-100 text-green-800 border border-green-300'
+                      : 'bg-red-100 text-red-800 border border-red-300'
+              }`}>
+                {state.message}
+              </div>
+          )}
+
+          <Form action={action} className="flex justify-center space-x-2">
+            {/* Hidden inputs to pass data */}
+            <input type="hidden" name="competitionId" value={match.competition.id} />
+            <input type="hidden" name="matchId" value={match.id} />
+            <input type="hidden" name="homeScore" value={homeScore} />
+            <input type="hidden" name="awayScore" value={awayScore} />
+            <input type="hidden" name="matchDay" value={match.matchday} />
+
             <button
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition-colors duration-200">
-              Save Prediction
+                type="submit"
+                disabled={pending}
+                className={`font-bold py-2 px-6 rounded transition-colors duration-200 ${
+                    pending
+                        ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+            >
+              {pending ? 'Saving...' : 'Save Prediction'}
             </button>
-          </div>
+          </Form>
         </div>
       </Card>
   );

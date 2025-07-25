@@ -8,6 +8,9 @@ export default {
   ],
   theme: {
     extend: {
+      spacing: {
+        'header': '5rem',
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",

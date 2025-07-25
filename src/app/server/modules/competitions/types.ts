@@ -59,6 +59,7 @@ export interface Match {
     homeTeam: Team;
     awayTeam: Team;
     score: Score;
+    predictedScore?: PredictedScore;
     odds: Odds;
     referees: never[]; // You might want to define a Referee interface if you have referee data
 }
@@ -80,4 +81,9 @@ export interface MatchesResponse {
     resultSet: ResultSet;
     competition: Competition;
     matches: Match[];
+}
+
+export interface PredictedScore {
+    home: number;
+    away: number;
 }
