@@ -2,9 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     output: 'standalone',
-    experimental: {
-        serverComponentsExternalPackages: ['@aws-sdk/client-dynamodb', '@aws-sdk/lib-dynamodb']
-    },
+    serverExternalPackages: [
+        '@aws-sdk/client-dynamodb',
+        '@aws-sdk/lib-dynamodb',
+    ],
     /* config options here */
     env: {
         DB_TYPE: process.env.DB_TYPE,
