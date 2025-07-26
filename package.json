@@ -22,6 +22,7 @@
     "clsx": "^2.1.1",
     "iron-session": "^8.0.4",
     "lucide-react": "^0.469.0",
+    "minimatch": "^10.0.3",
     "next": "^15.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
