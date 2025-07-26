@@ -36,7 +36,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # ──────────── Build Next.js & Docker ─────────────
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - run: npm run build
       - run: docker build -t score-game:latest .
 
