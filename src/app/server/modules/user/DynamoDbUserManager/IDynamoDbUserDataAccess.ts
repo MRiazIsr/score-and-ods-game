@@ -6,4 +6,5 @@ export interface IDynamoDbUserDataAccess {
     saveUser(user: DbUser): Promise<PutCommandOutput>
     getUserIdByUserName(userName: string): Promise<GetCommandOutput>
     getUserDataById(userId: string): Promise<GetCommandOutput>
+    addUserToGlobalList(user: { userName: string; userId: string }): Promise<PutCommandOutput>
 }

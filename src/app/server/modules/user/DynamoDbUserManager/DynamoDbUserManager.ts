@@ -35,6 +35,8 @@ export class DynamoDbUserManager {
             throw new Error("User already exists");
         }
 
+        await this.dataAccess.addUserToGlobalList({userName: formatedUser.userName, userId: userId});
+
         return 'User created successfully';
     }
 
