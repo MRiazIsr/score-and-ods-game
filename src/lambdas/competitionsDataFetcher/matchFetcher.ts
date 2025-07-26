@@ -72,6 +72,7 @@ const saveRawMatchesResponseToDynamoDB = async (competitions: Record<string, Mat
                 match.status = 'FINISHED';
                 match.score.fullTime.home = 2;
                 match.score.fullTime.away = 0;
+                match.utcDate = '2025-07-26T11:44:00Z';
             }
 
             return match;

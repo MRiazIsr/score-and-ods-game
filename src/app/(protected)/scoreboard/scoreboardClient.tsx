@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Competition } from "@/app/server/modules/competitions/types";
+import {Competition, ScoreBoardData} from "@/app/server/modules/competitions/types";
 import { CompetitionDropdown } from "@/app/client/components/ui/CompetitionDropdown";
 import { ScoreBoardTable } from "@/app/client/components/ui/ScoreBoardTable";
 import { getScoreBoardData } from "@/app/actions/scoreboard";
@@ -12,24 +12,23 @@ interface ScoreboardClientProps {
   currentUserId?: string;
 }
 
-export default function ScoreboardClient({
+export default function ScoreBoardClient({
   competitions,
   defaultCompetitionId,
   currentUserId
 }: ScoreboardClientProps) {
   const [selectedCompetitionId, setSelectedCompetitionId] = useState(defaultCompetitionId);
-  const [scoreboardData, setScoreboardData] = useState(null);
+  const [scoreBoardData, setScoreBoardData] = useState<ScoreBoardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Загружаем данные при изменении выбранной компетиции
   useEffect(() => {
-    async function loadScoreboardData() {
+    async function loadScoreBoardData() {
       try {
         setLoading(true);
         setError(null);
         const data = await getScoreBoardData(selectedCompetitionId);
-        setScoreboardData(data);
+        setScoreBoardData(data);
       } catch (error) {
         console.error("Error fetching scoreboard data:", error);
         setError("Failed to load scoreboard data. Please try again.");
@@ -38,7 +37,7 @@ export default function ScoreboardClient({
       }
     }
 
-    loadScoreboardData();
+    loadScoreBoardData();
   }, [selectedCompetitionId]);
 
   return (
@@ -46,7 +45,7 @@ export default function ScoreboardClient({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Score Board</h1>
-          <p className="text-gray-400">See how you're doing compared to other players</p>
+          <p className="text-gray-400">See how you are doing compared to other players</p>
         </div>
         <CompetitionDropdown
           competitions={competitions}
@@ -63,8 +62,8 @@ export default function ScoreboardClient({
         <div className="bg-red-900 bg-opacity-30 border border-red-500 text-red-300 p-4 rounded-lg">
           {error}
         </div>
-      ) : scoreboardData ? (
-        <ScoreBoardTable data={scoreboardData} currentUserId={currentUserId} />
+      ) : scoreBoardData ? (
+        <ScoreBoardTable data={scoreBoardData} currentUserId={currentUserId} />
       ) : null}
     </div>
   );

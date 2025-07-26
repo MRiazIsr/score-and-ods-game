@@ -15,7 +15,7 @@ export class DynamoDbCompetitionsManager {
     public async getActiveDayMatches(competitionId: number, season: number, userId: string)
     {
         const competitionRawData: GetCommandOutput = await this.dataAccess.getCompetitionData(competitionId, season);
-
+        const now = new Date();
         const matches: Match[] = competitionRawData.Item?.rawData?.matches;
 
         // Фильтруем матчи сначала
@@ -23,11 +23,13 @@ export class DynamoDbCompetitionsManager {
             if (match.competition.type === 'CUP' && match.stage !== 'LEAGUE_STAGE') {
                 return match.status === 'TIMED'
             }
-            return match.matchday === match.season.currentMatchday && match.status === 'TIMED';
+            return match.matchday === match.season.currentMatchday;
         });
 
         return await Promise.all(
             filteredMatches.map(async (match: Match): Promise<Match> => {
+                const matchDate = new Date(match.utcDate);
+                match.isStarted = matchDate < now;
                 try {
                     const matchScore: GetCommandOutput = await this.getMatchScoreByUser(userId, match.competition.id, season, match.matchday, match.id);
 
@@ -41,7 +43,7 @@ export class DynamoDbCompetitionsManager {
                     match.predictedScore = {
                         home: 0,
                         away: 0,
-                        isPredicted: false
+                        isPredicted: false,
                     };
                 }
 

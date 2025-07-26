@@ -11,10 +11,8 @@ export default async function ScoreboardPage() {
     redirect("/login");
   }
 
-  // Получаем данные о компетициях
   const competitions = await getCompetitions();
 
-  // Устанавливаем Premier League как компетицию по умолчанию
   const defaultCompetitionId = CompetitionsEntity.competitionsIds.ENGLISH_PREMIER_LEAGUE_ID;
 
   return (
@@ -22,7 +20,7 @@ export default async function ScoreboardPage() {
       <ScoreboardClient 
         competitions={competitions} 
         defaultCompetitionId={defaultCompetitionId}
-        currentUserId={session.user?.id}
+        currentUserId={session.user?.userId}
       />
     </div>
   );

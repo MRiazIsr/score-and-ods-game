@@ -61,7 +61,8 @@ export interface Match {
     score: Score;
     predictedScore?: PredictedScore;
     odds: Odds;
-    referees: never[]; // You might want to define a Referee interface if you have referee data
+    referees: never[];
+    isStarted?: boolean;// You might want to define a Referee interface if you have referee data
 }
 
 interface Filters {
