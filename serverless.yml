@@ -1,0 +1,82 @@
+service: tip-manager
+frameworkVersion: '3'
+
+plugins:
+  - serverless-plugin-typescript
+
+custom:
+  tableName: SoccerGameData
+  tsConfig:
+    outDir: .build
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  architecture: arm64
+  memorySize: 256
+  region: eu-central-1
+  stage:  ${opt:stage, 'production'}
+
+  environment:
+    AWS_TABLE_NAME: ${self:custom.tableName}
+    AWS_REGION: ${self:provider.region}
+    AWS_APP_API_URL: "https://api.football-data.org/v4"
+    AWS_APP_SERVICE_KEY: ${env:API_KEY}
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
+
+  iamRoleStatements:
+    # ─ DynamoDB
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+      Resource:
+        - Fn::GetAtt: [ SoccerGameDataTable, Arn ]
+        - Fn::Join: ['', [ Fn::GetAtt: [ SoccerGameDataTable, Arn ], '/index/*' ]]
+
+    # ─ Scheduler / Lambda invoke permissions
+    - Effect: Allow
+      Action:
+        - events:PutRule
+        - events:PutTargets
+        - lambda:AddPermission
+      Resource: '*'
+
+functions:
+  matchFetcher:
+    handler: .build/src/lambdas/competitionsDataFetcher/matchFetcher.handler
+    timeout: 300
+    memorySize: 256
+    architecture: arm64
+    events:
+      - schedule:
+          rate: 'rate(1 hour)'
+          enabled: true
+    environment:
+      AWS_TABLE_NAME: ${self:custom.tableName}
+      AWS_APP_SERVICE_KEY: ${ssm:/tip-manager/${self:provider.stage}/api-key~true}
+      AWS_APP_API_URL: "https://api.football-data.org/v4"
+
+resources:
+  Resources:
+    SoccerGameDataTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PartitionKey
+            AttributeType: S
+          - AttributeName: SortKey
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PartitionKey
+            KeyType: HASH
+          - AttributeName: SortKey
+            KeyType: RANGE
+        SSESpecification: { SSEEnabled: true }
+        PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true }
+        Tags:
+          - Key: Environment
+            Value: ${self:provider.stage}
+          - Key: Service
+            Value: tip-manager

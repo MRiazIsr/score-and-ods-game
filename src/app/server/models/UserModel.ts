@@ -1,12 +1,19 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
     PutCommand,
+    PutCommandInput,
+    PutCommandOutput,
     DynamoDBDocumentClient,
     GetCommand,
-    ScanCommandOutput,
-    ScanCommandInput, ScanCommand, QueryCommandOutput, QueryCommandInput, QueryCommand
+    GetCommandInput,
+    GetCommandOutput,
+    UpdateCommand,
+    UpdateCommandOutput,
+    UpdateCommandInput,
+    QueryCommandOutput,
+    QueryCommandInput,
+    QueryCommand
 } from "@aws-sdk/lib-dynamodb";
-import type { PutCommandInput, PutCommandOutput, GetCommandInput, GetCommandOutput } from "@aws-sdk/lib-dynamodb";
 import type { DbUser } from "@/app/server/modules/user/types/userTypes";
 
 
@@ -116,6 +123,30 @@ export class UserModel {
         };
 
         const command = new QueryCommand(input);
+        return this.documentClient.send(command);
+    }
+
+    static async addUserToGlobalList(user: { userName: string; userId: string }): Promise<UpdateCommandOutput> {
+        const input: UpdateCommandInput = {
+            TableName: this.tableName,
+            Key: {
+                PartitionKey: "USERS",
+                SortKey: "DATA",
+            },
+
+            UpdateExpression:
+                "SET usersData = list_append(if_not_exists(usersData, :empty), :new)",
+            ExpressionAttributeValues: {
+                ":new": [user],
+                ":empty": [],
+                ":uid": user.userId,
+            },
+
+            ConditionExpression: "not contains(usersData.userId, :uid)",
+
+            ReturnValues: "ALL_NEW",
+        };
+        const command = new UpdateCommand(input);
         return this.documentClient.send(command);
     }
 }

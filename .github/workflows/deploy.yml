@@ -1,0 +1,101 @@
+name: Deploy to AWS Lightsail
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  AWS_REGION: eu-central-1
+  NODE_VERSION: '20'
+  LIGHTSAIL_SERVICE_NAME: score-game
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      # ──────────── Git / Node ─────────────
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      # ──────────── Build Next.js & Docker ─────────────
+      - run: npm ci
+      - run: npm run build
+      - run: docker build -t score-game:latest .
+
+      # ──────────── Deploy Lambda + DynamoDB ─────────────
+      - run: npm install -g serverless
+      - run: serverless deploy --stage production
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+
+      # ──────────── Lightsail container ─────────────
+      - name: Ensure service exists
+        run: |
+          set +e
+          aws lightsail get-container-services --service-name $LIGHTSAIL_SERVICE_NAME >/dev/null 2>&1
+          if [ $? -ne 0 ]; then
+            aws lightsail create-container-service \
+              --service-name $LIGHTSAIL_SERVICE_NAME \
+              --power nano --scale 1
+          fi
+          set -e
+
+      - name: Push image & deploy
+        run: |
+          IMAGE_REF=$(aws lightsail push-container-image \
+            --service-name $LIGHTSAIL_SERVICE_NAME \
+            --label score-game-app \
+            --image score-game:latest \
+            --query 'image' --output text)
+          
+          cat > deployment.json <<EOF
+          {
+            "containers": {
+              "score-game-app": {
+                "image": "$IMAGE_REF",
+                "environment": {
+                  "AWS_REGION": "eu-central-1",
+                  "AWS_TABLE_NAME": "SoccerGameData"
+                },
+                "ports": { "3000": "HTTP" }
+              }
+            },
+            "publicEndpoint": {
+              "containerName": "score-game-app",
+              "containerPort": 3000,
+              "healthCheck": { "path": "/api/health" }
+            }
+          }
+          EOF
+          
+          aws lightsail create-container-service-deployment \
+            --service-name $LIGHTSAIL_SERVICE_NAME \
+            --cli-input-json file://deployment.json
+
+      - name: Wait & show URL
+        run: |
+          for i in {1..20}; do
+            STATE=$(aws lightsail get-container-services --service-name $LIGHTSAIL_SERVICE_NAME \
+                     --query 'containerServices[0].state' --output text)
+            [ "$STATE" = "RUNNING" ] && break
+            [ "$STATE" = "FAILED" ] && exit 1
+            sleep 30
+          done
+          URL=$(aws lightsail get-container-services --service-name $LIGHTSAIL_SERVICE_NAME \
+                 --query 'containerServices[0].url' --output text)
+          echo "✅  App is live → https://$URL"
