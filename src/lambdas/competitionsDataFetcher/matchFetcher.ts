@@ -67,17 +67,6 @@ const saveRawMatchesResponseToDynamoDB = async (competitions: Record<string, Mat
             Item: helperItem
         });
 
-        competitionData.matches?.map(match => {
-            if (match.id === 537785) {
-                match.status = 'FINISHED';
-                match.score.fullTime.home = 2;
-                match.score.fullTime.away = 0;
-                match.utcDate = '2025-07-26T11:44:00Z';
-            }
-
-            return match;
-        })
-
         const item = {
             PartitionKey: `COMPETITION_ID#${competitionId}`,
             SortKey: `MATCHES_DATA#SEASON#${competitionData.filters.season}`,
