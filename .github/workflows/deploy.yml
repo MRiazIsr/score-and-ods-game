@@ -38,6 +38,14 @@ jobs:
       # ──────────── Build Next.js & Docker ─────────────
       - run: npm install --no-audit --no-fund
       - run: npm run build
+        env:
+          SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
+          SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
+          API_KEY: ${{ secrets.API_KEY }}
+          DB_TYPE: Dynamo
+          TABLE_NAME: SoccerGameData
+          AWS_REGION: "eu-central-1"
+          AWS_TABLE_NAME: SoccerGameData
       - run: docker build -t score-game:latest .
 
       # ──────────── Deploy Lambda + DynamoDB ─────────────
