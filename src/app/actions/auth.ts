@@ -68,12 +68,19 @@ export async function signUp(state: FormState, formData: FormData): Promise<{
     const authService = authFactory.createAuthService();
     //TODO: add type for user creation result
     try {
-        const userCreationResult: { message: string } = await authService.createUser( validatedFields.data )
-        return {
-            success: true,
-            message: userCreationResult.message,
-            values: formFields,
-        }
+        const userCreationResult: SessionUser = await authService.createUser( validatedFields.data )
+
+        // Get session and store user data
+        const session = await getSession();
+        session.isLoggedIn = true;
+        session.user = {
+            userName: userCreationResult.userName,
+            userId: userCreationResult.userId,
+            userType: userCreationResult.userType,
+            name: userCreationResult.name,
+            email: userCreationResult.email,
+        };
+        await session.save();
     } catch (error: unknown) {
         console.error(error)
         if (error instanceof Error) {
@@ -92,6 +99,8 @@ export async function signUp(state: FormState, formData: FormData): Promise<{
             values: formFields
         }
     }
+
+    redirect('/');
 }
 
 export async function signIn(state: FormState, formData: FormData): Promise<{
@@ -139,7 +148,7 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
         //     success: true,
         //     message: userSignInResult.message
         // }
-        redirect('/');
+
     } catch (error: unknown) {
         if (error instanceof Error) {
             return {
@@ -152,6 +161,8 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
             message: 'An unknown error occurred.'
         }
     }
+
+    redirect('/');
 }
 
 export async function signOut() {

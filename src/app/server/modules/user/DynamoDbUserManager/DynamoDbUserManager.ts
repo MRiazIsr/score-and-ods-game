@@ -1,5 +1,5 @@
 import {IDynamoDbUserDataAccess} from "@/app/server/modules/user/DynamoDbUserManager/IDynamoDbUserDataAccess";
-import type {DbUser, User} from "@/app/server/modules/user/types/userTypes";
+import type {DbUser, SessionUser, User} from "@/app/server/modules/user/types/userTypes";
 import type {GetCommandOutput} from "@aws-sdk/lib-dynamodb";
 import {UserTypeEntity} from "@/app/server/entities/UserTypesEntity";
 import {Md5} from 'ts-md5'
@@ -11,7 +11,7 @@ export class DynamoDbUserManager {
         this.dataAccess = userDataAccess;
     }
 
-    public async createUser(user: User): Promise<string>
+    public async createUser(user: User): Promise<SessionUser>
     {
         const userId: string = crypto.randomUUID();
         const salt: string = crypto.randomUUID();
@@ -37,7 +37,13 @@ export class DynamoDbUserManager {
 
         await this.dataAccess.addUserToGlobalList({userName: formatedUser.userName, userId: userId});
 
-        return 'User created successfully';
+        return {
+            name: formatedUser.name,
+            email: formatedUser.email,
+            userId: formatedUser.userId,
+            userName: formatedUser.userName,
+            userType: formatedUser.userType,
+        };
     }
 
     public async getUserIdByUserName(userName: string): Promise<string>

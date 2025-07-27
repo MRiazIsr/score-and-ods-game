@@ -8,7 +8,7 @@ import type { DbUser } from "@/app/server/modules/user/types/userTypes";
 
 export class AuthService {
 
-    public async createUser(user: User): Promise<{message: string}>
+    public async createUser(user: User): Promise<SessionUser>
     {
         const authFactory: DynamoDbAuthFactory = selectFactory(process.env.DB_TYPE);
         const userManager: DynamoDbUserManager = authFactory.createUserManager();
@@ -18,7 +18,7 @@ export class AuthService {
             throw new Error(`User with this user name already exists`, { cause: FormFieldsKeysEntity.signUpGroup.USERNAME});
         }
 
-        return { message: await userManager.createUser(user) };
+        return await userManager.createUser(user) ;
     }
 
     public async signIn(user: User): Promise<{status: boolean, message: string, sessionUser: SessionUser}>
