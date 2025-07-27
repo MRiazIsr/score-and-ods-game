@@ -53,7 +53,7 @@ functions:
           enabled: true
     environment:
       AWS_TABLE_NAME: ${self:custom.tableName}
-      AWS_APP_SERVICE_KEY: ${ssm:/tip-manager/${self:provider.stage}/api-key~true}
+      AWS_APP_SERVICE_KEY: ${env:AWS_APP_SERVICE_KEY, ssm:/tip-manager/${self:provider.stage}/api-key~true}
       AWS_APP_API_URL: "https://api.football-data.org/v4"
 
 resources:
