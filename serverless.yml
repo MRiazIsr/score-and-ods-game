@@ -43,7 +43,7 @@ provider:
 
 functions:
   matchFetcher:
-    handler: .build/src/lambdas/competitionsDataFetcher/matchFetcher.handler
+    handler: src/lambdas/competitionsDataFetcher/matchFetcher.handler
     timeout: 300
     memorySize: 256
     architecture: arm64
