@@ -6,8 +6,7 @@ plugins:
 
 custom:
   tableName: SoccerGameData
-  typescript:
-    tsConfigFileLocation: './tsconfig.serverless.json'
+  tsConfig:
     outDir: .build
 
 provider:
