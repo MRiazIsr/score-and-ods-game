@@ -4,14 +4,14 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  id-token: write   # allow OIDC for aws-actions/configure-aws-credentials
+  contents: read
+
 env:
   AWS_REGION: eu-central-1
   NODE_VERSION: '20'
   LIGHTSAIL_SERVICE_NAME: score-game
-
-permissions:
-    id-token: write   # allow OIDC for aws-actions/configure-aws-credentials
-    contents: read
 
 jobs:
   filter:
@@ -40,6 +40,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - uses: unfor19/install-aws-cli-action@v1
         with:
           version: '2'
@@ -53,10 +54,10 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
 
   lightsail-deploy:
-    needs: [filter, serverless-deploy]
     concurrency:
       group: ${{ github.ref }}
       cancel-in-progress: true
+    needs: [filter, serverless-deploy]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -64,6 +65,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - uses: unfor19/install-aws-cli-action@v1
         with:
           version: '2'
@@ -75,6 +77,11 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+        env:
+          SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
+          SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
+          API_KEY: ${{ secrets.API_KEY }}
+          TABLE_NAME: SoccerGameData
       - run: docker build -t score-game:latest .
 
       - name: Push & deploy
