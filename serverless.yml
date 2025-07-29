@@ -2,7 +2,7 @@ service: tip-manager
 frameworkVersion: '3'
 
 plugins:
-  - serverless-esbuild  # switched from serverless-plugin-typescript
+  - serverless-esbuild
 
 custom:
   tableName: SoccerGameData

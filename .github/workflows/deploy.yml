@@ -83,7 +83,6 @@ jobs:
       # ─── Serverless deploy (Lambda + DDB) ─
       - name: Deploy Serverless stack
         run: npx serverless deploy --stage production
-        working-directory: backend
         env:
           API_KEY: ${{ secrets.API_KEY }}
 
