@@ -31,7 +31,7 @@ ENV SESSION_PASSWORD=${SESSION_PASSWORD} \
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN npm run build                       # ← больше не падает
+RUN npm run build
 RUN npm prune --omit=dev
 
 # ─────────── runner ─────────────

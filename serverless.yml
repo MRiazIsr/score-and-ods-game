@@ -2,12 +2,23 @@ service: tip-manager
 frameworkVersion: '3'
 
 plugins:
-  - serverless-plugin-typescript
+  - serverless-esbuild
 
 custom:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: false
+    platform: node
+    target: 'node20'
+    external: [ 'aws-sdk' ]
   tableName: SoccerGameData
   tsConfig:
     outDir: .build
+
+package:
+  individually: true
+  excludeDevDependencies: true
 
 provider:
   name: aws
