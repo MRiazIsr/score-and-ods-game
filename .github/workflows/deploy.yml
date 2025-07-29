@@ -9,6 +9,10 @@ env:
   NODE_VERSION: '20'
   LIGHTSAIL_SERVICE_NAME: score-game
 
+permissions:
+    id-token: write   # allow OIDC for aws-actions/configure-aws-credentials
+    contents: read
+
 jobs:
   filter:
     runs-on: ubuntu-latest
@@ -25,6 +29,9 @@ jobs:
               - 'src/lambdas/**'
 
   serverless-deploy:
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
     needs: filter
     if: needs.filter.outputs.sls == 'true'
     runs-on: ubuntu-latest
@@ -47,6 +54,9 @@ jobs:
 
   lightsail-deploy:
     needs: [filter, serverless-deploy]
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
