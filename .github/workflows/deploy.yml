@@ -1,4 +1,5 @@
-name: Deploy to AWS Lightsail
+# .github/workflows/deploy.yml
+name: Deploy stack & Lightsail
 
 on:
   push:
@@ -6,9 +7,8 @@ on:
   pull_request:
     branches: [ main ]
 
-
 permissions:
-  id-token: write
+  id-token: write   # для OIDC → AWS
   contents: read
 
 env:
@@ -16,49 +16,83 @@ env:
   NODE_VERSION: '20'
   LIGHTSAIL_SERVICE_NAME: score-game
 
+# ────────────────────────────────────────────────────────────────────────────────
 jobs:
-  deploy:
+  filter:
     runs-on: ubuntu-latest
+    outputs:            # передаём результат наружу
+      sls: ${{ steps.changes.outputs.sls }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            sls:
+              - 'backend/serverless.yml'
+              - 'backend/src/**/*.ts'
+
+  # 2.  (Lambdф+ DynamoDB + Lightsail)
+  deploy:
+    needs: filter
+    if: needs.filter.outputs.sls == 'true'   # запускаем, только если SLS‑файлы изменены
+    runs-on: ubuntu-latest
+
     concurrency:
-      group: ${{ github.ref }}
+      group: ${{ github.ref }}              # один деплой на ветку
       cancel-in-progress: true
 
     steps:
-      # ──────────── Git / Node ─────────────
+      # ─── Git + cache ─────────────────────
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ─── Свежий AWS CLI v2 ───────────────
+      - uses: unfor19/install-aws-cli-action@v1
+        with:
+          version: 2
+
+      # ─── AWS creds OIDC ────────────
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           role-session-name: github-ci
           aws-region: ${{ env.AWS_REGION }}
 
-      # ──────────── Build Next.js & Docker ─────────────
-      - run: npm install --no-audit --no-fund
-      - run: npm run build
+      # ─── Build + тесты ───────────────────
+      - name: Install deps
+        run: npm ci --omit=dev
+
+      - name: Build Next.js (frontend)
+        run: npm run build
         env:
           SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
           SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
           API_KEY: ${{ secrets.API_KEY }}
-          DB_TYPE: Dynamo
           TABLE_NAME: SoccerGameData
-          AWS_REGION: "eu-central-1"
-          AWS_TABLE_NAME: SoccerGameData
-      - run: docker build -t score-game:latest .
 
-      # ──────────── Deploy Lambda + DynamoDB ─────────────
-      - run: npm install -g serverless
-      - run: serverless deploy --stage production
+      # ─── Docker image ────────────────────
+      - name: Build Docker image
+        run: docker build -t score-game:latest .
+
+      # ─── Serverless deploy (Lambda + DDB) ─
+      - name: Deploy Serverless stack
+        run: npx serverless deploy --stage production
+        working-directory: backend
         env:
           API_KEY: ${{ secrets.API_KEY }}
 
-      # ──────────── Lightsail container ─────────────
-      - name: Ensure service exists
+      # ─── Lightsail:
+      - name: Ensure Lightsail service exists
         run: |
           set +e
-          aws lightsail get-container-services --service-name $LIGHTSAIL_SERVICE_NAME >/dev/null 2>&1
+          aws lightsail get-container-services \
+            --service-name $LIGHTSAIL_SERVICE_NAME >/dev/null 2>&1
           if [ $? -ne 0 ]; then
             aws lightsail create-container-service \
               --service-name $LIGHTSAIL_SERVICE_NAME \
@@ -66,19 +100,22 @@ jobs:
           fi
           set -e
 
-      - name: Push image & deploy
+      # ─── Push image & deploy Lightsail ───
+      - name: Push container & deploy
         run: |
+          set -eo pipefail
           IMAGE_REF=$(aws lightsail push-container-image \
-            --service-name $LIGHTSAIL_SERVICE_NAME \
+            --no-cli-pager \
+            --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --label score-game-app \
             --image score-game:latest \
-            --query 'image' --output text)
-          
+            --output json | jq -r '.image')
+
           cat > deployment.json <<EOF
           {
             "containers": {
               "score-game-app": {
-                "image": "$IMAGE_REF",
+                "image": "${IMAGE_REF}",
                 "environment": {
                   "AWS_REGION": "eu-central-1",
                   "AWS_TABLE_NAME": "SoccerGameData"
@@ -93,20 +130,23 @@ jobs:
             }
           }
           EOF
-          
+
           aws lightsail create-container-service-deployment \
-            --service-name $LIGHTSAIL_SERVICE_NAME \
+            --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --cli-input-json file://deployment.json
 
-      - name: Wait & show URL
+      # ─── Подождать RUNNING и показать URL ─
+      - name: Wait & display URL
         run: |
           for i in {1..20}; do
-            STATE=$(aws lightsail get-container-services --service-name $LIGHTSAIL_SERVICE_NAME \
-                     --query 'containerServices[0].state' --output text)
+            STATE=$(aws lightsail get-container-services \
+              --service-name $LIGHTSAIL_SERVICE_NAME \
+              --query 'containerServices[0].state' --output text)
             [ "$STATE" = "RUNNING" ] && break
             [ "$STATE" = "FAILED" ] && exit 1
             sleep 30
           done
-          URL=$(aws lightsail get-container-services --service-name $LIGHTSAIL_SERVICE_NAME \
-                 --query 'containerServices[0].url' --output text)
+          URL=$(aws lightsail get-container-services \
+            --service-name $LIGHTSAIL_SERVICE_NAME \
+            --query 'containerServices[0].url' --output text)
           echo "✅  App is live → https://$URL"

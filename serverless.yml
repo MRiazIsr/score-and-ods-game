@@ -2,23 +2,19 @@ service: tip-manager
 frameworkVersion: '3'
 
 plugins:
-  - serverless-esbuild
+  - serverless-esbuild  # switched from serverless-plugin-typescript
 
 custom:
+  tableName: SoccerGameData
   esbuild:
     bundle: true
     minify: true
     sourcemap: false
     platform: node
-    target: 'node20'
-    external: [ 'aws-sdk' ]
-  tableName: SoccerGameData
+    target: node20
+    external: ['aws-sdk']
   tsConfig:
     outDir: .build
-
-package:
-  individually: true
-  excludeDevDependencies: true
 
 provider:
   name: aws
@@ -26,17 +22,17 @@ provider:
   architecture: arm64
   memorySize: 256
   region: eu-central-1
-  stage:  ${opt:stage, 'production'}
+  stage: ${opt:stage, 'production'}
 
   environment:
+    AWS_DB_REGION: ${self.custom.region}
     AWS_TABLE_NAME: ${self:custom.tableName}
-    AWS_DB_REGION: ${self:provider.region}
     AWS_APP_API_URL: "https://api.football-data.org/v4"
     AWS_APP_SERVICE_KEY: ${env:API_KEY}
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
 
   iamRoleStatements:
-    # ─ DynamoDB
+    # DynamoDB access
     - Effect: Allow
       Action:
         - dynamodb:*
@@ -44,7 +40,7 @@ provider:
         - Fn::GetAtt: [ SoccerGameDataTable, Arn ]
         - Fn::Join: ['', [ Fn::GetAtt: [ SoccerGameDataTable, Arn ], '/index/*' ]]
 
-    # ─ Scheduler / Lambda invoke permissions
+    # EventBridge Scheduler & Lambda permissions
     - Effect: Allow
       Action:
         - events:PutRule
@@ -84,8 +80,10 @@ resources:
             KeyType: HASH
           - AttributeName: SortKey
             KeyType: RANGE
-        SSESpecification: { SSEEnabled: true }
-        PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true }
+        SSESpecification:
+          SSEEnabled: true
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
         Tags:
           - Key: Environment
             Value: ${self:provider.stage}
