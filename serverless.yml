@@ -19,7 +19,7 @@ provider:
 
   environment:
     AWS_TABLE_NAME: ${self:custom.tableName}
-    AWS_REGION: ${self:provider.region}
+    AWS_DB_REGION: ${self:provider.region}
     AWS_APP_API_URL: "https://api.football-data.org/v4"
     AWS_APP_SERVICE_KEY: ${env:API_KEY}
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'

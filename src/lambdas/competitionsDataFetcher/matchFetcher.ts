@@ -5,7 +5,7 @@ import {DynamoDBDocumentClient, PutCommand} from "@aws-sdk/lib-dynamodb";
 import { MatchesResponse } from "@/lambdas/competitionsDataFetcher/types";
 
 const dynamoDbClient = new DynamoDBClient({
-    region: process.env.AWS_REGION || 'us-east-1',
+    region: process.env.AWS_DB_REGION || 'us-east-1',
 });
 const docClient = DynamoDBDocumentClient.from(dynamoDbClient);
 
