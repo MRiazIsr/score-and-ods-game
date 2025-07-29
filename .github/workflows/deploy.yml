@@ -82,7 +82,14 @@ jobs:
           SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
           API_KEY: ${{ secrets.API_KEY }}
           TABLE_NAME: SoccerGameData
-      - run: docker build -t score-game:latest .
+      - name: Docker build with secrets
+        run: |
+          docker build \
+            --build-arg SESSION_PASSWORD=${{ secrets.SESSION_PASSWORD }} \
+            --build-arg SESSION_COOKIE_NAME=${{ secrets.SESSION_COOKIE_NAME }} \
+            --build-arg API_KEY=${{ secrets.API_KEY }} \
+            --build-arg TABLE_NAME=SoccerGameData \
+            -t score-game:latest .
 
       - name: Install lightsailctl
         run: |
