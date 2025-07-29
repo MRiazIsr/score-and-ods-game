@@ -84,6 +84,12 @@ jobs:
           TABLE_NAME: SoccerGameData
       - run: docker build -t score-game:latest .
 
+      - name: Install lightsailctl
+        run: |
+          curl -s https://lightsailctl.com/download/latest/linux-amd64/lightsailctl -o lightsailctl
+          chmod +x lightsailctl
+          sudo mv lightsailctl /usr/local/bin
+
       - name: Push & deploy
         run: |
           set -eo pipefail

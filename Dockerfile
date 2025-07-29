@@ -1,53 +1,50 @@
-# ───────────── deps ─────────────
-FROM node:20-alpine AS deps
-WORKDIR /app
-
-RUN addgroup -S app && adduser -S -G app app
-RUN corepack enable
-
-COPY package*.json ./
-RUN npm ci --production=false            # ставим всё для сборки
-
-# ─────────── builder ────────────
-FROM node:20-alpine AS builder
-WORKDIR /app
-
-ARG SESSION_PASSWORD=build_placeholder
-ARG SESSION_COOKIE_NAME=sid
-ARG DB_TYPE=Dynamo
-ARG TABLE_NAME=SoccerGameData
-ARG API_KEY=build_placeholder
-ARG AWS_REGION=eu-central-1
-ARG AWS_TABLE_NAME=SoccerGameData
-
-ENV SESSION_PASSWORD=${SESSION_PASSWORD} \
-    SESSION_COOKIE_NAME=${SESSION_COOKIE_NAME} \
-    DB_TYPE=${DB_TYPE} \
-    TABLE_NAME=${TABLE_NAME} \
-    API_KEY=${API_KEY} \
-    AWS_REGION=${AWS_REGION} \
-    AWS_TABLE_NAME=${AWS_TABLE_NAME}
-
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-RUN npm run build
-RUN npm prune --omit=dev
-
-# ─────────── runner ─────────────
-FROM node:20-alpine AS runner
+# ---------- 1. base image with caching ---------- #
+# используем BuildKit   docker buildx build --tag score-game .
+ARG NODE_VERSION=20
+FROM node:${NODE_VERSION}-slim AS base
 WORKDIR /app
 ENV NODE_ENV=production
+# включаем corepack сразу, чтобы pnpm/yarn были готовы
+RUN corepack enable
 
-ENV SESSION_PASSWORD=${SESSION_PASSWORD} \
-    SESSION_COOKIE_NAME=${SESSION_COOKIE_NAME} \
-    DB_TYPE=${DB_TYPE} \
-    TABLE_NAME=${TABLE_NAME} \
-    API_KEY=${API_KEY} \
-    AWS_REGION=${AWS_REGION} \
-    AWS_TABLE_NAME=${AWS_TABLE_NAME}
+# ---------- 2. deps layer (prod only) ---------- #
+FROM base AS deps
+# копируем lock‑файл отдельно – кеш не ломается на каждом коммите
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --omit=dev
 
-COPY --from=builder /app ./
+# ---------- 3. builder (prod + dev + сборка) --- #
+FROM base AS builder
+WORKDIR /app
+
+# 3.1 install **all** deps (prod+dev)
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
+
+# 3.2 copy source & build
+COPY . .
+RUN npm run build
+
+# 3.3 prune dev‑deps, останутся только prod
+RUN npm prune --omit=dev
+
+# ---------- 4. runtime image ------------- #
+FROM node:${NODE_VERSION}-alpine AS runtime
+WORKDIR /app
+RUN addgroup -S app && adduser -S -G app app
+
+# среды
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# скопировать node_modules (prod‑deps) и built output
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+
 USER app
 EXPOSE 3000
 CMD ["npm", "start"]
