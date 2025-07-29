@@ -40,7 +40,7 @@ provider:
         - Fn::GetAtt: [ SoccerGameDataTable, Arn ]
         - Fn::Join: ['', [ Fn::GetAtt: [ SoccerGameDataTable, Arn ], '/index/*' ]]
 
-    # EventBridge Scheduler & Lambda permissions4
+    # EventBridge Scheduler & Lambda permissions42
     - Effect: Allow
       Action:
         - events:PutRule

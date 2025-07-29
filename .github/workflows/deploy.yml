@@ -18,25 +18,8 @@ env:
 
 # ────────────────────────────────────────────────────────────────────────────────
 jobs:
-  filter:
-    runs-on: ubuntu-latest
-    outputs:            # передаём результат наружу
-      sls: ${{ steps.changes.outputs.sls }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - id: changes
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            sls:
-              - 'serverless.yml'
-              - 'src/**/*.ts'
-
   # 2.  (Lambda + DynamoDB + Lightsail)
   deploy:
-    needs: filter
-    if: needs.filter.outputs.sls == 'true'   # запускаем, только если SLS‑файлы изменены
     runs-on: ubuntu-latest
 
     concurrency:
