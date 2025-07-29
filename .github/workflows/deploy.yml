@@ -18,6 +18,7 @@ env:
 
 # ────────────────────────────────────────────────────────────────────────────────
 jobs:
+
   # 2.  (Lambda + DynamoDB + Lightsail)
   deploy:
     runs-on: ubuntu-latest
@@ -49,7 +50,7 @@ jobs:
 
       # ─── Build + тесты ───────────────────
       - name: Install deps
-        run: npm ci --omit=dev
+        run: npm ci
 
       - name: Build Next.js (frontend)
         run: npm run build
@@ -59,6 +60,8 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
           TABLE_NAME: SoccerGameData
 
+      - name: Prune dev deps
+        run: npm prune --omit=dev
       # ─── Docker image ────────────────────
       - name: Build Docker image
         run: docker build -t score-game:latest .
