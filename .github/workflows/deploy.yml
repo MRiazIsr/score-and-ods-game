@@ -107,16 +107,17 @@ jobs:
       - name: Push & deploy
         run: |
           set -eo pipefail
-          aws lightsail create-container-service --service-name "$LIGHTSAIL_SERVICE_NAME" \
+          AWS_PAGER="" \
+          aws lightsail create-container-service --no-cli-pager --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --power nano --scale 1 2>/dev/null || true
-
+        
           IMAGE_REF=$(aws lightsail push-container-image \
             --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --label score-game-app \
             --image score-game:latest \
             --query 'image' --output text)
 
-          # Build deployment JSON safely with jq to avoid parse errors
+        # Build deployment JSON safely with jq to avoid parse errors
           DEPLOY_JSON=$(jq -n --arg img "$IMAGE_REF" '
             {
               containers: {
@@ -132,7 +133,7 @@ jobs:
                 healthCheck: {path:"/api/health"}
               }
             }')
-
+        
           echo "$DEPLOY_JSON" > deployment.json
           aws lightsail create-container-service-deployment \
             --cli-binary-format raw-in-base64-out \
