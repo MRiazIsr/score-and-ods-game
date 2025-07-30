@@ -116,10 +116,12 @@ jobs:
             --power nano --scale 1 2>/dev/null || true
 
           IMAGE_REF=$(aws lightsail push-container-image \
+            --no-cli-pager \
             --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --label score-game-app \
             --image score-game:latest \
-            --query 'image' --output text)
+            --query 'image' \
+            --output text)
 
           # Build deployment JSON safely with jq to avoid parse errors
           DEPLOY_JSON=$(jq -n --arg img "$IMAGE_REF" '
