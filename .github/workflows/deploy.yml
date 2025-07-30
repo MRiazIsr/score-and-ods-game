@@ -1,3 +1,4 @@
+
 name: Deploy stack & Lightsail
 
 on:
@@ -94,8 +95,22 @@ jobs:
           role-session-name: github-ci
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Install jq and Lightsail plugin
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq curl
+          
+          # Install Lightsail Control plugin
+          echo "Installing Lightsail Control plugin..."
+          curl -s "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "lightsailctl"
+          sudo mv lightsailctl /usr/local/bin/lightsailctl
+          sudo chmod +x /usr/local/bin/lightsailctl
+          
+          # Install the plugin to AWS CLI
+          aws configure set plugins.lightsail lightsailctl
+          
+          # Verify installation
+          echo "Verifying Lightsail plugin installation..."
+          aws lightsail help | head -5 || echo "Plugin installed but help may not be available"
 
       - run: npm ci
 
@@ -152,13 +167,23 @@ jobs:
 
           # Ensure the container service exists (idempotent)
           echo "Creating/verifying Lightsail container service..."
-          aws lightsail create-container-service --no-cli-pager --service-name "$LIGHTSAIL_SERVICE_NAME" \
-            --power nano --scale 1 2>/dev/null || true
+          aws lightsail create-container-service \
+            --no-cli-pager \
+            --service-name "$LIGHTSAIL_SERVICE_NAME" \
+            --power nano \
+            --scale 1 2>/dev/null || echo "Container service may already exist"
+
+          # Wait a moment for service to be ready
+          sleep 10
 
           # Verify AWS credentials and connection
           echo "Verifying AWS credentials..."
           aws sts get-caller-identity
 
+          # Check if lightsailctl is properly configured
+          echo "Verifying Lightsail plugin..."
+          which lightsailctl || echo "lightsailctl not found in PATH"
+          
           # Push the Docker image to Lightsail
           echo "Pushing image to Lightsail..."
           PUSH_RESULT=0
@@ -171,10 +196,19 @@ jobs:
           if [ $PUSH_RESULT -ne 0 ]; then
             echo "Error pushing image to Lightsail: $PUSH_OUTPUT"
             echo "Exit code: $PUSH_RESULT"
-            exit $PUSH_RESULT
+          
+            # Try alternative approach with direct lightsailctl
+            echo "Attempting direct lightsailctl push..."
+            lightsailctl push-container-image \
+              --service-name "$LIGHTSAIL_SERVICE_NAME" \
+              --label score-game-app \
+              --image score-game:latest || exit $PUSH_RESULT
           fi
 
           echo "Push output: $PUSH_OUTPUT"
+
+          # Wait for image to be processed
+          sleep 5
 
           # Extract image reference using the AWS CLI query parameter instead of regex
           echo "Getting container images..."
@@ -189,6 +223,8 @@ jobs:
 
           if [ -z "$IMAGE_REF" ] || [ "$IMAGE_REF" = "null" ]; then
             echo "Failed to extract image reference"
+            echo "Available images:"
+            echo "$CONTAINER_IMAGES" | jq '.containerImages[].image'
             exit 1
           fi
 
