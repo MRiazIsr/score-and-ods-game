@@ -65,13 +65,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+
       - uses: unfor19/install-aws-cli-action@v1
         with:
           version: '2'
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
@@ -79,12 +82,15 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - run: npm ci
-      - run: npm run build
+
+      - name: Build Next.js
+        run: npm run build
         env:
           SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
           SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
           API_KEY: ${{ secrets.API_KEY }}
           TABLE_NAME: SoccerGameData
+
       - name: Docker build with secrets
         env:
           SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
@@ -100,14 +106,21 @@ jobs:
             --build-arg TABLE_NAME="$TABLE_NAME" \
             .
 
-      # Install lightsailctl plugin (нужен здесь, где вызываем Lightsail команды)
+      - name: Install lightsailctl
+        run: |
+          curl -sSL https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl -o lightsailctl
+          chmod +x lightsailctl
+          sudo mv lightsailctl /usr/local/bin/lightsailctl
+
       - name: Push & deploy
         run: |
           set -eo pipefail
 
+          # Ensure the container service exists (idempotent)
           aws lightsail create-container-service --no-cli-pager --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --power nano --scale 1 2>/dev/null || true
 
+          # Push local image and capture reference
           IMAGE_REF=$(aws lightsail push-container-image \
             --no-cli-pager \
             --service-name "$LIGHTSAIL_SERVICE_NAME" \
@@ -117,7 +130,8 @@ jobs:
 
           echo "Image pushed: $IMAGE_REF"
 
-          CONTAINERS="score-game-app={image=${IMAGE_REF},environment={AWS_REGION=eu-central-1,AWS_TABLE_NAME=SoccerGameData},ports={3000=HTTP}}"
+          # Deploy new version using concise flags
+          CONTAINERS="score-game-app=image=${IMAGE_REF},environment=AWS_REGION=eu-central-1,AWS_TABLE_NAME=SoccerGameData,ports=3000=HTTP"
           PUBLIC_EP="containerName=score-game-app,containerPort=3000,healthCheck={path=/api/health}"
 
           aws lightsail create-container-service-deployment \
