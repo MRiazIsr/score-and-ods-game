@@ -16,6 +16,20 @@ RUN --mount=type=cache,target=/root/.npm \
 FROM base AS builder
 WORKDIR /app
 
+# Accept build args
+ARG SESSION_PASSWORD
+ARG SESSION_COOKIE_NAME
+ARG API_KEY
+ARG TABLE_NAME
+
+# Set environment variables for the build process
+ENV SESSION_PASSWORD=$SESSION_PASSWORD \
+    SESSION_COOKIE_NAME=$SESSION_COOKIE_NAME \
+    API_KEY=$API_KEY \
+    TABLE_NAME=$TABLE_NAME \
+    AWS_TABLE_NAME=$TABLE_NAME \
+    NODE_ENV=production
+
 # 3.1 install **all** deps (prod+dev)
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
@@ -48,7 +62,8 @@ ARG TABLE_NAME
 ENV SESSION_PASSWORD=$SESSION_PASSWORD \
     SESSION_COOKIE_NAME=$SESSION_COOKIE_NAME \
     API_KEY=$API_KEY \
-    TABLE_NAME=$TABLE_NAME
+    TABLE_NAME=$TABLE_NAME \
+    AWS_TABLE_NAME=$TABLE_NAME
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
