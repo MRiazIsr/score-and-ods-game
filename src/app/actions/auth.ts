@@ -12,6 +12,8 @@ import { cookies } from "next/headers";
 import { SessionData } from "@/app/lib/auth/types";
 import { sessionOptions } from "@/app/lib/auth/definitions";
 import {redirect} from "next/navigation";
+import {router} from "next/client";
+
 
 export async function getSession(): Promise<IronSession<SessionData>>
 {
@@ -35,7 +37,7 @@ export async function signUp(state: FormState, formData: FormData): Promise<{
     success: boolean;
     errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
     values?: { name?: string; email?: string; userName?: string; password?: string };
-}> {
+} | undefined> {
     const formFields = {
         name: formData.get(FormFieldsKeysEntity.signUpGroup.NAME)?.toString() ?? '',
         email: formData.get(FormFieldsKeysEntity.signUpGroup.EMAIL)?.toString() ?? '',
@@ -99,15 +101,14 @@ export async function signUp(state: FormState, formData: FormData): Promise<{
             values: formFields
         }
     }
-
-    redirect('/');
+    await router.push('/');
 }
 
 export async function signIn(state: FormState, formData: FormData): Promise<{
     message: string;
     success: boolean;
     errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
-}> {
+} | undefined> {
     const formFields = {
         userName: formData.get(FormFieldsKeysEntity.signInGroup.USERNAME)?.toString() ?? '',
         password: formData.get(FormFieldsKeysEntity.signInGroup.PASSWORD)?.toString() ?? '',
@@ -162,12 +163,12 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
         }
     }
 
-    redirect('/');
+    await router.push('/');
 }
 
 export async function signOut() {
     const session = await getSession();
 
     session.destroy();
-    redirect('/');
+    await router.push('/');
 }
