@@ -50,7 +50,6 @@ jobs:
           role-session-name: github-ci
           aws-region: ${{ env.AWS_REGION }}
 
-      # (lightsailctl не нужен в этой джобе — удалён)
       - run: npm ci
       - run: npx serverless deploy --stage production
         env:
@@ -106,12 +105,6 @@ jobs:
             --build-arg TABLE_NAME="$TABLE_NAME" \
             .
 
-      - name: Install lightsailctl
-        run: |
-          curl -sSL https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl -o lightsailctl
-          chmod +x lightsailctl
-          sudo mv lightsailctl /usr/local/bin/lightsailctl
-
       - name: Push & deploy
         run: |
           set -eo pipefail
@@ -130,12 +123,13 @@ jobs:
 
           echo "Image pushed: $IMAGE_REF"
 
-          # Deploy new version using concise flags
-          CONTAINERS="score-game-app=image=${IMAGE_REF},environment=AWS_REGION=eu-central-1,AWS_TABLE_NAME=SoccerGameData,ports=3000=HTTP"
-          PUBLIC_EP="containerName=score-game-app,containerPort=3000,healthCheck={path=/api/health}"
+          # Define container and public endpoint configurations
+          CONTAINERS_JSON='{"score-game-app":{"image":"'"$IMAGE_REF"'","environment":{"AWS_REGION":"eu-central-1","AWS_TABLE_NAME":"SoccerGameData"},"ports":{"3000":"HTTP"}}}'
+          PUBLIC_ENDPOINT_JSON='{"containerName":"score-game-app","containerPort":3000,"healthCheck":{"path":"/api/health"}}'
 
+          # Deploy the new version using the configurations
           aws lightsail create-container-service-deployment \
             --no-cli-pager \
             --service-name "$LIGHTSAIL_SERVICE_NAME" \
-            --containers "$CONTAINERS" \
-            --public-endpoint "$PUBLIC_EP"
+            --containers "$CONTAINERS_JSON" \
+            --public-endpoint "$PUBLIC_ENDPOINT_JSON"
