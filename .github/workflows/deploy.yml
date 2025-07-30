@@ -53,20 +53,19 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - run: npm ci
-      - name: Deploy serverless with verification
+      - name: Deploy serverless with validation
         env:
           API_KEY: ${{ secrets.API_KEY }}
         run: |
-          # First create the CloudFormation change set (dry-run)
-          echo "Generating CloudFormation change set..."
-          npx serverless deploy --stage production --noDeploy
-
-          # If the above succeeds, proceed with the actual deployment
+          # Validate the serverless configuration
+          echo "Validating Serverless configuration..."
+          npx serverless print --stage production
+          
           if [ $? -eq 0 ]; then
-            echo "Validation successful, proceeding with deployment..."
+            echo "✅ Configuration validation successful, proceeding with deployment..."
             npx serverless deploy --stage production
           else
-            echo "⚠️ Deployment validation failed, please check the CloudFormation template"
+            echo "❌ Configuration validation failed, please check the serverless.yml"
             exit 1
           fi
 
@@ -100,7 +99,7 @@ jobs:
 
       - run: npm ci
 
-      - name: Build Next.js
+      - name: Build Next.js (verify locally first)
         run: npm run build
         env:
           SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
@@ -108,7 +107,7 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
           TABLE_NAME: SoccerGameData
 
-      - name: Docker build with runtime env variables
+      - name: Docker build with secrets
         env:
           SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
           SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
@@ -116,28 +115,28 @@ jobs:
           TABLE_NAME: SoccerGameData
         run: |
           # Start the build with proper error handling
-          echo "Building Docker image..."
+          echo "Building Docker image with secrets..."
           set -e
 
-          # Create .env file for build (will be removed by .dockerignore)
-          cat > .env.build << EOF
-          SESSION_PASSWORD=$SESSION_PASSWORD
-          SESSION_COOKIE_NAME=$SESSION_COOKIE_NAME
-          API_KEY=$API_KEY
-          TABLE_NAME=$TABLE_NAME
-          EOF
+          # Create temporary secret files
+          echo "$SESSION_PASSWORD" > /tmp/session_password
+          echo "$SESSION_COOKIE_NAME" > /tmp/session_cookie_name
+          echo "$API_KEY" > /tmp/api_key
 
-          # Build with arguments
+          # Enable BuildKit for Docker secrets
+          export DOCKER_BUILDKIT=1
+
+          # Build with secrets
           docker build \
             -t score-game:latest \
-            --build-arg SESSION_PASSWORD="$SESSION_PASSWORD" \
-            --build-arg SESSION_COOKIE_NAME="$SESSION_COOKIE_NAME" \
-            --build-arg API_KEY="$API_KEY" \
             --build-arg TABLE_NAME="$TABLE_NAME" \
+            --secret id=session_password,src=/tmp/session_password \
+            --secret id=session_cookie_name,src=/tmp/session_cookie_name \
+            --secret id=api_key,src=/tmp/api_key \
             .
 
-          # Cleanup
-          rm -f .env.build
+          # Cleanup secret files
+          rm -f /tmp/session_password /tmp/session_cookie_name /tmp/api_key
 
           # Verify build succeeded
           if [ $? -ne 0 ]; then
@@ -196,10 +195,11 @@ jobs:
           echo "Image pushed: $IMAGE_REF"
 
           # Define container and public endpoint configurations using workflow variables
-          CONTAINERS_JSON='{"score-game-app":{"image":"'"$IMAGE_REF"'","environment":{"AWS_REGION":"'"$AWS_REGION"'","AWS_TABLE_NAME":"'"$TABLE_NAME"'"},"ports":{"3000":"HTTP"}}}'
+          # Note: Runtime secrets will need to be passed through Lightsail environment variables
+          CONTAINERS_JSON='{"score-game-app":{"image":"'"$IMAGE_REF"'","environment":{"AWS_REGION":"'"$AWS_REGION"'","AWS_TABLE_NAME":"'"$TABLE_NAME"'","SESSION_PASSWORD":"'"${{ secrets.SESSION_PASSWORD }}"'","SESSION_COOKIE_NAME":"'"${{ secrets.SESSION_COOKIE_NAME }}"'","API_KEY":"'"${{ secrets.API_KEY }}"'"},"ports":{"3000":"HTTP"}}}'
           PUBLIC_ENDPOINT_JSON='{"containerName":"score-game-app","containerPort":3000,"healthCheck":{"path":"/api/health","successCodes":"200","healthyThreshold":2,"unhealthyThreshold":2,"intervalSeconds":5,"timeoutSeconds":2}}'
 
-          echo "Deploying with containers config: $CONTAINERS_JSON"
+          echo "Deploying with containers config..."
           echo "Public endpoint config: $PUBLIC_ENDPOINT_JSON"
 
           # Deploy the new version using the configurations
