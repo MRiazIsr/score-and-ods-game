@@ -99,9 +99,10 @@ jobs:
 
       - name: Install lightsailctl
         run: |
-          curl -s https://lightsailctl.com/download/latest/linux-amd64/lightsailctl -o lightsailctl
+          set -e
+          curl -sSL https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl -o lightsailctl
           chmod +x lightsailctl
-          sudo mv lightsailctl /usr/local/bin
+          sudo mv lightsailctl /usr/local/bin/lightsailctl
 
       - name: Push & deploy
         run: |
