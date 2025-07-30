@@ -47,7 +47,10 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: github-ci
           aws-region: ${{ env.AWS_REGION }}
+
+      # (lightsailctl не нужен в этой джобе — удалён)
       - run: npm ci
       - run: npx serverless deploy --stage production
         env:
@@ -97,6 +100,7 @@ jobs:
             --build-arg TABLE_NAME="$TABLE_NAME" \
             .
 
+      # Install lightsailctl plugin (нужен здесь, где вызываем Lightsail команды)
       - name: Install lightsailctl
         run: |
           set -e
@@ -110,14 +114,14 @@ jobs:
           AWS_PAGER="" \
           aws lightsail create-container-service --no-cli-pager --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --power nano --scale 1 2>/dev/null || true
-        
+
           IMAGE_REF=$(aws lightsail push-container-image \
             --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --label score-game-app \
             --image score-game:latest \
             --query 'image' --output text)
 
-        # Build deployment JSON safely with jq to avoid parse errors
+          # Build deployment JSON safely with jq to avoid parse errors
           DEPLOY_JSON=$(jq -n --arg img "$IMAGE_REF" '
             {
               containers: {
@@ -133,7 +137,7 @@ jobs:
                 healthCheck: {path:"/api/health"}
               }
             }')
-        
+
           echo "$DEPLOY_JSON" > deployment.json
           aws lightsail create-container-service-deployment \
             --cli-binary-format raw-in-base64-out \
