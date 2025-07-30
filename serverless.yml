@@ -23,35 +23,41 @@ provider:
   memorySize: 256
   region: eu-central-1
   stage: ${opt:stage, 'production'}
+  tracing:
+    lambda: true
+  logs:
+    restApi: true
 
   environment:
-    AWS_DB_REGION: ${self.custom.region}
+    AWS_DB_REGION: ${self:provider.region}
     AWS_TABLE_NAME: ${self:custom.tableName}
     AWS_APP_API_URL: "https://api.football-data.org/v4"
     AWS_APP_SERVICE_KEY: ${env:API_KEY}
     AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
 
   iamRoleStatements:
-    # DynamoDB access
+    # DynamoDB access - limited to specific actions
     - Effect: Allow
       Action:
-        - dynamodb:*
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:BatchGetItem
+        - dynamodb:BatchWriteItem
       Resource:
         - Fn::GetAtt: [ SoccerGameDataTable, Arn ]
         - Fn::Join: ['', [ Fn::GetAtt: [ SoccerGameDataTable, Arn ], '/index/*' ]]
 
-    # EventBridge Scheduler & Lambda permissions - restricted to resources used by this service
+    # EventBridge Scheduler & Lambda permissions
     - Effect: Allow
       Action:
         - events:PutRule
         - events:PutTargets
-      Resource: 
-        - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/tip-manager-${self:provider.stage}*
-    - Effect: Allow
-      Action:
         - lambda:AddPermission
-      Resource: 
-        - !GetAtt MatchFetcherLambdaFunction.Arn
+      Resource: "*"
 
 functions:
   matchFetcher:

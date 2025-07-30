@@ -102,15 +102,37 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
           TABLE_NAME: SoccerGameData
         run: |
-          # Create a temporary .env file for the build
+          # Start the build with proper error handling
           echo "Building Docker image..."
+          set -e
+
+          # Create .env file for build (will be removed by .dockerignore)
+          cat > .env.build << EOF
+          SESSION_PASSWORD=$SESSION_PASSWORD
+          SESSION_COOKIE_NAME=$SESSION_COOKIE_NAME
+          API_KEY=$API_KEY
+          TABLE_NAME=$TABLE_NAME
+          EOF
+
+          # Build with arguments
           docker build \
             -t score-game:latest \
             --build-arg SESSION_PASSWORD="$SESSION_PASSWORD" \
             --build-arg SESSION_COOKIE_NAME="$SESSION_COOKIE_NAME" \
             --build-arg API_KEY="$API_KEY" \
             --build-arg TABLE_NAME="$TABLE_NAME" \
-            . || { echo "Docker build failed"; exit 1; }
+            .
+
+          # Cleanup
+          rm -f .env.build
+
+          # Verify build succeeded
+          if [ $? -ne 0 ]; then
+            echo "Docker build failed"
+            exit 1
+          fi
+
+          echo "Docker build completed successfully"
 
       - name: Push & deploy
         run: |
