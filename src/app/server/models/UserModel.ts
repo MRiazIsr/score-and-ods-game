@@ -18,14 +18,14 @@ import type { DbUser } from "@/app/server/modules/user/types/userTypes";
 
 
 export class UserModel {
-    private static client: DynamoDBClient = new DynamoDBClient({
-        region: 'us-east-1',
-        endpoint: "http://localhost:8000",
-        credentials: {
-            accessKeyId: "fakeKey",
-            secretAccessKey: "fakeSecret"
-        }
+    private static client = new DynamoDBClient({
+        region: process.env.AWS_REGION || 'eu-central-1',
+        // Endpoint только для локальной разработки
+        ...(process.env.NODE_ENV === 'development' && {
+            endpoint: 'http://localhost:8000'
+        })
     });
+
     private static documentClient: DynamoDBDocumentClient = DynamoDBDocumentClient.from(this.client);
     private static tableName: string = (() => {
         console.log('ENV', process.env.TABLE_NAME);
