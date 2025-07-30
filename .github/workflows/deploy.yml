@@ -119,26 +119,16 @@ jobs:
 
           echo "Image pushed: $IMAGE_REF"
 
-          # 2. Create minimal deployment JSON
-          cat > deployment.json <<JSON
-          {
-            "containers": {
-              "score-game-app": {
-                "image": "${IMAGE_REF}",
-                "environment": {
-                  "AWS_REGION": "eu-central-1",
-                  "AWS_TABLE_NAME": "SoccerGameData"
-                },
-                "ports": { "3000": "HTTP" }
-              }
-            },
-            "publicEndpoint": {
-              "containerName": "score-game-app",
-              "containerPort": 3000,
-              "healthCheck": { "path": "/api/health" }
-            }
-          }
+          # 2. Create deployment via --containers and --public-endpoint (no temp file)
+          CONTAINERS="score-game-app={image=${IMAGE_REF},environment={AWS_REGION=eu-central-1,AWS_TABLE_NAME=SoccerGameData},ports={3000=HTTP}}"
+          PUBLIC_EP="containerName=score-game-app,containerPort=3000,healthCheck={path=/api/health}"
 
+          # 3. Deploy new version (avoid ParsedResult bug)
+          aws lightsail create-container-service-deployment \
+            --no-cli-pager \
+            --service-name "$LIGHTSAIL_SERVICE_NAME" \
+            --containers "$CONTAINERS" \
+            --public-endpoint "$PUBLIC_EP" Deploy new version
           aws lightsail create-container-service-deployment \
             --no-cli-pager \
             --cli-binary-format raw-in-base64-out \
