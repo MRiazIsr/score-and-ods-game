@@ -80,6 +80,9 @@ jobs:
           role-session-name: github-ci
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - run: npm ci
 
       - name: Build Next.js
@@ -110,24 +113,44 @@ jobs:
           set -eo pipefail
 
           # Ensure the container service exists (idempotent)
+          echo "Creating/verifying Lightsail container service..."
           aws lightsail create-container-service --no-cli-pager --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --power nano --scale 1 2>/dev/null || true
 
-          # Push local image and capture reference with proper error handling
+          # Verify AWS credentials and connection
+          echo "Verifying AWS credentials..."
+          aws sts get-caller-identity
+
+          # Push the Docker image to Lightsail
           echo "Pushing image to Lightsail..."
+          PUSH_RESULT=0
           PUSH_OUTPUT=$(aws lightsail push-container-image \
             --no-cli-pager \
             --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --label score-game-app \
-            --image score-game:latest 2>&1)
-          
+            --image score-game:latest 2>&1) || PUSH_RESULT=$?
+
+          if [ $PUSH_RESULT -ne 0 ]; then
+            echo "Error pushing image to Lightsail: $PUSH_OUTPUT"
+            echo "Exit code: $PUSH_RESULT"
+            exit $PUSH_RESULT
+          fi
+
           echo "Push output: $PUSH_OUTPUT"
-          
-          # Extract image reference from output using grep and sed
-          IMAGE_REF=$(echo "$PUSH_OUTPUT" | grep -E '":score-game-app\.' | sed -E 's/.*(".*score-game-app\.[^"]*").*/\1/' | tr -d '"')
-          
-          if [ -z "$IMAGE_REF" ]; then
-            echo "Failed to extract image reference from push output"
+
+          # Extract image reference using the AWS CLI query parameter instead of regex
+          echo "Getting container images..."
+          CONTAINER_IMAGES=$(aws lightsail get-container-images \
+            --no-cli-pager \
+            --service-name "$LIGHTSAIL_SERVICE_NAME")
+
+          echo "Container images: $CONTAINER_IMAGES"
+
+          # Get the most recent image (first in the list)
+          IMAGE_REF=$(echo "$CONTAINER_IMAGES" | jq -r '.containerImages[0].image')
+
+          if [ -z "$IMAGE_REF" ] || [ "$IMAGE_REF" = "null" ]; then
+            echo "Failed to extract image reference"
             exit 1
           fi
 
@@ -135,7 +158,10 @@ jobs:
 
           # Define container and public endpoint configurations
           CONTAINERS_JSON='{"score-game-app":{"image":"'"$IMAGE_REF"'","environment":{"AWS_REGION":"eu-central-1","AWS_TABLE_NAME":"SoccerGameData"},"ports":{"3000":"HTTP"}}}'
-          PUBLIC_ENDPOINT_JSON='{"containerName":"score-game-app","containerPort":3000,"healthCheck":{"path":"/"}}'
+          PUBLIC_ENDPOINT_JSON='{"containerName":"score-game-app","containerPort":3000,"healthCheck":{"path":"/api/health","successCodes":"200","healthyThreshold":2,"unhealthyThreshold":2,"intervalSeconds":5,"timeoutSeconds":2}}'
+
+          echo "Deploying with containers config: $CONTAINERS_JSON"
+          echo "Public endpoint config: $PUBLIC_ENDPOINT_JSON"
 
           # Deploy the new version using the configurations
           aws lightsail create-container-service-deployment \
@@ -143,3 +169,9 @@ jobs:
             --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --containers "$CONTAINERS_JSON" \
             --public-endpoint "$PUBLIC_ENDPOINT_JSON"
+
+          echo "Deployment initiated. Checking status..."
+          aws lightsail get-container-service \
+            --no-cli-pager \
+            --service-name "$LIGHTSAIL_SERVICE_NAME" \
+            --query 'containerService.state'
