@@ -101,31 +101,46 @@ jobs:
             .
 
       # Install lightsailctl plugin (нужен здесь, где вызываем Lightsail команды)
-      - name: Install lightsailctl
-        run: |
-          set -e
-          curl -sSL https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl -o lightsailctl
-          chmod +x lightsailctl
-          sudo mv lightsailctl /usr/local/bin/lightsailctl
-
       - name: Push & deploy
         run: |
           set -eo pipefail
 
           # Ensure the container service exists (idempotent)
-          lightsailctl create-container-service --service-name "$LIGHTSAIL_SERVICE_NAME" \
+          aws lightsail create-container-service --no-cli-pager --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --power nano --scale 1 2>/dev/null || true
 
-          # 1. Push local image to Lightsail container registry
-          IMAGE_REF=$(lightsailctl push-container-image \
+          # 1. Push local image to Lightsail container registry and capture image ARN
+          IMAGE_REF=$(aws lightsail push-container-image \
+            --no-cli-pager \
             --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --label score-game-app \
-            --image score-game:latest --output image)
+            --image score-game:latest \
+            --query 'image' --output text)
 
           echo "Image pushed: $IMAGE_REF"
 
-          # 2. Deploy the new image (no JSON juggling required)
-          lightsailctl create-container-service-deployment \
+          # 2. Create minimal deployment JSON
+          cat > deployment.json <<JSON
+          {
+            "containers": {
+              "score-game-app": {
+                "image": "${IMAGE_REF}",
+                "environment": {
+                  "AWS_REGION": "eu-central-1",
+                  "AWS_TABLE_NAME": "SoccerGameData"
+                },
+                "ports": { "3000": "HTTP" }
+              }
+            },
+            "publicEndpoint": {
+              "containerName": "score-game-app",
+              "containerPort": 3000,
+              "healthCheck": { "path": "/api/health" }
+            }
+          }
+
+          aws lightsail create-container-service-deployment \
+            --no-cli-pager \
+            --cli-binary-format raw-in-base64-out \
             --service-name "$LIGHTSAIL_SERVICE_NAME" \
-            --containers score-game-app=image=$IMAGE_REF,environment.AWS_REGION=eu-central-1,environment.AWS_TABLE_NAME=SoccerGameData,ports.3000=HTTP \
-            --public-endpoint port=3000,health-check-path=/api/health
+            --cli-input-json file://deployment.json
