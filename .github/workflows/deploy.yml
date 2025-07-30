@@ -113,19 +113,29 @@ jobs:
           aws lightsail create-container-service --no-cli-pager --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --power nano --scale 1 2>/dev/null || true
 
-          # Push local image and capture reference
-          IMAGE_REF=$(aws lightsail push-container-image \
+          # Push local image and capture reference with proper error handling
+          echo "Pushing image to Lightsail..."
+          PUSH_OUTPUT=$(aws lightsail push-container-image \
             --no-cli-pager \
             --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --label score-game-app \
-            --image score-game:latest \
-            --query 'image' --output text)
+            --image score-game:latest 2>&1)
+          
+          echo "Push output: $PUSH_OUTPUT"
+          
+          # Extract image reference from output using grep and sed
+          IMAGE_REF=$(echo "$PUSH_OUTPUT" | grep -E '":score-game-app\.' | sed -E 's/.*(".*score-game-app\.[^"]*").*/\1/' | tr -d '"')
+          
+          if [ -z "$IMAGE_REF" ]; then
+            echo "Failed to extract image reference from push output"
+            exit 1
+          fi
 
           echo "Image pushed: $IMAGE_REF"
 
           # Define container and public endpoint configurations
           CONTAINERS_JSON='{"score-game-app":{"image":"'"$IMAGE_REF"'","environment":{"AWS_REGION":"eu-central-1","AWS_TABLE_NAME":"SoccerGameData"},"ports":{"3000":"HTTP"}}}'
-          PUBLIC_ENDPOINT_JSON='{"containerName":"score-game-app","containerPort":3000,"healthCheck":{"path":"/api/health"}}'
+          PUBLIC_ENDPOINT_JSON='{"containerName":"score-game-app","containerPort":3000,"healthCheck":{"path":"/"}}'
 
           # Deploy the new version using the configurations
           aws lightsail create-container-service-deployment \
