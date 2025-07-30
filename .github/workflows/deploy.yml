@@ -53,9 +53,22 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - run: npm ci
-      - run: npx serverless deploy --stage production
+      - name: Deploy serverless with verification
         env:
           API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          # First create the CloudFormation change set (dry-run)
+          echo "Generating CloudFormation change set..."
+          npx serverless deploy --stage production --noDeploy
+
+          # If the above succeeds, proceed with the actual deployment
+          if [ $? -eq 0 ]; then
+            echo "Validation successful, proceeding with deployment..."
+            npx serverless deploy --stage production
+          else
+            echo "⚠️ Deployment validation failed, please check the CloudFormation template"
+            exit 1
+          fi
 
   lightsail-deploy:
     concurrency:

@@ -78,6 +78,8 @@ resources:
   Resources:
     SoccerGameDataTable:
       Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      UpdateReplacePolicy: Retain
       Properties:
         TableName: ${self:custom.tableName}
         BillingMode: PAY_PER_REQUEST
