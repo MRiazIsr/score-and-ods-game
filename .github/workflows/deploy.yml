@@ -114,7 +114,7 @@ jobs:
             --service-name "$LIGHTSAIL_SERVICE_NAME" \
             --label score-game-app \
             --image score-game:latest \
-            --output json | jq -r '.image')
+            --query 'image' --output text)
           
           cat > deployment.json <<EOF
           {
