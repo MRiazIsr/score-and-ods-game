@@ -89,6 +89,7 @@ ENV TABLE_NAME=${TABLE_NAME} \
     AWS_TABLE_NAME=${TABLE_NAME}
 
 # Copy built application from builder stage
+COPY --from=builder --chown=app:app /app/next.config.ts ./next.config.ts
 COPY --from=builder --chown=app:app /app/node_modules ./node_modules
 COPY --from=builder --chown=app:app /app/.next ./.next
 COPY --from=builder --chown=app:app /app/public ./public

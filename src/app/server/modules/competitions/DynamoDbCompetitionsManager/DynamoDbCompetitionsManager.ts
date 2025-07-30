@@ -20,8 +20,8 @@ export class DynamoDbCompetitionsManager {
 
         // Фильтруем матчи сначала
         const filteredMatches = matches.filter((match: Match) => {
-            if (match.competition.type === 'CUP' && match.stage !== 'LEAGUE_STAGE') {
-                return match.status === 'TIMED'
+            if (match.competition.type === 'CUP') {
+                return match.status === 'TIMED' && match.stage !== 'LEAGUE_STAGE';
             }
             return match.matchday === match.season.currentMatchday;
         });
@@ -100,8 +100,6 @@ export class DynamoDbCompetitionsManager {
             const finishedMatches = matchesData.matches.filter((match: Match) =>
                 match.status === 'FINISHED' || match.status === 'IN_PLAY'
             );
-
-            console.log('FINISHED', finishedMatches);
 
             const matchResults: Map<number, MatchResult> = new Map();
             finishedMatches.forEach((match: Match) => {

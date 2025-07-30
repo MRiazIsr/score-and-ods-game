@@ -1,4 +1,4 @@
-import { handler } from '@/lambdas/competitionsDataFetcher/matchFetcher';
+import { handler } from '../../../lambdas/competitionsDataFetcher/matchFetcher';
 import { TestData } from './envDumy';
 
 // Set environment variables for local testing
