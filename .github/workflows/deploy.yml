@@ -95,7 +95,7 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
           TABLE_NAME: SoccerGameData
 
-              - name: Docker build with runtime env variables
+      - name: Docker build with runtime env variables
         env:
           SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
           SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
