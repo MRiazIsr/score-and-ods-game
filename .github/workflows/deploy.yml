@@ -267,7 +267,7 @@ jobs:
             STATE=$(echo "$SERVICE_INFO" | jq -r '.containerServices[0].state')
             echo "Current state: $STATE (elapsed: $((ELAPSED/60))m $((ELAPSED%60))s)"
 
-            if [ "$STATE" == "READY" ]; then
+            if [ "$STATE" == "RUNNING" ]; then
               echo "✅ Deployment completed successfully!"
 
               # Get the public endpoint URL

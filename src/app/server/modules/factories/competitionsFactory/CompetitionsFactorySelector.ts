@@ -3,7 +3,7 @@ import { DynamoDbCompetitionsFactory } from "@/app/server/modules/factories/comp
 export const selectFactory = (dbType: string = ''): DynamoDbCompetitionsFactory =>
 {
     switch (dbType.toLowerCase()) {
-        case 'dynamo':
+        case 'dynamodb':
             return new DynamoDbCompetitionsFactory();
         default:
             throw new Error(`Unknown DB type: ${dbType}`);

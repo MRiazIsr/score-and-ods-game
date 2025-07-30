@@ -4,7 +4,7 @@ import {DynamoDbAuthFactory} from "@/app/server/modules/factories/authFactory/Dy
 export const selectFactory = (dbType: string = ''): DynamoDbAuthFactory =>
 {
     switch (dbType.toLowerCase()) {
-        case 'dynamo':
+        case 'dynamodb':
             return new DynamoDbAuthFactory();
         default:
             throw new Error(`Unknown DB type: ${dbType}`);
