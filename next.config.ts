@@ -15,8 +15,16 @@ const nextConfig: NextConfig = {
         AWS_TABLE_NAME: process.env.AWS_TABLE_NAME,
     },
     images: {
-        remotePatterns: [new URL('https://crests.football-data.org/**')],
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: 'crests.football-data.org',
+                port: '',
+                pathname: '/**',
+            },
+        ],
     },
+
 };
 
 export default nextConfig;
