@@ -1,15 +1,22 @@
 # ---------- 1. base image with caching ---------- #
-# используем BuildKit   docker buildx build --tag score-game .
 ARG NODE_VERSION=20
 FROM node:${NODE_VERSION}-slim AS base
 WORKDIR /app
-ENV NODE_ENV=production
-# включаем corepack сразу, чтобы pnpm/yarn были готовы
+
+ARG SESSION_PASSWORD
+ARG SESSION_COOKIE_NAME
+ARG API_KEY
+ARG TABLE_NAME
+ENV SESSION_PASSWORD=$SESSION_PASSWORD \
+    SESSION_COOKIE_NAME=$SESSION_COOKIE_NAME \
+    API_KEY=$API_KEY \
+    TABLE_NAME=$TABLE_NAME
+
+
 RUN corepack enable
 
 # ---------- 2. deps layer (prod only) ---------- #
 FROM base AS deps
-# копируем lock‑файл отдельно – кеш не ломается на каждом коммите
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev
@@ -35,11 +42,9 @@ FROM node:${NODE_VERSION}-alpine AS runtime
 WORKDIR /app
 RUN addgroup -S app && adduser -S -G app app
 
-# среды
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# скопировать node_modules (prod‑deps) и built output
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
