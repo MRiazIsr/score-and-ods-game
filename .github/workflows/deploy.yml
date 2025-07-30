@@ -12,6 +12,8 @@ env:
   AWS_REGION: eu-central-1
   NODE_VERSION: '20'
   LIGHTSAIL_SERVICE_NAME: score-game
+  TABLE_NAME: SoccerGameData
+  DEPLOY_TIMEOUT_MINUTES: 10
 
 jobs:
   filter:
@@ -93,20 +95,22 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
           TABLE_NAME: SoccerGameData
 
-      - name: Docker build with secrets
+              - name: Docker build with runtime env variables
         env:
           SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
           SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
           API_KEY: ${{ secrets.API_KEY }}
           TABLE_NAME: SoccerGameData
         run: |
+          # Create a temporary .env file for the build
+          echo "Building Docker image..."
           docker build \
             -t score-game:latest \
             --build-arg SESSION_PASSWORD="$SESSION_PASSWORD" \
             --build-arg SESSION_COOKIE_NAME="$SESSION_COOKIE_NAME" \
             --build-arg API_KEY="$API_KEY" \
             --build-arg TABLE_NAME="$TABLE_NAME" \
-            .
+            . || { echo "Docker build failed"; exit 1; }
 
       - name: Push & deploy
         run: |
@@ -156,8 +160,8 @@ jobs:
 
           echo "Image pushed: $IMAGE_REF"
 
-          # Define container and public endpoint configurations
-          CONTAINERS_JSON='{"score-game-app":{"image":"'"$IMAGE_REF"'","environment":{"AWS_REGION":"eu-central-1","AWS_TABLE_NAME":"SoccerGameData"},"ports":{"3000":"HTTP"}}}'
+          # Define container and public endpoint configurations using workflow variables
+          CONTAINERS_JSON='{"score-game-app":{"image":"'"$IMAGE_REF"'","environment":{"AWS_REGION":"'"$AWS_REGION"'","AWS_TABLE_NAME":"'"$TABLE_NAME"'"},"ports":{"3000":"HTTP"}}}'
           PUBLIC_ENDPOINT_JSON='{"containerName":"score-game-app","containerPort":3000,"healthCheck":{"path":"/api/health","successCodes":"200","healthyThreshold":2,"unhealthyThreshold":2,"intervalSeconds":5,"timeoutSeconds":2}}'
 
           echo "Deploying with containers config: $CONTAINERS_JSON"
@@ -170,8 +174,46 @@ jobs:
             --containers "$CONTAINERS_JSON" \
             --public-endpoint "$PUBLIC_ENDPOINT_JSON"
 
-          echo "Deployment initiated. Checking status..."
-          aws lightsail get-container-service \
-            --no-cli-pager \
-            --service-name "$LIGHTSAIL_SERVICE_NAME" \
-            --query 'containerService.state'
+          echo "Deployment initiated. Monitoring status..."
+
+          # Monitor deployment status with timeout
+          START_TIME=$(date +%s)
+          TIMEOUT=$((${DEPLOY_TIMEOUT_MINUTES} * 60))
+
+          while true; do
+            CURRENT_TIME=$(date +%s)
+            ELAPSED=$((CURRENT_TIME - START_TIME))
+
+            if [ $ELAPSED -gt $TIMEOUT ]; then
+              echo "Deployment timeout after ${DEPLOY_TIMEOUT_MINUTES} minutes!"
+              exit 1
+            fi
+
+            SERVICE_INFO=$(aws lightsail get-container-service \
+              --no-cli-pager \
+              --service-name "$LIGHTSAIL_SERVICE_NAME")
+
+            STATE=$(echo "$SERVICE_INFO" | jq -r '.containerService.state')
+            echo "Current state: $STATE (elapsed: $((ELAPSED/60))m $((ELAPSED%60))s)"
+
+            if [ "$STATE" == "READY" ]; then
+              echo "✅ Deployment completed successfully!"
+
+              # Get the public endpoint URL
+              ENDPOINT_URL=$(echo "$SERVICE_INFO" | jq -r '.containerService.url')
+              echo "Application available at: $ENDPOINT_URL"
+
+              # Verify the health endpoint is responding
+              echo "Verifying health endpoint..."
+              curl -s "${ENDPOINT_URL}/api/health" || echo "Warning: Health check failed but deployment completed"
+
+              break
+            elif [ "$STATE" == "DEPLOYING" ] || [ "$STATE" == "PENDING" ]; then
+              echo "Deployment in progress..."
+              sleep 20
+            else
+              echo "❌ Deployment failed with state: $STATE"
+              echo "Container logs may provide more information."
+              exit 1
+            fi
+          done

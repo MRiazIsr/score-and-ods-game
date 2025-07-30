@@ -40,13 +40,18 @@ provider:
         - Fn::GetAtt: [ SoccerGameDataTable, Arn ]
         - Fn::Join: ['', [ Fn::GetAtt: [ SoccerGameDataTable, Arn ], '/index/*' ]]
 
-    # EventBridge Scheduler & Lambda permissions42
+    # EventBridge Scheduler & Lambda permissions - restricted to resources used by this service
     - Effect: Allow
       Action:
         - events:PutRule
         - events:PutTargets
+      Resource: 
+        - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/tip-manager-${self:provider.stage}*
+    - Effect: Allow
+      Action:
         - lambda:AddPermission
-      Resource: '*'
+      Resource: 
+        - !GetAtt MatchFetcherLambdaFunction.Arn
 
 functions:
   matchFetcher:
