@@ -43,7 +43,7 @@ jobs:
     needs: filter
     if: needs.filter.outputs.app == 'true'
     outputs:
-      cache-key: build-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+      cache-key: build-${{ github.sha }}-${{ hashFiles('**/package-lock.json') }}
     steps:
       - uses: actions/checkout@v4
 
