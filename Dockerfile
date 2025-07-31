@@ -40,6 +40,9 @@ COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --include=dev
 
+# 3.1.1 ВАЖНО: Убедитесь что TypeScript установлен для build time
+RUN npm ls typescript || npm install typescript --save-dev
+
 # Verify Next.js installation
 RUN ls -la node_modules/.bin/ | grep next || echo "Next.js not found in .bin"
 RUN ls -la node_modules/next/ || echo "Next.js not found in node_modules"
@@ -47,9 +50,11 @@ RUN ls -la node_modules/next/ || echo "Next.js not found in node_modules"
 # 3.2 copy source files
 COPY . .
 
-# Debug: Show what's available
+# Debug: Show what's available and verify TypeScript
 RUN echo "Checking Next.js installation..." && \
     npx next --version && \
+    echo "Checking TypeScript..." && \
+    npx tsc --version && \
     echo "Build environment variables:" && \
     echo "NODE_ENV=$NODE_ENV" && \
     echo "TABLE_NAME=$TABLE_NAME" && \
@@ -65,8 +70,8 @@ RUN --mount=type=secret,id=session_password \
     echo "Starting build with secrets loaded..." && \
     npm run build
 
-# 3.3 prune dev-deps, only prod deps remain
-RUN npm prune --omit=dev
+# 3.3 prune dev-deps, но оставляем typescript для runtime (Next.js нужен для .ts config)
+RUN npm prune --omit=dev && npm install typescript --save
 
 # ---------- 4. runtime image ------------- #
 FROM node:${NODE_VERSION}-alpine AS runtime
@@ -79,6 +84,7 @@ RUN apk add --no-cache dumb-init curl && \
 # Set non-sensitive runtime environment variables
 ENV NODE_ENV=production \
     PORT=3000 \
+    HOSTNAME=0.0.0.0 \
     NEXT_TELEMETRY_DISABLED=1 \
     DB_TYPE=dynamodb \
     AWS_REGION=eu-central-1
@@ -98,8 +104,8 @@ COPY --from=builder --chown=app:app /app/package.json ./package.json
 # Verify the build was successful
 RUN ls -la .next/ && echo "Build verification complete"
 
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Add healthcheck with longer timeouts для решения проблемы с медленным стартом
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:3000/api/health || exit 1
 
 USER app
