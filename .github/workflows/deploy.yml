@@ -43,7 +43,7 @@ jobs:
     needs: filter
     if: needs.filter.outputs.app == 'true'
     outputs:
-      cache-key: build-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+      cache-key: build-${{ github.sha }}-${{ hashFiles('**/package-lock.json') }}
     steps:
       - uses: actions/checkout@v4
 
@@ -80,7 +80,7 @@ jobs:
           path: |
             .next
             node_modules
-          key: build-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+          key: build-${{ github.sha }}-${{ hashFiles('**/package-lock.json') }}
 
   serverless-deploy:
     concurrency:
@@ -152,7 +152,7 @@ jobs:
           path: |
             .next
             node_modules
-          key: ${{ needs.build-and-test.outputs.cache-key }}
+          key: ${{ hashFiles('**/package-lock.json') }}
           fail-on-cache-miss: false
 
       - name: Fallback build (if cache miss)
