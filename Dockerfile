@@ -80,7 +80,7 @@ ENV TABLE_NAME=${TABLE_NAME} \
 # Copy built application from builder stage
 COPY --from=builder --chown=app:app /app/next.config.js ./next.config.js
 COPY --from=builder --chown=app:app /app/package.json ./package.json
-# ✅ Используем standalone build (меньший размер)
+# ✅ Using standalone build (smaller size)
 COPY --from=builder --chown=app:app /app/.next/standalone ./
 COPY --from=builder --chown=app:app /app/.next/static ./.next/static
 COPY --from=builder --chown=app:app /app/public ./public
