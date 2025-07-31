@@ -146,6 +146,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Restore build artifacts
+        id: cache
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -155,7 +156,7 @@ jobs:
           fail-on-cache-miss: false
 
       - name: Fallback build (if cache miss)
-        if: steps.restore-cache.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           echo "Cache miss - rebuilding..."
           npm ci
