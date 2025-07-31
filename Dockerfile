@@ -95,5 +95,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 USER app
 EXPOSE 3000
 ENTRYPOINT ["dumb-init", "--"]
-# ✅ Для standalone используем server.js вместо npm start
+# ✅ For standalone builds, use server.js instead of npm start
 CMD ["node", "server.js"]
