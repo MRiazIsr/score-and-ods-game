@@ -94,6 +94,15 @@ jobs:
           role-session-name: github-ci
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Validate Configuration
+        run: |
+          node -e "require('./next.config.js')"
+
+      - name: Build and Test
+        run: |
+          npm run build
+          npm run test
+
       - name: Install jq and Lightsail plugin
         run: |
           sudo apt-get update && sudo apt-get install -y jq curl

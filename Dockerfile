@@ -79,10 +79,11 @@ ENV TABLE_NAME=${TABLE_NAME} \
 
 # Copy built application from builder stage
 COPY --from=builder --chown=app:app /app/next.config.js ./next.config.js
-COPY --from=builder --chown=app:app /app/node_modules ./node_modules
-COPY --from=builder --chown=app:app /app/.next ./.next
-COPY --from=builder --chown=app:app /app/public ./public
 COPY --from=builder --chown=app:app /app/package.json ./package.json
+# ✅ Используем standalone build (меньший размер)
+COPY --from=builder --chown=app:app /app/.next/standalone ./
+COPY --from=builder --chown=app:app /app/.next/static ./.next/static
+COPY --from=builder --chown=app:app /app/public ./public
 
 # Verify the build was successful
 RUN ls -la .next/ && echo "Build verification complete"
@@ -94,4 +95,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 USER app
 EXPOSE 3000
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["npm", "start"]
+# ✅ Для standalone используем server.js вместо npm start
+CMD ["node", "server.js"]

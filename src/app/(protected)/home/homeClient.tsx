@@ -1,6 +1,5 @@
 "use client";
 
-import { useSession } from "@/app/lib/auth/SessionContext";
 import { Card } from "@/app/client/components/ui/Card";
 import type { Competition } from "@/app/server/modules/competitions/types";
 import Image from "next/image";
@@ -11,7 +10,6 @@ interface Props {
 }
 
 export default function HomeClient({ competitions }: Props) {
-    const session = useSession();
     const router = useRouter();
 
     const handleCompetitionClick = (competitionId: number) => {
