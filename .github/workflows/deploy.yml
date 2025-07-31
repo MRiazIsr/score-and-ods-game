@@ -152,7 +152,7 @@ jobs:
           path: |
             .next
             node_modules
-          key: ${{ hashFiles('**/package-lock.json') }}
+          key: build-${{ github.sha }}-${{ hashFiles('**/package-lock.json') }}
           fail-on-cache-miss: false
 
       - name: Fallback build (if cache miss)
