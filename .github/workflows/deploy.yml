@@ -80,7 +80,7 @@ jobs:
           path: |
             .next
             node_modules
-          key: build-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+          key: build-${{ github.sha }}-${{ hashFiles('**/package-lock.json') }}
 
   serverless-deploy:
     concurrency:
