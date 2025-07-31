@@ -32,4 +32,8 @@ export class DynamoDbCompetitionsDataAccess implements IDynamoDbCompetitionsData
     async getUserPredictions(userId: string, competitionId: number, season: number): Promise<QueryCommandOutput> {
         return UserModel.getUserPredictions(userId, competitionId, season);
     }
+
+    async getUserById(userId: string): Promise<GetCommandOutput> {
+        return UserModel.getUserDataById(userId);
+    }
 }

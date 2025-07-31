@@ -86,7 +86,6 @@ export class DynamoDbCompetitionsManager {
             const competitionData = await this.getCompetitionData(competitionId);
             const competitionName = competitionData.length > 0 ? competitionData[0].name : `Competition ${competitionId}`;
 
-            // Получаем все завершенные матчи для данной компетиции
             const matchesResponse = await this.dataAccess.getCompetitionData(competitionId, season);
             if (!matchesResponse.Item?.rawData) {
                 return {
@@ -126,8 +125,10 @@ export class DynamoDbCompetitionsManager {
             // Обрабатываем предсказания каждого пользователя
             const scoreboardEntries = await Promise.all(
                 usersResponse.Item?.usersData.map(async (userItem: { userName: string; userId: string; }) => {
+                    const user = await this.dataAccess.getUserById(userItem.userId);
                     const userId = userItem.userId;
-                    const userName = userItem.userName || 'Unknown User';
+                    const userName = user.Item?.userName || 'Unknown User';
+                    const name = user.Item?.name || 'Unknown Name';
 
                     // Получаем все предсказания пользователя для данной компетеции
                     const predictionsResponse = await this.dataAccess.getUserPredictions(userId, competitionId, season);
@@ -135,6 +136,7 @@ export class DynamoDbCompetitionsManager {
                         return {
                             userId,
                             userName,
+                            name,
                             predictedCount: 0,
                             predictedDifference: 0,
                             predictedOutcome: 0,
@@ -194,6 +196,7 @@ export class DynamoDbCompetitionsManager {
                     return {
                         userId,
                         userName,
+                        name,
                         predictedCount: exactScoreCount,
                         predictedDifference: correctDifferenceCount,
                         predictedOutcome: correctOutcomeCount,
@@ -202,11 +205,6 @@ export class DynamoDbCompetitionsManager {
                 })
             );
 
-            // Сортируем результаты согласно правилам
-            // 1. По очкам (по убыванию)
-            // 2. По угаданным счетам (по убыванию)
-            // 3. По угаданным разницам (по убыванию)
-            // 4. По угаданным исходам (по убыванию)
             scoreboardEntries.sort((a, b) => {
                 // Сначала сортируем по очкам
                 if (b.points !== a.points) {

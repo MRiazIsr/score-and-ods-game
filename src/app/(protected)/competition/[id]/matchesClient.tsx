@@ -13,31 +13,30 @@ interface Props {
 }
 
 export default function MatchesClient({ matches }: Props) {
-  // Use the first match to get competition info for the header
   const competition = matches[0]?.competition;
 
   return (
-      <div className="z-10 max-w-5xl w-full items-center justify-between">
-        <div className="flex items-center justify-center mb-8">
+      <div className="z-10 max-w-5xl w-full items-center justify-between px-4 md:px-0">
+        <div className="flex flex-col md:flex-row items-center justify-center mb-6 md:mb-8">
           {competition && (
-              <div className="flex items-center space-x-4">
-                <div className="bg-amber-50 rounded-lg p-3 flex items-center justify-center">
+              <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4">
+                <div className="bg-amber-50 rounded-lg p-2 md:p-3 flex items-center justify-center">
                   <Image
                       src={competition.emblem}
                       alt={competition.name}
-                      width={60}
-                      height={60}
-                      className="object-contain"
+                      width={40}
+                      height={40}
+                      className="object-contain md:w-[60px] md:h-[60px]"
                   />
                 </div>
-                <h1 className="text-4xl font-bold text-center text-white">
+                <h1 className="text-2xl md:text-4xl font-bold text-center text-white">
                   {competition.name} Matches
                 </h1>
               </div>
           )}
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 md:gap-6">
           {matches.map((match) => (
               <MatchCard key={match.id} match={match} />
           ))}
@@ -79,9 +78,8 @@ function MatchCard({ match }: MatchCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
+      weekday: 'short',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -90,12 +88,54 @@ function MatchCard({ match }: MatchCardProps) {
 
   return (
       <Card
-          title={`${match.homeTeam.name} vs ${match.awayTeam.name}`}
+          title={`${match.homeTeam.shortName} vs ${match.awayTeam.shortName}`}
           description={formatDate(match.utcDate)}
           width="w-full"
       >
-        <div className="flex items-center justify-between px-6 py-4">
-          {/* Home Team */}
+        {/* Mobile layout */}
+        <div className="md:hidden flex flex-col items-center justify-center py-3">
+          <div className="flex flex-row items-center justify-center">
+            {/* Home Team */}
+            <div className="flex flex-col items-center w-32">
+              <div className="bg-white p-2 rounded w-12 h-12 flex items-center justify-center mb-2">
+                <Image
+                    src={match.homeTeam.crest}
+                    alt={match.homeTeam.name}
+                    width={32}
+                    height={32}
+                    className="object-contain"
+                />
+              </div>
+              <span className="text-white text-sm font-medium text-center">{match.homeTeam.shortName}</span>
+            </div>
+
+            {/* Away Team */}
+            <div className="flex flex-col items-center w-32">
+              <div className="bg-white p-2 rounded w-12 h-12 flex items-center justify-center mb-2">
+                <Image
+                    src={match.awayTeam.crest}
+                    alt={match.awayTeam.name}
+                    width={32}
+                    height={32}
+                    className="object-contain"
+                />
+              </div>
+              <span className="text-white text-sm font-medium text-center">{match.awayTeam.shortName}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center w-32 mx-4">
+            <MatchScoreInput
+                homeScore={homeScore}
+                awayScore={awayScore}
+                onHomeScoreChange={setHomeScore}
+                onAwayScoreChange={setAwayScore}
+                disabled={!isEditing}
+            />
+          </div>
+        </div>
+        {/* Desktop layout */}
+        <div className="hidden md:flex items-center justify-between px-6 py-4">
           <div className="flex flex-col items-center w-1/3">
             <div className="bg-white p-4 rounded-lg mb-4 w-24 h-24 flex items-center justify-center">
               <Image
@@ -109,7 +149,6 @@ function MatchCard({ match }: MatchCardProps) {
             <h3 className="text-white text-lg font-semibold text-center">{match.homeTeam.shortName}</h3>
           </div>
 
-          {/* Score Input */}
           <div className="flex items-center justify-center w-1/3">
             <div className="h-24 flex items-start -mt-12">
               <MatchScoreInput
@@ -122,7 +161,6 @@ function MatchCard({ match }: MatchCardProps) {
             </div>
           </div>
 
-          {/* Away Team */}
           <div className="flex flex-col items-center w-1/3">
             <div className="bg-white p-4 rounded-lg mb-4 w-24 h-24 flex items-center justify-center">
               <Image
@@ -137,10 +175,9 @@ function MatchCard({ match }: MatchCardProps) {
           </div>
         </div>
 
-        <div className="mt-4 px-6 pb-4">
-          {/* Success/Error Message */}
+        <div className="mt-4 px-4 md:px-6 pb-4">
           {showMessage && state?.message && (
-              <div className={`mb-4 p-3 rounded text-center ${
+              <div className={`mb-4 p-3 rounded text-center text-sm ${
                   state.success
                       ? 'bg-green-100 text-green-800 border border-green-300'
                       : 'bg-red-100 text-red-800 border border-red-300'
@@ -154,7 +191,6 @@ function MatchCard({ match }: MatchCardProps) {
                 <div>
                   {isEditing ? (
                       <Form action={action} className="flex justify-center space-x-2">
-                        {/* Hidden inputs to pass data */}
                         <input type="hidden" name="competitionId" value={match.competition.id}/>
                         <input type="hidden" name="matchId" value={match.id}/>
                         <input type="hidden" name="homeScore" value={homeScore}/>
@@ -164,7 +200,7 @@ function MatchCard({ match }: MatchCardProps) {
                         <button
                             type="submit"
                             disabled={pending}
-                            className={`font-bold py-2 px-6 rounded transition-colors duration-200 ${
+                            className={`font-bold py-2 px-4 md:px-6 rounded text-sm transition-colors duration-200 ${
                                 pending
                                     ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
                                     : 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -176,7 +212,7 @@ function MatchCard({ match }: MatchCardProps) {
                   ) : (
                       <button
                           onClick={handleEditClick}
-                          className="font-bold py-2 px-6 rounded transition-colors duration-200 bg-green-600 hover:bg-green-700 text-white"
+                          className="font-bold py-2 px-4 md:px-6 rounded text-sm transition-colors duration-200 bg-green-600 hover:bg-green-700 text-white"
                       >
                         Edit
                       </button>

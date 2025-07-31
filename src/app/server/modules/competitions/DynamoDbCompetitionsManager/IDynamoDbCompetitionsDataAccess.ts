@@ -7,4 +7,5 @@ export interface IDynamoDbCompetitionsDataAccess {
     getMatchScoreByUser(userId: string, competitionId: number, season: number, matchDay: number, matchId: number): Promise<GetCommandOutput>
     getAllUsers(): Promise<GetCommandOutput>
     getUserPredictions(userId: string, competitionId: number, season: number): Promise<QueryCommandOutput>
+    getUserById(userId: string): Promise<GetCommandOutput>
 }
