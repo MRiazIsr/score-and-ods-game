@@ -1,12 +1,10 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
     output: 'standalone',
     serverExternalPackages: [
         '@aws-sdk/client-dynamodb',
         '@aws-sdk/lib-dynamodb',
     ],
-    /* config options here */
     env: {
         DB_TYPE: process.env.DB_TYPE,
         TABLE_NAME: process.env.TABLE_NAME,
@@ -17,7 +15,6 @@ const nextConfig: NextConfig = {
     images: {
         remotePatterns: [new URL('https://crests.football-data.org/**')],
     },
-
 };
 
-export default nextConfig;
+module.exports = nextConfig;

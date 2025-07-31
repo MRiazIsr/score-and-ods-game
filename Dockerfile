@@ -1,23 +1,23 @@
-# ---------- 1. base image with caching ---------- #
+# Define build arguments at the top
 ARG NODE_VERSION=20
-FROM node:${NODE_VERSION}-slim AS base
+
+# ---------- 1. base deps ------------- #
+FROM node:${NODE_VERSION}-alpine AS base
 WORKDIR /app
 
-# Install necessary packages for build
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Install base dependencies
+RUN apk add --no-cache curl
 
-RUN corepack enable
-
-# ---------- 2. deps layer (prod only) ---------- #
+# ---------- 2. deps (prod only) ------------- #
 FROM base AS deps
+WORKDIR /app
+
+# Copy package files for dependency installation
 COPY package.json package-lock.json ./
+
+# Install production dependencies with cache mount
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev
+    npm ci --omit=dev && npm cache clean --force
 
 # ---------- 3. builder (prod + dev + build) --- #
 FROM base AS builder
@@ -40,26 +40,10 @@ COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --include=dev
 
-# Verify Next.js and TypeScript installation
-RUN ls -la node_modules/.bin/ | grep next || echo "Next.js not found in .bin"
-RUN ls -la node_modules/next/ || echo "Next.js not found in node_modules"
-RUN ls -la node_modules/typescript/ || echo "TypeScript not found in node_modules"
-
 # 3.2 copy source files
 COPY . .
 
-# Debug: Show what's available (убираем проблемную проверку tsc)
-RUN echo "Checking Next.js installation..." && \
-    npx next --version && \
-    echo "Checking TypeScript installation..." && \
-    ls -la node_modules/.bin/tsc && \
-    node_modules/.bin/tsc --version && \
-    echo "Build environment variables:" && \
-    echo "NODE_ENV=$NODE_ENV" && \
-    echo "TABLE_NAME=$TABLE_NAME" && \
-    echo "AWS_TABLE_NAME=$AWS_TABLE_NAME"
-
-# Build Next.js application with secrets mounted (not stored in image)
+# Build Next.js application with secrets mounted
 RUN --mount=type=secret,id=session_password \
     --mount=type=secret,id=session_cookie_name \
     --mount=type=secret,id=api_key \
@@ -69,8 +53,8 @@ RUN --mount=type=secret,id=session_password \
     echo "Starting build with secrets loaded..." && \
     npm run build
 
-# 3.3 prune dev-deps, но оставляем typescript для runtime (Next.js нужен для .ts config)
-RUN npm prune --omit=dev && npm install typescript --save
+# 3.3 prune dev-deps
+RUN npm prune --omit=dev
 
 # ---------- 4. runtime image ------------- #
 FROM node:${NODE_VERSION}-alpine AS runtime
@@ -94,7 +78,7 @@ ENV TABLE_NAME=${TABLE_NAME} \
     AWS_TABLE_NAME=${TABLE_NAME}
 
 # Copy built application from builder stage
-COPY --from=builder --chown=app:app /app/next.config.ts ./next.config.ts
+COPY --from=builder --chown=app:app /app/next.config.js ./next.config.js
 COPY --from=builder --chown=app:app /app/node_modules ./node_modules
 COPY --from=builder --chown=app:app /app/.next ./.next
 COPY --from=builder --chown=app:app /app/public ./public
@@ -103,8 +87,8 @@ COPY --from=builder --chown=app:app /app/package.json ./package.json
 # Verify the build was successful
 RUN ls -la .next/ && echo "Build verification complete"
 
-# Add healthcheck with longer timeouts для решения проблемы с медленным стартом
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# Health check with appropriate timings
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:3000/api/health || exit 1
 
 USER app
