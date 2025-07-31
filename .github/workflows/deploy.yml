@@ -232,7 +232,7 @@ jobs:
           # Define container and public endpoint configurations using workflow variables
           # Note: Runtime secrets will need to be passed through Lightsail environment variables
           CONTAINERS_JSON='{"score-game-app":{"image":"'"$IMAGE_REF"'","environment":{"AWS_REGION":"'"$AWS_REGION"'","AWS_TABLE_NAME":"'"$TABLE_NAME"'","AWS_ACCESS_KEY_ID":"'"${{ secrets.LIGHTSAIL_AWS_ACCESS_KEY_ID }}"'","AWS_SECRET_ACCESS_KEY":"'"${{ secrets.LIGHTSAIL_AWS_SECRET_ACCESS_KEY }}"'","SESSION_PASSWORD":"'"${{ secrets.SESSION_PASSWORD }}"'","SESSION_COOKIE_NAME":"'"${{ secrets.SESSION_COOKIE_NAME }}"'","API_KEY":"'"${{ secrets.API_KEY }}"'"},"ports":{"3000":"HTTP"}}}'
-          PUBLIC_ENDPOINT_JSON='{"containerName":"score-game-app","containerPort":3000,"healthCheck":{"path":"/api/health","successCodes":"200","healthyThreshold":15,"unhealthyThreshold":2,"intervalSeconds":5,"timeoutSeconds":30}}'
+          PUBLIC_ENDPOINT_JSON='{"containerName":"score-game-app","containerPort":3000,"healthCheck":{"path":"/api/health","successCodes":"200","healthyThreshold":15,"unhealthyThreshold":2,"intervalSeconds":5,"timeoutSeconds":5}}'
 
           echo "Deploying with containers config..."
           echo "Public endpoint config: $PUBLIC_ENDPOINT_JSON"
