@@ -43,7 +43,7 @@ jobs:
     needs: filter
     if: needs.filter.outputs.app == 'true'
     outputs:
-      cache-key: build-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+      cache-key: ${{ steps.cache-key.outputs.key }}
     steps:
       - uses: actions/checkout@v4
 
@@ -51,6 +51,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+
+      - name: Generate cache key
+        id: cache-key
+        run: echo "key=build-${{ github.sha }}-${{ hashFiles('package-lock.json') }}" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         run: npm ci
@@ -80,7 +84,7 @@ jobs:
           path: |
             .next
             node_modules
-          key: build-${{ github.sha }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ steps.cache-key.outputs.key }}
 
   serverless-deploy:
     concurrency:
@@ -125,7 +129,7 @@ jobs:
       group: lightsail-${{ github.ref }}
       cancel-in-progress: true
     needs: [filter, build-and-test, serverless-deploy]
-    if: always() && (needs.build-and-test.result == 'success' || false)
+    if: always() && needs.build-and-test.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -152,7 +156,7 @@ jobs:
           path: |
             .next
             node_modules
-          key: build-${{ github.sha }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ needs.build-and-test.outputs.cache-key }}
           fail-on-cache-miss: false
 
       - name: Fallback build (if cache miss)
