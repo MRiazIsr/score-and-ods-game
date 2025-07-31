@@ -11,9 +11,6 @@ import { getIronSession, IronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { SessionData } from "@/app/lib/auth/types";
 import { sessionOptions } from "@/app/lib/auth/definitions";
-import {redirect} from "next/navigation";
-import {router} from "next/client";
-
 
 export async function getSession(): Promise<IronSession<SessionData>>
 {
@@ -35,9 +32,10 @@ export async function getSession(): Promise<IronSession<SessionData>>
 export async function signUp(state: FormState, formData: FormData): Promise<{
     message: string;
     success: boolean;
+    shouldRedirect?: boolean;
     errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
     values?: { name?: string; email?: string; userName?: string; password?: string };
-} | undefined> {
+}> {
     const formFields = {
         name: formData.get(FormFieldsKeysEntity.signUpGroup.NAME)?.toString() ?? '',
         email: formData.get(FormFieldsKeysEntity.signUpGroup.EMAIL)?.toString() ?? '',
@@ -83,6 +81,13 @@ export async function signUp(state: FormState, formData: FormData): Promise<{
             email: userCreationResult.email,
         };
         await session.save();
+
+        return {
+            success: true,
+            message: 'Registration successful',
+            shouldRedirect: true
+        };
+
     } catch (error: unknown) {
         console.error(error)
         if (error instanceof Error) {
@@ -101,14 +106,14 @@ export async function signUp(state: FormState, formData: FormData): Promise<{
             values: formFields
         }
     }
-    await router.push('/');
 }
 
 export async function signIn(state: FormState, formData: FormData): Promise<{
     message: string;
     success: boolean;
+    shouldRedirect?: boolean;
     errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
-} | undefined> {
+} > {
     const formFields = {
         userName: formData.get(FormFieldsKeysEntity.signInGroup.USERNAME)?.toString() ?? '',
         password: formData.get(FormFieldsKeysEntity.signInGroup.PASSWORD)?.toString() ?? '',
@@ -145,10 +150,11 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
         };
         await session.save();
 
-        // return {
-        //     success: true,
-        //     message: userSignInResult.message
-        // }
+        return {
+            success: true,
+            message: 'Login successful',
+            shouldRedirect: true // Флаг для клиента
+        };
 
     } catch (error: unknown) {
         if (error instanceof Error) {
@@ -163,12 +169,11 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
         }
     }
 
-    await router.push('/');
 }
 
 export async function signOut() {
     const session = await getSession();
 
     session.destroy();
-    await router.push('/');
+    //redirect('/');
 }
