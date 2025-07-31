@@ -17,5 +17,17 @@ export default {
       },
     },
   },
+  safelist: [
+    'bg-gradient-to-r',
+    'bg-gradient-to-l',
+    'bg-gradient-to-t',
+    'bg-gradient-to-b',
+    'from-purple-500',
+    'to-blue-500',
+    'from-purple-600',
+    'to-blue-600',
+    'from-violet-500',
+    'to-indigo-500',
+  ],
   plugins: [],
 } satisfies Config;
