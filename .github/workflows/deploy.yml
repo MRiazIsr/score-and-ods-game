@@ -125,7 +125,7 @@ jobs:
       group: lightsail-${{ github.ref }}
       cancel-in-progress: true
     needs: [filter, build-and-test, serverless-deploy]
-    if: always() && needs.build-and-test.result == 'success'
+    if: always() && (needs.build-and-test.result == 'success' || false)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
