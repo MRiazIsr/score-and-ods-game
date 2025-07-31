@@ -128,7 +128,6 @@ jobs:
     concurrency:
       group: lightsail-${{ github.ref }}
       cancel-in-progress: true
-    if: always() && needs.build-and-test.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
