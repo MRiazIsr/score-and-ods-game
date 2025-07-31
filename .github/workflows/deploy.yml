@@ -151,7 +151,7 @@ jobs:
           path: |
             .next
             node_modules
-          key: ${{ needs.build-and-test.outputs.cache-key }}
+          key: ${{ hashFiles('**/package-lock.json') }}
           fail-on-cache-miss: false
 
       - name: Fallback build (if cache miss)
