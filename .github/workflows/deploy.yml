@@ -128,7 +128,6 @@ jobs:
     concurrency:
       group: lightsail-${{ github.ref }}
       cancel-in-progress: true
-    needs: [filter, serverless-deploy]
     if: always() && needs.build-and-test.result == 'success'
     runs-on: ubuntu-latest
     steps:
