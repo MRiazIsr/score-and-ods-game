@@ -35,7 +35,7 @@ export const MatchScoreInput: React.FC<MatchScoreInputProps> = ({
       onChange(Number(value));
     }
   };
-
+    // sf
   return (
       <div className="flex items-center justify-center space-x-8">
         {/* Home Score Input */}
