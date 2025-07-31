@@ -40,21 +40,20 @@ COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --include=dev
 
-# 3.1.1 ВАЖНО: Убедитесь что TypeScript установлен для build time
-RUN npm ls typescript || npm install typescript --save-dev
-
-# Verify Next.js installation
+# Verify Next.js and TypeScript installation
 RUN ls -la node_modules/.bin/ | grep next || echo "Next.js not found in .bin"
 RUN ls -la node_modules/next/ || echo "Next.js not found in node_modules"
+RUN ls -la node_modules/typescript/ || echo "TypeScript not found in node_modules"
 
 # 3.2 copy source files
 COPY . .
 
-# Debug: Show what's available and verify TypeScript
+# Debug: Show what's available (убираем проблемную проверку tsc)
 RUN echo "Checking Next.js installation..." && \
     npx next --version && \
-    echo "Checking TypeScript..." && \
-    npx tsc --version && \
+    echo "Checking TypeScript installation..." && \
+    ls -la node_modules/.bin/tsc && \
+    node_modules/.bin/tsc --version && \
     echo "Build environment variables:" && \
     echo "NODE_ENV=$NODE_ENV" && \
     echo "TABLE_NAME=$TABLE_NAME" && \
