@@ -30,61 +30,7 @@ jobs:
             sls:
               - 'serverless.yml'
               - 'src/lambdas/**'
-            app:
-              - 'src/**'
-              - 'pages/**'
-              - 'components/**'
-              - 'package*.json'
-              - 'next.config.js'
-              - 'Dockerfile'
-
-#  build-and-test:
-#    runs-on: ubuntu-latest
-#    needs: filter
-#    if: needs.filter.outputs.app == 'true'
-#    outputs:
-#      cache-key: ${{ steps.cache-key.outputs.key }}
-#    steps:
-#      - uses: actions/checkout@v4
-#
-#      - uses: actions/setup-node@v4
-#        with:
-#          node-version: ${{ env.NODE_VERSION }}
-#          cache: npm
-#
-#      - name: Generate cache key
-#        id: cache-key
-#        run: echo "key=build-${{ github.sha }}-${{ hashFiles('package-lock.json') }}" >> $GITHUB_OUTPUT
-#
-#      - name: Install dependencies
-#        run: npm ci
-#
-#      - name: Validate Configuration
-#        run: node -e "require('./next.config.js')"
-#
-#      - name: Run tests (if available)
-#        run: |
-#          if [ -f "package.json" ] && npm run | grep -q "test"; then
-#            npm run test
-#          else
-#            echo "No tests found, skipping"
-#          fi
-#
-#      - name: Build Next.js
-#        run: npm run build
-#        env:
-#          SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
-#          SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
-#          API_KEY: ${{ secrets.API_KEY }}
-#          TABLE_NAME: ${{ env.TABLE_NAME }}
-#
-#      - name: Cache build artifacts
-#        uses: actions/cache/save@v4
-#        with:
-#          path: |
-#            .next
-#            node_modules
-#          key: ${{ steps.cache-key.outputs.key }}
+            
 
   serverless-deploy:
     concurrency:
@@ -128,6 +74,7 @@ jobs:
     concurrency:
       group: lightsail-${{ github.ref }}
       cancel-in-progress: true
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -147,28 +94,6 @@ jobs:
           role-session-name: github-ci
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Restore build artifacts
-        id: cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            .next
-            node_modules
-          key: ${{ needs.build-and-test.outputs.cache-key }}
-          fail-on-cache-miss: false
-
-      - name: Fallback build (if cache miss)
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Cache miss - rebuilding..."
-          npm ci
-          npm run build
-        env:
-          SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
-          SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
-          API_KEY: ${{ secrets.API_KEY }}
-          TABLE_NAME: ${{ env.TABLE_NAME }}
-
       - name: Install Lightsail tools
         run: |
           sudo apt-get update && sudo apt-get install -y jq curl
@@ -176,13 +101,25 @@ jobs:
           sudo mv lightsailctl /usr/local/bin/lightsailctl
           sudo chmod +x /usr/local/bin/lightsailctl
           aws configure set plugins.lightsail lightsailctl
+          
+          echo "Verifying Lightsail plugin installation..."
+          aws lightsail help | head -5 || echo "Plugin installed but help may not be available"
+      - run: npm ci
+
+      - name: Build Next.js (verify locally first)
+        run: npm run build
+        env:
+          SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
+          SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
+          API_KEY: ${{ secrets.API_KEY }}
+          TABLE_NAME: SoccerGameData
 
       - name: Docker build with secrets
         env:
           SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
           SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
           API_KEY: ${{ secrets.API_KEY }}
-          TABLE_NAME: ${{ env.TABLE_NAME }}
+          TABLE_NAME: SoccerGameData
         run: |
           echo "Building Docker image with secrets..."
           set -e
@@ -207,6 +144,11 @@ jobs:
           rm -f /tmp/session_password /tmp/session_cookie_name /tmp/api_key
 
           echo "Docker build completed successfully"
+          
+          if [ $? -ne 0 ]; then
+            echo "Docker build failed"
+            exit 1
+          fi
 
       - name: Push & deploy
         run: |
