@@ -2,7 +2,7 @@
 
 import { Match } from "@/app/server/modules/competitions/types";
 import { selectFactory } from "@/app/server/modules/factories/competitionsFactory/CompetitionsFactorySelector";
-import {getSession} from "@/app/actions/auth";
+import { getSession } from "@/app/actions/auth";
 
 type SaveMatchScoreState = {
   success: boolean;

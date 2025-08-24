@@ -3,7 +3,7 @@
 import { Match } from "@/app/server/modules/competitions/types";
 import { Card } from "@/app/client/components/ui/Card";
 import Image from "next/image";
-import { useActionState, useState, useEffect } from "react";
+import {useActionState, useState, useEffect, useMemo} from "react";
 import { MatchScoreInput } from "@/app/client/components/ui/MatchScoreInput";
 import { saveMatchScore } from "@/app/actions/matches";
 import Form from "next/form";
@@ -14,6 +14,18 @@ interface Props {
 
 export default function MatchesClient({ matches }: Props) {
   const competition = matches[0]?.competition;
+  const [selectedMatchDay, setSelectedMatchDay] = useState<number>(matches[0]?.season.currentMatchday || 1);
+  const matchDays = useMemo(
+      () =>
+          Array.from(
+              new Set(
+                  matches
+                      .map((m) => m.matchday)
+                      .filter((v): v is number => true)
+              )
+          ).sort((a, b) => a - b),
+      [matches]
+  );
 
   return (
       <div className="z-10 max-w-5xl w-full items-center justify-between px-4 md:px-0">
@@ -36,8 +48,29 @@ export default function MatchesClient({ matches }: Props) {
           )}
         </div>
 
+        <div className="mb-4 overflow-x-auto no-scrollbar overflow-y-hidden">
+          <div className="inline-flex space-x-2 overflow-y-hidden">
+            {matchDays.map((matchDay) => {
+              const isActive = matchDay === selectedMatchDay;
+              return (
+                  <button
+                      key={matchDay}
+                      onClick={() => setSelectedMatchDay(matchDay)}
+                      className={`px-8 py-0.5 rounded text-sm transition-colors ${
+                          isActive
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                      }`}
+                  >
+                    Match Day {matchDay}
+                  </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="flex flex-col gap-4 md:gap-6">
-          {matches.map((match) => (
+          {matches.filter(match => match.matchday === selectedMatchDay).map((match) => (
               <MatchCard key={match.id} match={match} />
           ))}
         </div>
@@ -88,7 +121,7 @@ function MatchCard({ match }: MatchCardProps) {
 
   return (
       <Card
-          title={`${match.homeTeam.shortName} vs ${match.awayTeam.shortName}`}
+          title={`${match.homeTeam?.tla ?? 'HOME'} ${match.score?.fullTime?.home ?? '-'} : ${match.score?.fullTime?.away ?? '-'} ${match.awayTeam?.tla ?? 'AWAY'}`}
           description={formatDate(match.utcDate)}
           width="w-full"
       >

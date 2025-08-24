@@ -1,0 +1,56 @@
+{
+  "log": { "level": "info", "timestamp": true },
+
+  "dns": {
+    "strategy": "prefer_ipv4",
+    "servers": [
+      { "tag": "bootstrap",  "address": "1.1.1.1", "detour": "direct" },
+      { "tag": "doh_cf",     "address": "https://cloudflare-dns.com/dns-query", "address_resolver": "bootstrap", "detour": "proxy" },
+      { "tag": "doh_google", "address": "https://dns.google/dns-query",         "address_resolver": "bootstrap", "detour": "proxy" }
+    ],
+    "final": "doh_cf"
+  },
+
+  "inbounds": [{
+    "type": "tun",
+    "address": ["172.19.0.1/30", "fd00::1/126"],
+    "auto_route": true,
+    "strict_route": true,
+    "stack": "gvisor"
+  }],
+
+  "outbounds": [
+    {
+      "tag": "proxy",
+      "type": "vless",
+      "server": "49.13.201.110",
+      "server_port": 443,
+      "uuid": "15986646-9dd8-45b8-b6d4-5c0cf9c8b784",
+      "flow": "xtls-rprx-vision",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.google.com",
+        "utls": { "enabled": true, "fingerprint": "chrome" },
+        "reality": {
+          "enabled": true,
+          "public_key": "BgLsjp3u0Mjk3BqLs7kopcAOF6KOyx14lxHlP7e_yxo",
+          "short_id": "207fc82a9f9e741f"
+        }
+      }
+    },
+    { "type": "direct", "tag": "direct" },
+    { "type": "dns", "tag": "dns" }
+  ],
+
+  "route": {
+    "auto_detect_interface": true,
+    "final": "proxy",
+    "rules": [
+      { "network": "udp", "port": 53, "outbound": "dns" },
+      { "protocol": "dns", "outbound": "dns" },
+      { "network": "udp", "port": 443, "action": "reject" },
+      { "ip_is_private": true, "action": "route", "outbound": "direct" }
+    ]
+  }
+}
