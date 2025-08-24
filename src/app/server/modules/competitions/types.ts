@@ -11,6 +11,8 @@ export interface Competition {
     code: string;
     type: string;
     emblem: string;
+    activeMatchDay: number;
+    matchDays: number[];
 }
 
 interface Season {

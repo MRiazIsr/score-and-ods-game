@@ -1,31 +1,34 @@
 "use client";
 
-import { Match } from "@/app/server/modules/competitions/types";
+import {Competition, Match} from "@/app/server/modules/competitions/types";
 import { Card } from "@/app/client/components/ui/Card";
 import Image from "next/image";
-import {useActionState, useState, useEffect, useMemo} from "react";
+import {useActionState, useState, useEffect, useCallback, useTransition } from "react";
 import { MatchScoreInput } from "@/app/client/components/ui/MatchScoreInput";
-import { saveMatchScore } from "@/app/actions/matches";
+import {getCompetitionMatches, saveMatchScore} from "@/app/actions/matches";
 import Form from "next/form";
 
 interface Props {
-  matches: Match[];
+  competition: Competition;
+  matchDays: number[];
 }
 
-export default function MatchesClient({ matches }: Props) {
-  const competition = matches[0]?.competition;
-  const [selectedMatchDay, setSelectedMatchDay] = useState<number>(matches[0]?.season.currentMatchday || 1);
-  const matchDays = useMemo(
-      () =>
-          Array.from(
-              new Set(
-                  matches
-                      .map((m) => m.matchday)
-                      .filter((v): v is number => true)
-              )
-          ).sort((a, b) => a - b),
-      [matches]
-  );
+export default function MatchesClient({competition, matchDays }: Props) {
+  const [selectedMatchDay, setSelectedMatchDay] = useState<number>(competition.activeMatchDay);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [pending, startTransition] = useTransition();
+
+  const selectMatchDay = useCallback((day: number) => {
+    startTransition(async () => {
+      const data = await getCompetitionMatches(competition.id, day);
+      setSelectedMatchDay(day);
+      setMatches(data ?? []);
+    });
+  }, [competition.id]);
+
+  useEffect(() => {
+    selectMatchDay(selectedMatchDay);
+  }, [selectedMatchDay, selectMatchDay]);
 
   return (
       <div className="z-10 max-w-5xl w-full items-center justify-between px-4 md:px-0">
@@ -56,7 +59,7 @@ export default function MatchesClient({ matches }: Props) {
                   <button
                       key={matchDay}
                       onClick={() => setSelectedMatchDay(matchDay)}
-                      className={`px-8 py-0.5 rounded text-sm transition-colors ${
+                      className={`px-2 py-2 w-20 rounded text-sm transition-colors ${
                           isActive
                               ? "bg-blue-600 text-white"
                               : "bg-gray-800 text-gray-300 hover:bg-gray-700"
@@ -70,7 +73,7 @@ export default function MatchesClient({ matches }: Props) {
         </div>
 
         <div className="flex flex-col gap-4 md:gap-6">
-          {matches.filter(match => match.matchday === selectedMatchDay).map((match) => (
+          {matches.map((match) => (
               <MatchCard key={match.id} match={match} />
           ))}
         </div>

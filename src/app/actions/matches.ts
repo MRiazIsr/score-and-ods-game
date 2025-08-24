@@ -10,12 +10,12 @@ type SaveMatchScoreState = {
 } | undefined;
 
 
-export async function getCompetitionMatches(competitionId: number): Promise<Match[]> {
+export async function getCompetitionMatches(competitionId: number, matchDay: number): Promise<Match[]> {
   const competitionsFactory = selectFactory(process.env.DB_TYPE);
   const competitionsService = competitionsFactory.createCompetitionsService();
   const session = await getSession();
 
-  return await competitionsService.getCompetitionActiveMatches(competitionId, session.user.userId);
+  return await competitionsService.getCompetitionActiveMatches(competitionId, matchDay, session.user.userId);
 }
 
 export async function saveMatchScore(prevState: SaveMatchScoreState, formData: FormData): Promise<{ success: boolean; message: string }> {
