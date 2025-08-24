@@ -4,15 +4,15 @@ import { Match, Competition, ScoreBoardData } from "@/app/server/modules/competi
 
 export class CompetitionsService {
 
-    async getCompetitionActiveMatches(competitionId: number, userId: string): Promise<Match[]> {
+    async getCompetitionActiveMatches(competitionId: number, matchDay: number, userId: string): Promise<Match[]> {
         const competitionFactory = selectFactory(process.env.DB_TYPE);
         const competitionsManager = competitionFactory.createCompetitionsManager();
         const activeSeason: number = await competitionsManager.getActiveSeason(competitionId);
 
-        return await competitionsManager.getActiveDayMatches(competitionId, activeSeason, userId);
+        return await competitionsManager.getAllMatchesWithPredictions(competitionId, matchDay, activeSeason, userId);
     }
 
-    async getCompetitionData(competitionId: number): Promise<Competition[]> {
+    async getCompetitionData(competitionId: number): Promise<Competition> {
         const competitionFactory = selectFactory(process.env.DB_TYPE);
         const competitionsManager = competitionFactory.createCompetitionsManager();
         return await competitionsManager.getCompetitionData(competitionId);
@@ -29,5 +29,14 @@ export class CompetitionsService {
         const competitionFactory = selectFactory(process.env.DB_TYPE);
         const competitionsManager = competitionFactory.createCompetitionsManager();
         return await competitionsManager.getScoreBoardData(competitionId);
+    }
+
+    async getAllCompetitionMatchDays(competitionId: number): Promise<number[]> {
+        const competitionFactory = selectFactory(process.env.DB_TYPE);
+        const competitionsManager = competitionFactory.createCompetitionsManager();
+        const competitionData: Competition = await competitionsManager.getCompetitionData(competitionId);
+        console.log(competitionData);
+
+        return competitionData.matchDays;
     }
 }

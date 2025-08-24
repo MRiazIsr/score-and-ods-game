@@ -5,7 +5,7 @@ import {selectFactory} from "@/app/server/modules/factories/competitionsFactory/
 import {CompetitionsEntity} from "@/app/server/entities/CompetitionsEntity";
 import { Competition } from "@/app/server/modules/competitions/types";
 
-export async function getCompetitions(): Promise<Array<Competition[]>> {
+export async function getCompetitions(): Promise<Array<Competition>> {
     const competitionsFactory: ICompetitionsFactory = selectFactory(process.env.DB_TYPE);
     const competitionsService = competitionsFactory.createCompetitionsService();
 
@@ -16,4 +16,17 @@ export async function getCompetitions(): Promise<Array<Competition[]>> {
     }
 
     return competitions;
+}
+
+export async function getCompetitionData(competitionId: number): Promise<Competition> {
+    const competitionsFactory: ICompetitionsFactory = selectFactory(process.env.DB_TYPE);
+    const competitionsService = competitionsFactory.createCompetitionsService();
+
+    return await competitionsService.getCompetitionData(competitionId);
+}
+
+export async function getAllMatchDays(competitionId: number): Promise<number[]> {
+    const competitionsFactory: ICompetitionsFactory = selectFactory(process.env.DB_TYPE);
+    const competitionsService = competitionsFactory.createCompetitionsService();
+    return await competitionsService.getAllCompetitionMatchDays(competitionId);
 }

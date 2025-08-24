@@ -5,9 +5,6 @@ import {
     PutCommand,
     PutCommandInput,
     PutCommandOutput,
-    ScanCommand,
-    ScanCommandInput,
-    ScanCommandOutput
 } from "@aws-sdk/lib-dynamodb";
 import type { GetCommandInput, GetCommandOutput } from "@aws-sdk/lib-dynamodb";
 
