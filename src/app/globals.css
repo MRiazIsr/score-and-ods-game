@@ -3,8 +3,12 @@
 @tailwind utilities;
 
 :root {
-  /*--background: #ffffff;*/
-  --foreground: #ddd3d3;
+  :root {
+    --background: #1f1f2e;
+    --foreground: #b5b3b3;
+    --card-background: #2d2d3d;
+    --input-background: #3d3d4d;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
