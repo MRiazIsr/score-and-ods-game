@@ -3,6 +3,7 @@ import { getSession } from "@/app/actions/auth";
 import { getCompetitions } from "@/app/actions/competitions";
 import { CompetitionsEntity } from "@/app/server/entities/CompetitionsEntity";
 import ScoreboardClient from "./scoreboardClient";
+import {Competition} from "@/app/server/modules/competitions/types";
 
 export default async function ScoreboardPage() {
   const session = await getSession();
@@ -11,7 +12,7 @@ export default async function ScoreboardPage() {
     redirect("/login");
   }
 
-  const competitions = await getCompetitions();
+  const competitions: Competition[] = await getCompetitions();
 
   const defaultCompetitionId = CompetitionsEntity.competitionsIds.ENGLISH_PREMIER_LEAGUE_ID;
 

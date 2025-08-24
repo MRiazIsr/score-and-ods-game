@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
 interface CompetitionDropdownProps {
-  competitions: Competition[][];
+  competitions: Competition[];
   selectedCompetitionId: number;
   onSelect: (competitionId: number) => void;
 }
