@@ -9,8 +9,24 @@ import { UserModel } from "@/app/server/models/UserModel";
 
 export class DynamoDbCompetitionsDataAccess implements IDynamoDbCompetitionsDataAccess {
 
-    async getCompetitionData(competitionId: number, season: number): Promise<GetCommandOutput> {
+    async getCompetitionData(competitionId: number, season: number): Promise<import("@aws-sdk/lib-dynamodb").QueryCommandOutput> {
         return CompetitionModel.getCompetitionData(competitionId, season);
+    }
+
+    async getCompetitionMatchDayMatches(competitionId: number, season: number, matchDay: number): Promise<GetCommandOutput> {
+        return CompetitionModel.getCompetitionMatchDayMatches(competitionId, season, matchDay);
+    }
+
+    async getCompetitionStandings(competitionId: number, season: number): Promise<GetCommandOutput> {
+         return CompetitionModel.getCompetitionStandings(competitionId, season);
+    }
+
+    async getCompetitionScorers(competitionId: number, season: number): Promise<GetCommandOutput> {
+        return CompetitionModel.getCompetitionScorers(competitionId, season);
+    }
+
+    async getCompetitionTeams(competitionId: number, season: number): Promise<GetCommandOutput> {
+        return CompetitionModel.getCompetitionTeams(competitionId, season);
     }
 
     async getCompetitionHelperData(competitionId: number): Promise<GetCommandOutput> {

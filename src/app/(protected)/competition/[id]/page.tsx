@@ -1,7 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import { getSession } from '@/app/actions/auth';
 import MatchesClient from './matchesClient';
-import {getAllMatchDays, getCompetitionData} from "@/app/actions/competitions";
+import {getAllMatchDaysWithStatus, getCompetitionData} from "@/app/actions/competitions";
 
 export default async function CompetitionPage({ params }: {params: Promise<{ id: string }>}) {
     const { id } = await params;
@@ -12,7 +12,7 @@ export default async function CompetitionPage({ params }: {params: Promise<{ id:
     if (Number.isNaN(competitionId)) notFound();
 
     const competition = await getCompetitionData(competitionId);
-    const matchDays = await getAllMatchDays(competitionId);
+    const matchDays = await getAllMatchDaysWithStatus(competitionId);
 
     return <MatchesClient competition={competition} matchDays={matchDays} />;
 }

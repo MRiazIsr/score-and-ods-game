@@ -4,7 +4,9 @@ import type {GetCommandOutput} from "@aws-sdk/lib-dynamodb";
 import {UserTypeEntity} from "@/app/server/entities/UserTypesEntity";
 import {Md5} from 'ts-md5'
 
-export class DynamoDbUserManager {
+import {IUserManager} from "@/app/server/modules/user/IUserManager";
+
+export class DynamoDbUserManager implements IUserManager {
     private dataAccess: IDynamoDbUserDataAccess;
 
     constructor(userDataAccess: IDynamoDbUserDataAccess) {

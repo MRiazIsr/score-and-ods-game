@@ -1,7 +1,7 @@
-import { DynamoDbCompetitionsManager } from "@/app/server/modules/competitions/DynamoDbCompetitionsManager/DynamoDbCompetitionsManager";
+import { ICompetitionsManager } from "@/app/server/modules/competitions/ICompetitionsManager";
 import { CompetitionsService } from "@/app/server/services/auth/CompetitionsService";
 
 export interface ICompetitionsFactory {
-    createCompetitionsManager(): DynamoDbCompetitionsManager;
+    createCompetitionsManager(): ICompetitionsManager;
     createCompetitionsService(): CompetitionsService;
 }

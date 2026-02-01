@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/app/client/components/ui/Card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { Competition } from "@/app/server/modules/competitions/types";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -17,14 +17,21 @@ export default function HomeClient({ competitions }: Props) {
     };
 
     return (
-        <div className={`z-10 max-w-5xl w-full items-center justify-between font-mono text-sm`}>
-            <h1 className="text-4xl font-bold mb-8 text-center text-white">Choose League</h1>
+        <div className={`z-10 max-w-5xl w-full font-mono text-sm`}>
+            <h1 className="text-4xl font-bold mb-8 text-center text-foreground">Choose League</h1>
 
             <div className="flex flex-wrap gap-8 justify-center">
                 {competitions.map((c) => (
-                    <div key={c.id} onClick={() => handleCompetitionClick(c.id)}>
-                        <Card title={c.name} pointer={true} variant="competition" width="w-64">
-                            <div className="w-full h-32 bg-white p-4 flex items-center justify-center border-b border-gray-600">
+                    <Card
+                        key={c.id}
+                        className="w-64 cursor-pointer hover:scale-105 transition-transform overflow-hidden group"
+                        onClick={() => handleCompetitionClick(c.id)}
+                    >
+                        <CardHeader className="bg-muted/50 py-4 group-hover:bg-muted transition-colors">
+                            <CardTitle className="text-center truncate">{c.name}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <div className="w-full h-32 bg-zinc-100 dark:bg-zinc-200 p-4 flex items-center justify-center border-t border-border">
                                 <Image
                                     src={c.emblem}
                                     alt={c.name}
@@ -33,8 +40,8 @@ export default function HomeClient({ competitions }: Props) {
                                     className="object-contain"
                                 />
                             </div>
-                        </Card>
-                    </div>
+                        </CardContent>
+                    </Card>
                 ))}
             </div>
         </div>

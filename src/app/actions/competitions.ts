@@ -30,3 +30,9 @@ export async function getAllMatchDays(competitionId: number): Promise<number[]> 
     const competitionsService = competitionsFactory.createCompetitionsService();
     return await competitionsService.getAllCompetitionMatchDays(competitionId);
 }
+
+export async function getAllMatchDaysWithStatus(competitionId: number): Promise<import("@/app/server/modules/competitions/types").MatchDayWithStatus[]> {
+    const competitionsFactory: ICompetitionsFactory = selectFactory(process.env.DB_TYPE);
+    const competitionsService = competitionsFactory.createCompetitionsService();
+    return await competitionsService.getCompetitionMatchDaysWithStatus(competitionId);
+}

@@ -2,9 +2,10 @@ import { DynamoDbCompetitionsManager } from "@/app/server/modules/competitions/D
 import { DynamoDbCompetitionsDataAccess } from "@/app/server/modules/dataAccess/DynamoDbCompetitionsDataAccess";
 import { ICompetitionsFactory } from "@/app/server/modules/factories/competitionsFactory/ICompetitionsFactory";
 import { CompetitionsService } from "@/app/server/services/auth/CompetitionsService";
+import { ICompetitionsManager } from "@/app/server/modules/competitions/ICompetitionsManager";
 
 export class DynamoDbCompetitionsFactory implements ICompetitionsFactory {
-    createCompetitionsManager(): DynamoDbCompetitionsManager {
+    createCompetitionsManager(): ICompetitionsManager {
         return new DynamoDbCompetitionsManager(new DynamoDbCompetitionsDataAccess());
     }
 

@@ -2,7 +2,7 @@ import { selectFactory } from "@/app/server/modules/factories/authFactory/AuthFa
 import type { SessionUser, User} from "@/app/server/modules/user/types/userTypes";
 import { Md5 } from 'ts-md5'
 import { DynamoDbAuthFactory } from "@/app/server/modules/factories/authFactory/DynamoDbAuthFactory";
-import { DynamoDbUserManager } from "@/app/server/modules/user/DynamoDbUserManager/DynamoDbUserManager";
+import type { IUserManager } from "@/app/server/modules/user/IUserManager";
 import { FormFieldsKeysEntity } from "@/app/server/entities/FormFieldsKeysEntity";
 import type { DbUser } from "@/app/server/modules/user/types/userTypes";
 
@@ -11,9 +11,9 @@ export class AuthService {
     public async createUser(user: User): Promise<SessionUser>
     {
         const authFactory: DynamoDbAuthFactory = selectFactory(process.env.DB_TYPE);
-        const userManager: DynamoDbUserManager = authFactory.createUserManager();
+        const userManager: IUserManager = authFactory.createUserManager();
 
-        const userExists: string = await userManager.getUserIdByUserName(user.userName);
+        const userExists: string | undefined = await userManager.getUserIdByUserName(user.userName);
         if (userExists) {
             throw new Error(`User with this user name already exists`, { cause: FormFieldsKeysEntity.signUpGroup.USERNAME});
         }
@@ -24,9 +24,9 @@ export class AuthService {
     public async signIn(user: User): Promise<{status: boolean, message: string, sessionUser: SessionUser}>
     {
         const authFactory: DynamoDbAuthFactory = selectFactory(process.env.DB_TYPE);
-        const userManager: DynamoDbUserManager = authFactory.createUserManager();
+        const userManager: IUserManager = authFactory.createUserManager();
 
-        const userId: string = await userManager.getUserIdByUserName(user.userName);
+        const userId: string | undefined = await userManager.getUserIdByUserName(user.userName);
         if (!userId) {
             throw new Error("User not found");
         }

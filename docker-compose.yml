@@ -1,4 +1,3 @@
-
 services:
   dynamodb-local:
     command: "-jar DynamoDBLocal.jar -cors * -sharedDb -dbPath ./data"
@@ -10,3 +9,16 @@ services:
     volumes:
       - "./docker/dynamodb:/home/dynamodblocal/data"
     working_dir: /home/dynamodblocal
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: tip-manager-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-tip_manager}
+    ports:
+      - "5435:5432"
+    volumes:
+      - ./docker/postgres:/var/lib/postgresql/data
+    restart: always

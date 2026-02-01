@@ -1,12 +1,10 @@
 
-import {DynamoDbAuthFactory} from "@/app/server/modules/factories/authFactory/DynamoDbAuthFactory";
+import { DynamoDbAuthFactory } from "@/app/server/modules/factories/authFactory/DynamoDbAuthFactory";
+import { PrismaAuthFactory } from "@/app/server/modules/factories/authFactory/PrismaAuthFactory";
+import { IAuthFactory } from "@/app/server/modules/factories/authFactory/IAuthFactory";
 
-export const selectFactory = (dbType: string = ''): DynamoDbAuthFactory =>
+export const selectFactory = (dbType: string = 'postgres'): IAuthFactory =>
 {
-    switch (dbType.toLowerCase()) {
-        case 'dynamodb':
-            return new DynamoDbAuthFactory();
-        default:
-            throw new Error(`Unknown DB type: ${dbType}`);
-    }
+    // Hybrid architecture selected as final. Always return Prisma factory.
+    return new PrismaAuthFactory();
 }

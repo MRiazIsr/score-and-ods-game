@@ -1,81 +1,79 @@
 'use client';
-import { Card } from "@/app/client/components/ui/Card";
-import { SubmitButton } from "@/app/client/components/ui/SubmitButton";
-import { Input } from "@/app/client/components/ui/Input";
-import { PasswordInput } from "@/app/client/components/ui/PasswordInput";
-import { ErrorNotification } from "@/app/client/components/ui/ErrorNotice";
+
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PasswordInput } from "@/components/ui/password-input";
 import Link from "next/link";
 import Form from "next/form";
 import { useActionState, useState } from 'react';
 import { signIn } from "@/app/actions/auth";
 import { FormFieldsKeysEntity } from "@/app/server/entities/FormFieldsKeysEntity";
+import { Loader2, AlertCircle } from "lucide-react";
 
 export default function LoginForm() {
     const [state, action, pending] = useActionState(signIn, undefined);
     const [errors, setErrors] = useState({});
 
     return (
-        <Card
-            title="TJ Score Game"
-            description="Please Log In"
-            variant="form"
-        >
-            <ErrorNotification error={state?.message} onClose={() => setErrors({})} />
-
-            <Form action={action} className="space-y-4">
-                <Input
-                    name={FormFieldsKeysEntity.signInGroup.USERNAME}
-                    id='userName'
-                    type='text'
-                    placeHolder='MyFunnyUserName'
-                    error={state?.errors?.userName}
-                />
-
-                <PasswordInput
-                    value=''
-                    // error={state?.errors?.password?.[0]}
-                />
-
-                {!state?.success && state?.message && (
-                    <p className="text-red-500 text-sm">{state.message}</p>
+        <Card className="w-full max-w-md mx-auto">
+            <CardHeader>
+                <CardTitle className="text-2xl text-center">TJ Score Game</CardTitle>
+                <CardDescription className="text-center">Please Log In</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {state?.message && !state?.success && (
+                    <Alert variant="destructive" className="mb-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{state.message}</AlertDescription>
+                    </Alert>
                 )}
 
-                <div className="flex justify-center">
-                    <SubmitButton buttonText="Sign In" pending={pending} />
-                </div>
+                <Form action={action} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="userName">Username</Label>
+                        <Input
+                            name={FormFieldsKeysEntity.signInGroup.USERNAME}
+                            id='userName'
+                            type='text'
+                            placeholder='MyFunnyUserName'
+                            className={state?.errors?.userName ? "border-destructive" : ""}
+                        />
+                        {state?.errors?.userName && (
+                             <p className="text-sm text-destructive">{state.errors.userName}</p>
+                        )}
+                    </div>
 
-            </Form>
+                    <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <PasswordInput
+                            name="password"
+                            id="password"
+                            placeholder="********"
+                            // error={state?.errors?.password?.[0]}
+                        />
+                    </div>
 
-            <div className='flex flex-row space-x-2 justify-center pt-4'>
-                <Link
-                    href="/signup"
-                    className="text-blue-500 hover:text-blue-700 text-xs rounded-lg transition-colors"
-                    aria-label="Navigate to Sign Up page"
-                >
-                    Sign Up
-                </Link>
-                <Link
-                    href="/about"
-                    className="text-blue-500 hover:text-blue-700 text-xs rounded-lg transition-colors"
-                    aria-label="Navigate to About page"
-                >
-                    About
-                </Link>
-                <Link
-                    href="/forgot-password"
-                    className="text-blue-500 hover:text-blue-700 text-xs rounded-lg transition-colors"
-                    aria-label="Navigate to Forgot Password page"
-                >
-                    Forgot Password
-                </Link>
-                <Link
-                    href="/contact-us"
-                    className="text-blue-500 hover:text-blue-700 text-xs rounded-lg transition-colors"
-                    aria-label="Navigate to Contact Us page"
-                >
-                    Contact Us
-                </Link>
-            </div>
+                    <Button type="submit" className="w-full" disabled={pending}>
+                        {pending ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Signing In...
+                            </>
+                        ) : (
+                            "Sign In"
+                        )}
+                    </Button>
+                </Form>
+            </CardContent>
+            <CardFooter className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+                 <Link href="/signup" className="hover:text-primary transition-colors">Sign Up</Link>
+                 <Link href="/about" className="hover:text-primary transition-colors">About</Link>
+                 <Link href="/forgot-password" className="hover:text-primary transition-colors">Forgot Password</Link>
+                 <Link href="/contact-us" className="hover:text-primary transition-colors">Contact Us</Link>
+            </CardFooter>
         </Card>
     );
 }

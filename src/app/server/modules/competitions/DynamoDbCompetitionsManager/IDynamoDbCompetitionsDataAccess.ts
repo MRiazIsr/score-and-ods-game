@@ -1,7 +1,11 @@
 import type {GetCommandOutput, PutCommandOutput, QueryCommandOutput} from "@aws-sdk/lib-dynamodb";
 
 export interface IDynamoDbCompetitionsDataAccess {
-    getCompetitionData(competitionId: number, season: number): Promise<GetCommandOutput>
+    getCompetitionData(competitionId: number, season: number): Promise<QueryCommandOutput> // Now returns QueryOutput
+    getCompetitionMatchDayMatches(competitionId: number, season: number, matchDay: number): Promise<GetCommandOutput>
+    getCompetitionStandings(competitionId: number, season: number): Promise<GetCommandOutput>
+    getCompetitionScorers(competitionId: number, season: number): Promise<GetCommandOutput>
+    getCompetitionTeams(competitionId: number, season: number): Promise<GetCommandOutput>
     getCompetitionHelperData(competitionId: number): Promise<GetCommandOutput>
     saveMatchScore(competitionId: number, matchDay: number , activeSeason: number, matchId: number, score: { home: number, away: number }, userId: string): Promise<PutCommandOutput>
     getMatchScoreByUser(userId: string, competitionId: number, season: number, matchDay: number, matchId: number): Promise<GetCommandOutput>

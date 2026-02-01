@@ -2,73 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+@layer base {
   :root {
-    --background: #1f1f2e;
-    --foreground: #b5b3b3;
-    --card-background: #2d2d3d;
-    --input-background: #3d3d4d;
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+
+    --radius: 0.5rem;
+
+    --input-bg: 0 0% 100%;
+  }
+
+  .dark {
+    /* Custom Dark Theme based on existing colors */
+    --background: 240 19.5% 15.1%;
+    /* #1f1f2e */
+    --foreground: 0 1.3% 70.6%;
+    /* #b5b3b3 */
+
+    --card: 240 15.1% 20.8%;
+    /* #2d2d3d */
+    --card-foreground: 0 1.3% 70.6%;
+
+    --popover: 240 15.1% 20.8%;
+    --popover-foreground: 0 1.3% 70.6%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+
+    --input-bg: 240 11.6% 27.1%;
+    /* #3d3d4d */
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1f1f2e;
-    --foreground: #b5b3b3;
-    --card-background: #2d2d3d;
-    --input-background: #3d3d4d;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
+/* Autofill Styles */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-background-clip: text;
-  -webkit-text-fill-color: #cdcdcd; /* Set your desired text color */
+  -webkit-text-fill-color: #cdcdcd;
   transition: background-color 5000s ease-in-out 0s;
-  box-shadow: 0 0 0px 1000px var(--input-background) inset; /* Set your desired background color */
-  caret-color: #cdcdcd; /* Set cursor color to match text */
+  box-shadow: 0 0 0px 1000px hsl(var(--input-bg)) inset;
+  caret-color: #cdcdcd;
 }
 
-input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0 30px var(--input-background) inset !important; /* Set your desired background color */
-  caret-color: #cdcdcd !important; /* Set cursor color */
-}
 @supports (-webkit-appearance: none) {
   input:-webkit-autofill {
     background-color: transparent !important;
     -webkit-background-clip: text !important;
   }
-}
-input:-webkit-autofill:focus {
-  -webkit-text-fill-color: #cdcdcd !important; /* Set your desired text color */
-  -webkit-box-shadow: 0 0 0 30px var(--input-background) inset !important; /* Set your desired background color */
-  outline: 2px solid #2196F3 !important; /* Adjust color and width as needed */
-  outline-offset: 1px !important;
-  border-color: #2196F3 !important; /* Match your focus border color */
-}
-input[data-autocompleted] {
-  background-color: var(--input-background) !important; /* Set your desired background color */
-}
-
-input::-ms-clear {
-  display: none;
-}
-
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active,
-input:-webkit-autofill::first-line {
-  font-size: inherit;
-  line-height: inherit;
-  font-family: --montserrat, sans-serif;
-  color: inherit;
 }

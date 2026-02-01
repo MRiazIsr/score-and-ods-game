@@ -5,6 +5,8 @@ import {
     PutCommand,
     PutCommandInput,
     PutCommandOutput,
+    QueryCommand,
+    QueryCommandInput,
 } from "@aws-sdk/lib-dynamodb";
 import type { GetCommandInput, GetCommandOutput } from "@aws-sdk/lib-dynamodb";
 
@@ -26,17 +28,62 @@ export class CompetitionModel {
         return process.env.TABLE_NAME;
     })();
 
-    static async getCompetitionData(competitionId: number, season: number): Promise<GetCommandOutput> {
-        const input: GetCommandInput = {
+    static async getCompetitionData(competitionId: number, season: number): Promise<import("@aws-sdk/lib-dynamodb").QueryCommandOutput> {
+         const pk = `COMPETITION_ID#${competitionId}`;
+         // Query ALL matchdays for the season using begins_with
+        const input: QueryCommandInput = {
+            TableName: this.tableName,
+            KeyConditionExpression: "PartitionKey = :pk AND begins_with(SortKey, :skPrefix)",
+            ExpressionAttributeValues: {
+                ":pk": pk,
+                ":skPrefix": `SEASON#${season}#MATCHDAY#`
+            }
+        };
+        // This will return Items: [ { matches: [...], matchday: 1 }, { matches: [...], matchday: 2 }, ... ]
+        return this.documentClient.send(new QueryCommand(input));
+    }
+
+    static async getCompetitionMatchDayMatches(competitionId: number, season: number, matchDay: number): Promise<GetCommandOutput> {
+         const pk = `COMPETITION_ID#${competitionId}`;
+         const sk = `MATCHES_DATA#SEASON#${season}`;
+         const input: GetCommandInput = {
+            TableName: this.tableName,
+            Key: {
+                PartitionKey: pk,
+                SortKey: sk
+            }
+        };
+        return this.documentClient.send(new GetCommand(input));
+    }
+
+    static async getCompetitionStandings(competitionId: number, season: number): Promise<GetCommandOutput> {
+        return this.documentClient.send(new GetCommand({
             TableName: this.tableName,
             Key: {
                 PartitionKey: `COMPETITION_ID#${competitionId}`,
-                SortKey: `MATCHES_DATA#SEASON#${season}`
+                SortKey: `SEASON#${season}#STANDINGS`
             }
-        }
+        }));
+    }
 
-        const command = new GetCommand(input);
-        return this.documentClient.send(command);
+    static async getCompetitionScorers(competitionId: number, season: number): Promise<GetCommandOutput> {
+        return this.documentClient.send(new GetCommand({
+            TableName: this.tableName,
+            Key: {
+                PartitionKey: `COMPETITION_ID#${competitionId}`,
+                SortKey: `SEASON#${season}#SCORERS`
+            }
+        }));
+    }
+
+    static async getCompetitionTeams(competitionId: number, season: number): Promise<GetCommandOutput> {
+        return this.documentClient.send(new GetCommand({
+            TableName: this.tableName,
+            Key: {
+                PartitionKey: `COMPETITION_ID#${competitionId}`,
+                SortKey: `SEASON#${season}#TEAMS`
+            }
+        }));
     }
 
     static async getCompetitionHelperData(competitionId: number): Promise<GetCommandOutput> {

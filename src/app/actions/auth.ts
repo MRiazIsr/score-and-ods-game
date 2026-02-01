@@ -3,7 +3,7 @@
 import { FormState, SignInFormSchema, SignUpFormSchema } from "@/app/lib/auth/definitions";
 import { selectFactory } from '@/app/server/modules/factories/authFactory/AuthFactorySelector'
 import { SessionUser, User } from "@/app/server/modules/user/types/userTypes";
-import { SafeParseReturnType } from "zod";
+// Zod types are inferred from safeParse
 import { DynamoDbAuthFactory } from "@/app/server/modules/factories/authFactory/DynamoDbAuthFactory";
 import { AuthService} from "@/app/server/services/auth/AuthService";
 import { FormFieldsKeysEntity } from "@/app/server/entities/FormFieldsKeysEntity";
@@ -43,7 +43,7 @@ export async function signUp(state: FormState, formData: FormData): Promise<{
         password: formData.get(FormFieldsKeysEntity.signUpGroup.PASSWORD)?.toString()
     }
 
-    const validatedFields: SafeParseReturnType<User, User> = SignUpFormSchema.safeParse( formFields )
+    const validatedFields = SignUpFormSchema.safeParse( formFields )
 
     if (!validatedFields.success) {
         const fieldErrors = validatedFields.error.flatten().fieldErrors;
@@ -119,7 +119,7 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
         password: formData.get(FormFieldsKeysEntity.signInGroup.PASSWORD)?.toString() ?? '',
     }
 
-    const validatedFields: SafeParseReturnType<User, User> = SignInFormSchema.safeParse(formFields)
+    const validatedFields = SignInFormSchema.safeParse(formFields)
 
     if (!validatedFields.success) {
         return {

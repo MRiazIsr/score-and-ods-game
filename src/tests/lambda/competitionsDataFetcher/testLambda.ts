@@ -4,8 +4,8 @@ import { TestData } from './envDumy';
 // Set environment variables for local testing
 process.env.AWS_REGION = 'us-east-1';
 process.env.AWS_TABLE_NAME = TestData.AWS_TABLE_NAME;
-process.env.AWS_APP_SERVICE_KEY = TestData.AWS_APP_SERVICE_KEY;
-process.env.AWS_APP_API_URL = TestData.AWS_APP_API_URL;
+process.env.AWS_APP_SERVICE_KEY = process.env.API_KEY || TestData.AWS_APP_SERVICE_KEY;
+process.env.AWS_APP_API_URL = "https://api.football-data.org/v4";
 process.env.AWS_ACCESS_KEY_ID = 'dummy';
 process.env.AWS_SECRET_ACCESS_KEY = 'dummy';
 

@@ -39,4 +39,10 @@ export class CompetitionsService {
 
         return competitionData.matchDays;
     }
+
+    async getCompetitionMatchDaysWithStatus(competitionId: number): Promise<import("@/app/server/modules/competitions/types").MatchDayWithStatus[]> {
+        const competitionFactory = selectFactory(process.env.DB_TYPE);
+        const competitionsManager = competitionFactory.createCompetitionsManager();
+        return await competitionsManager.getMatchDaysWithStatus(competitionId);
+    }
 }
