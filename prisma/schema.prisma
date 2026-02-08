@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(cuid())
+  username         String    @unique
+  email            String    @unique
+  name             String?
+  password         String // Hashed
+  salt             String?
+  sessionKey       String?   @map("session_key")
+  sessionStartedAt DateTime? @map("session_started_at")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships    LeagueMember[]
+  predictions    Prediction[]
+  createdLeagues League[]       @relation("LeagueCreator")
+
+  @@index([username])
+  @@index([email])
+  @@map("users")
+}
+
+model League {
+  id       String  @id @default(cuid())
+  name     String
+  slug     String  @unique
+  isGlobal Boolean @default(false) @map("is_global")
+
+  creatorId String? @map("creator_id")
+  creator   User?   @relation("LeagueCreator", fields: [creatorId], references: [id])
+
+  members LeagueMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("leagues")
+}
+
+model LeagueMember {
+  id       String   @id @default(cuid())
+  userId   String   @map("user_id")
+  leagueId String   @map("league_id")
+  joinedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  league League @relation(fields: [leagueId], references: [id])
+
+  @@unique([userId, leagueId])
+  @@map("league_members")
+}
+
+model Prediction {
+  id      String @id @default(cuid())
+  userId  String @map("user_id")
+  matchId String @map("match_id") // ID from DynamoDB/External API
+
+  // Predicted score
+  homeScore Int @map("home_score")
+  awayScore Int @map("away_score")
+
+  // Points earned (calculated after match finishes)
+  points Int?
+
+  user  User  @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, matchId])
+  @@map("predictions")
+}
