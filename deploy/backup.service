@@ -1,8 +1,7 @@
 [Unit]
-Description=Pick The Score Postgres backup → Hetzner Object Storage
-After=docker.service network-online.target
+Description=Pick The Score Postgres backup → local disk
+After=docker.service
 Requires=docker.service
-Wants=network-online.target
 
 [Service]
 Type=oneshot

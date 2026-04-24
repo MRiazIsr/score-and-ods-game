@@ -3,14 +3,12 @@
 Prerequisites:
 
 - Logged into the Hetzner VPS as root or user in `docker` group.
-- `rclone` configured with remote matching `$BACKUP_RCLONE_REMOTE` (see `/opt/pckthscr/.env`).
 - Age private key at `/opt/pckthscr/.age-key`, permissions `600`.
 
 ## List available backups
 
 ```
-source /opt/pckthscr/.env
-rclone lsf "${BACKUP_RCLONE_REMOTE}:${BACKUP_BUCKET}/" | sort
+ls -lh /opt/pckthscr/backups/
 ```
 
 Up to 5 files named `pckthscr-YYYYMMDD-HHMMSS.dump.age`.
@@ -21,7 +19,7 @@ Up to 5 files named `pckthscr-YYYYMMDD-HHMMSS.dump.age`.
 sudo /opt/pckthscr/restore-latest.sh --verify-only
 ```
 
-Downloads the latest dump, restores into a temp `pckthscr_restore` database, prints row counts of key tables, then drops the temp DB. Zero impact on production.
+Restores the latest dump into a temp `pckthscr_restore` database, prints row counts of key tables, then drops the temp DB. Zero impact on production.
 
 ## Option B — restore latest into a separate DB (for inspection)
 
@@ -47,13 +45,11 @@ docker compose -f /opt/pckthscr/docker-compose.yml exec postgres \
 
 ```
 source /opt/pckthscr/.env
-BACKUP_FILE="pckthscr-20260424-030000.dump.age"   # pick from rclone lsf output
-
-# Download
-rclone copy "${BACKUP_RCLONE_REMOTE}:${BACKUP_BUCKET}/${BACKUP_FILE}" /tmp/
+BACKUP_FILE="pckthscr-20260424-030000.dump.age"   # pick from `ls` output
 
 # Decrypt
-age -d -i /opt/pckthscr/.age-key -o /tmp/restore.dump "/tmp/${BACKUP_FILE}"
+age -d -i /opt/pckthscr/.age-key \
+    -o /tmp/restore.dump "/opt/pckthscr/backups/${BACKUP_FILE}"
 
 # Create temp DB and restore
 docker compose -f /opt/pckthscr/docker-compose.yml exec -T postgres \
@@ -70,15 +66,15 @@ Requires app downtime. Only use when the production DB is confirmed unusable.
 
 ```
 source /opt/pckthscr/.env
+BACKUP_FILE="pckthscr-20260424-030000.dump.age"
 
 # 1. Stop app + fetcher timer to avoid new writes mid-restore.
 docker compose -f /opt/pckthscr/docker-compose.yml stop app
 sudo systemctl stop fetcher.timer
 
-# 2. Download and decrypt desired backup (see Option C for which file).
-BACKUP_FILE="pckthscr-20260424-030000.dump.age"
-rclone copy "${BACKUP_RCLONE_REMOTE}:${BACKUP_BUCKET}/${BACKUP_FILE}" /tmp/
-age -d -i /opt/pckthscr/.age-key -o /tmp/restore.dump "/tmp/${BACKUP_FILE}"
+# 2. Decrypt.
+age -d -i /opt/pckthscr/.age-key \
+    -o /tmp/restore.dump "/opt/pckthscr/backups/${BACKUP_FILE}"
 
 # 3. Recreate production DB.
 docker compose -f /opt/pckthscr/docker-compose.yml exec -T postgres \

@@ -15,14 +15,12 @@ concurrency:
 
 env:
   NODE_VERSION: '20'
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.meta.outputs.image }}
-      tag: ${{ steps.meta.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,9 +37,8 @@ jobs:
       - name: Compute image name (lowercase)
         id: meta
         run: |
-          IMAGE=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')
+          IMAGE=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
-          echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Prepare build secrets
         run: |
@@ -74,73 +71,60 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy deploy artifacts (compose, Caddyfile, systemd units, backup scripts)
+      - name: Copy deploy artifacts
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HETZNER_HOST }}
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          source: "deploy/docker-compose.yml,deploy/Caddyfile,deploy/fetcher.service,deploy/fetcher.timer,deploy/backup.service,deploy/backup.timer,deploy/backup.sh,deploy/restore-latest.sh,deploy/RESTORE.md"
-          target: "/opt/tipmgr/"
+          source: "deploy/docker-compose.yml,deploy/fetcher.service,deploy/fetcher.timer,deploy/backup.service,deploy/backup.timer,deploy/backup.sh,deploy/restore-latest.sh,deploy/RESTORE.md"
+          target: "/opt/pckthscr/"
           strip_components: 1
 
-      - name: Deploy — pull image, apply migrations, restart app
+      - name: Deploy — login to ghcr.io, pull, migrate, restart
         uses: appleboy/ssh-action@v1
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.HETZNER_HOST }}
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          envs: IMAGE_TAG
+          envs: GHCR_TOKEN
           script: |
             set -euo pipefail
-            cd /opt/tipmgr
+            cd /opt/pckthscr
 
-            # Set IMAGE_TAG for this deploy (sourced by docker-compose).
+            # 1. Log in to ghcr.io so `docker compose pull` can fetch the private image.
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            # 2. Pin IMAGE_TAG for this deploy.
             export IMAGE_TAG="${{ github.sha }}"
             grep -v '^IMAGE_TAG=' .env > .env.tmp || true
             echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.tmp
             mv .env.tmp .env
             chmod 600 .env
 
-            # Make scripts executable after scp (flags don't survive scp).
+            # 3. Make scripts executable (scp strips +x bit).
             chmod +x backup.sh restore-latest.sh
 
-            # Ensure systemd units are in /etc/systemd/system and current.
+            # 4. Install systemd units (idempotent).
             sudo cp fetcher.service fetcher.timer backup.service backup.timer /etc/systemd/system/
             sudo systemctl daemon-reload
 
-            # Pull new image and recreate app; migrations run inside container CMD.
+            # 5. Pull + (re)start containers. App CMD applies prisma migrate deploy.
             docker compose pull app
             docker compose up -d postgres
             docker compose up -d app
-            docker compose up -d caddy
 
-            # Enable timers (idempotent).
+            # 6. Enable timers.
             sudo systemctl enable --now fetcher.timer backup.timer
 
-            # Wait for app health.
+            # 7. Wait for app health (loopback, no Cloudflare involved).
             for i in $(seq 1 30); do
               if docker compose exec -T app curl -fsS http://localhost:3000/api/health > /dev/null 2>&1; then
                 echo "App is healthy."
-                break
+                exit 0
               fi
-              if [ $i -eq 30 ]; then
-                echo "App health check failed after 30 attempts"
-                docker compose logs --tail=100 app
-                exit 1
-              fi
+              [ $i -eq 30 ] && { echo "Health check failed"; docker compose logs --tail=100 app; exit 1; }
               sleep 2
             done
-
-      - name: External smoke test
-        run: |
-          for i in $(seq 1 12); do
-            if curl -fsS "https://${{ secrets.CADDY_DOMAIN || 'pickthescore.app' }}/api/health" > /dev/null; then
-              echo "External health check passed."
-              exit 0
-            fi
-            echo "Waiting for external health... ($i/12)"
-            sleep 5
-          done
-          echo "External health check failed."
-          exit 1

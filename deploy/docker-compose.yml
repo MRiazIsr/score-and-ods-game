@@ -1,10 +1,14 @@
 # Production Docker Compose for Hetzner VPS.
 # Deployed to /opt/pckthscr/docker-compose.yml during CI.
 #
+# NOTE: no Caddy container — the existing system-level Caddy at /etc/caddy/Caddyfile
+# already runs on the host and has a vhost for pickthescore.app:8080 that reverse-proxies
+# to 127.0.0.1:3000 (where this compose exposes the app). Cloudflare orange-cloud
+# terminates TLS at the edge and forwards to VPS:8080 through its proxy.
+#
 # Services:
-#   - postgres: Postgres 16 with persistent volume
-#   - app:      Next.js app image from ghcr.io (runs prisma migrate deploy + server.js)
-#   - caddy:    reverse proxy with auto Let's Encrypt for pickthescore.app
+#   - postgres: Postgres 16 with persistent bind-mount
+#   - app:      Next.js app image from ghcr.io (runs `prisma migrate deploy` + server.js)
 
 services:
   postgres:
@@ -40,27 +44,13 @@ services:
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME}
       API_KEY: ${API_KEY}
       API_URL: https://api.football-data.org/v4
-    expose:
-      - "3000"
+    # Expose ONLY to loopback — the host-level Caddy reaches us via 127.0.0.1:3000.
+    # This prevents direct access to port 3000 from outside the server.
+    ports:
+      - "127.0.0.1:3000:3000"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
-
-  caddy:
-    image: caddy:2-alpine
-    container_name: pckthscr-caddy
-    restart: unless-stopped
-    depends_on:
-      - app
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./volumes/caddy-data:/data
-      - ./volumes/caddy-config:/config
-    environment:
-      CADDY_DOMAIN: ${CADDY_DOMAIN:-pickthescore.app}

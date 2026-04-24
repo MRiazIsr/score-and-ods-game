@@ -1,169 +1,128 @@
 # Pick The Score — Go-Live Checklist
 
-Пошаговая инструкция для первого деплоя на Hetzner VPS после миграции с AWS.
+Пошаговая инструкция для первого деплоя на Hetzner VPS.
+
+**Архитектура:** Cloudflare (TLS на 443) → VPS:8080 (existing Caddy vhost) → `127.0.0.1:3000` (Next.js Docker). Port 443 на VPS занят sing-box VPN — мы туда не идём.
 
 ## 1. GitHub Secrets
 
-В настройках репозитория `Settings → Secrets and variables → Actions` добавить:
+В `Settings → Secrets and variables → Actions`:
 
-| Secret | Назначение |
+| Secret | Значение |
 |---|---|
-| `HETZNER_HOST` | IP или hostname Hetzner VPS |
-| `HETZNER_USER` | SSH-пользователь на VPS (например `deploy` или `root`) |
-| `HETZNER_SSH_KEY` | Приватный SSH-ключ (полный текст, включая `-----BEGIN...` / `-----END...`) для доступа к VPS |
+| `HETZNER_HOST` | IP или hostname VPS (например `49.13.201.110`) |
+| `HETZNER_USER` | SSH-user (например `root`) |
+| `HETZNER_SSH_KEY` | Приватный SSH-ключ (полный текст) |
+| `SESSION_PASSWORD` | уже был |
+| `SESSION_COOKIE_NAME` | уже был |
+| `API_KEY` | football-data.org, уже был |
 
-Уже существующие секреты (оставляем как есть):
-- `SESSION_PASSWORD`
-- `SESSION_COOKIE_NAME`
-- `API_KEY`
-
-Удалить старые AWS-секреты после успешного переезда:
+Удалить старые AWS-секреты после переезда:
 - `AWS_ROLE_ARN`
 - `LIGHTSAIL_AWS_ACCESS_KEY_ID`
 - `LIGHTSAIL_AWS_SECRET_ACCESS_KEY`
 
-## 2. Hetzner Object Storage
+## 2. Cloudflare
 
-В Hetzner Cloud Console создать два S3-совместимых bucket:
+1. Зарегать домен `pickthescore.app` в Cloudflare (бесплатный тариф).
+2. В регистраторе поменять nameservers на Cloudflare-овские (Cloudflare показывает какие).
+3. После активации — в DNS:
+   - `A pickthescore.app → 49.13.201.110` (orange cloud **ON**)
+   - `A www.pickthescore.app → 49.13.201.110` (orange cloud **ON**)
+4. SSL/TLS → Overview → encryption mode: **Flexible** (Cloudflare ↔ Origin — HTTP на порту 8080; Browser ↔ Cloudflare — HTTPS).
+5. Rules → **Origin Rules** → Create rule:
+   - When: `Hostname equals pickthescore.app OR www.pickthescore.app`
+   - Then: **HTTP port: 8080** (это перенаправит входящие 443 на origin:8080)
+6. Rules → **Page Rules** (опционально, чтоб www редиректил на apex):
+   - URL: `www.pickthescore.app/*`
+   - Forwarding URL: 301 → `https://pickthescore.app/$1`
 
-| Bucket | Видимость | Назначение |
-|---|---|---|
-| `pckthscr-avatars` | public-read | User profile images (URL вида `https://<endpoint>/pckthscr-avatars/<user-uuid>.webp`) |
-| `pckthscr-backups` | private | Ежедневные pg_dump (age-encrypted) |
+## 3. VPS — уже настроено скриптом (пропустить)
 
-Сгенерировать и сохранить Access Key + Secret Key (по одной паре — используется и для app, и для backup). Endpoint зависит от выбранного датацентра, например `https://fsn1.your-objectstorage.com`.
+Этот раздел выполнен ранее:
+- ✅ `/opt/pckthscr/{volumes/postgres-data,backups,fetcher}`
+- ✅ `/opt/pckthscr/.age-key` + `BACKUP_AGE_PUBLIC_KEY` в `.env`
+- ✅ `/opt/pckthscr/.env` с секретами, правами 600
+- ✅ Existing `/etc/caddy/Caddyfile` дополнен vhost-ом `pickthescore.app:8080 → 127.0.0.1:3000`
+- ✅ UFW открыт на :8080 только для Cloudflare IP-диапазонов
 
-## 3. VPS setup
+## 4. DNS
 
-На Hetzner VPS:
-
-```bash
-# 3.1 Директории
-sudo mkdir -p /opt/pckthscr/volumes/{postgres-data,caddy-data,caddy-config}
-sudo mkdir -p /opt/pckthscr/fetcher
-cd /opt/pckthscr
-
-# 3.2 Установить инструменты (на Debian/Ubuntu)
-sudo apt update
-sudo apt install -y age rclone docker.io docker-compose-plugin curl
-
-# 3.3 .env
-# Скопировать шаблон deploy/.env.example из репо, заполнить секреты
-sudo nano /opt/pckthscr/.env
-sudo chmod 600 /opt/pckthscr/.env
-
-# 3.4 rclone config для Hetzner Object Storage (S3-compatible)
-rclone config
-#   n (new remote)
-#   name: hetzner (должно совпадать с BACKUP_RCLONE_REMOTE в .env)
-#   storage: 4 (Amazon S3 Compliant ...)
-#   provider: Other
-#   env_auth: false
-#   access_key_id: <из шага 2>
-#   secret_access_key: <из шага 2>
-#   region: <регион bucket>
-#   endpoint: <endpoint URL без схемы>
-#   location_constraint: <регион>
-#   acl: private
-
-# 3.5 Проверить
-rclone ls hetzner:pckthscr-backups/   # должно ничего не вывести (пустой bucket)
-```
-
-## 4. Age-ключ для шифрования бэкапов
-
-```bash
-# Сгенерировать ключевую пару
-sudo age-keygen -o /opt/pckthscr/.age-key
-sudo chmod 600 /opt/pckthscr/.age-key
-
-# Public key (строка вида "age1...") положить в /opt/pckthscr/.env
-# как BACKUP_AGE_PUBLIC_KEY=age1...
-sudo grep "public key:" /opt/pckthscr/.age-key | awk '{print $NF}'
-```
-
-Приватный ключ НЕ должен покидать VPS — без него расшифровать бэкапы нельзя (это фича). Держи копию приватного ключа в надёжном месте (1Password, зашифрованный внешний носитель) чтобы восстановиться если VPS умрёт.
-
-## 5. DNS
-
-Убедиться, что `pickthescore.app` указывает A-записью на IP VPS:
+`pickthescore.app` должен резолвиться на Cloudflare (после шага 2, когда NS переключатся):
 
 ```bash
 dig +short pickthescore.app
-# должен вернуть IP VPS
+# Ответ: 104.x.x.x или 172.x.x.x (Cloudflare IP), а не 49.13.201.110
 ```
 
-У тебя это уже настроено.
+Если видишь прямой IP VPS — значит orange cloud выключен или nameservers ещё не обновились.
 
-## 6. Первый деплой
+## 5. Первый деплой
 
-Первый `docker compose up` нужно запустить вручную чтобы Caddy получил TLS-сертификат от Let's Encrypt. Начиная со второго — автоматика через CI.
+Просто `git push origin main` — GitHub Actions:
+1. Соберёт Docker image, пушнёт в `ghcr.io/mriazisr/score-and-ods-game:SHA`
+2. SSH в VPS, `docker login ghcr.io` через GITHUB_TOKEN
+3. Скопирует compose/systemd-units в `/opt/pckthscr/`
+4. `docker compose up -d postgres app`
+5. App применит миграции Prisma (`prisma migrate deploy`) на старте контейнера
+6. `systemctl enable --now fetcher.timer backup.timer`
+7. Healthcheck: `curl http://localhost:3000/api/health` изнутри контейнера
+
+Если упало — логи в GitHub Actions UI.
+
+## 6. Проверка после деплоя
 
 ```bash
+# SSH на VPS
 cd /opt/pckthscr
 
-# Залогиниться в ghcr.io (нужен GitHub Personal Access Token с read:packages)
-echo $GH_TOKEN | docker login ghcr.io -u <github-username> --password-stdin
+# Контейнеры работают
+docker compose ps          # postgres + app → healthy
 
-# Скопировать docker-compose.yml, Caddyfile, systemd units из репо вручную или через git clone
-# (первый раз — вручную; потом CI их обновляет)
+# App отвечает на loopback
+curl -fsS http://127.0.0.1:3000/api/health
 
-# Запустить postgres первым, дождаться healthcheck
-docker compose up -d postgres
-docker compose ps  # должен быть healthy
+# Миграции применены
+docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c "\dt"
+# Должно быть 10 таблиц включая _prisma_migrations
 
-# Запустить app (применит Prisma миграции при старте)
-docker compose up -d app
-docker compose logs -f app   # проверить: "✓ Ready in ..."
+# Caddy маршрутизирует на app
+curl -fsS -H "Host: pickthescore.app" http://127.0.0.1:8080/api/health
 
-# Запустить Caddy — получит TLS-сертификат
-docker compose up -d caddy
-curl https://pickthescore.app/api/health   # должен ответить {"status":"healthy",...}
+# Systemd timers активны
+systemctl list-timers fetcher.timer backup.timer
 
-# Установить systemd units для фетчера и бэкапов
-sudo cp /opt/pckthscr/fetcher.service /opt/pckthscr/fetcher.timer \
-       /opt/pckthscr/backup.service  /opt/pckthscr/backup.timer \
-       /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now fetcher.timer backup.timer
+# Запустить первый фетчер вручную
+sudo systemctl start fetcher.service
+journalctl -u fetcher.service --since "5 min ago" --no-pager
 
-# Проверить статус
-systemctl status fetcher.timer backup.timer
+# Проверить что данные загрузились
+docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB -c \
+  "SELECT COUNT(*) FROM matches, competitions, teams;"
 ```
 
-После этого первый push в `main` → GitHub Actions сделает build → push ghcr.io → SSH deploy. Дальше — автоматика.
+После того как Cloudflare поднимется, снаружи:
+
+```bash
+curl -fsS https://pickthescore.app/api/health
+# Ожидаемо: {"status":"healthy","timestamp":"...","version":"1.0.0"}
+```
 
 ## 7. Decommission AWS
 
-**Только после** стабильной работы Hetzner (минимум несколько дней без инцидентов, бэкапы проверены):
+**Только после** стабильной работы Hetzner (несколько дней, бэкапы проверены):
 
-1. AWS Console → DynamoDB → удалить таблицу `SoccerGameData`
-2. AWS Console → Lambda → удалить `matchFetcher` function
-3. AWS Console → EventBridge → удалить schedule для matchFetcher
-4. AWS Console → Lightsail → Containers → удалить `score-game` service
-5. AWS Console → IAM → удалить OIDC provider + роль для GitHub Actions
-6. GitHub Secrets → удалить `AWS_ROLE_ARN`, `LIGHTSAIL_AWS_ACCESS_KEY_ID`, `LIGHTSAIL_AWS_SECRET_ACCESS_KEY`
-
-После этого AWS-аккаунт можно закрывать.
+1. AWS Console → DynamoDB → удалить `SoccerGameData`
+2. AWS Console → Lambda → удалить `matchFetcher`
+3. AWS Console → EventBridge → удалить schedule
+4. AWS Console → Lightsail → удалить `score-game`
+5. AWS Console → IAM → удалить OIDC provider + role
+6. GitHub Secrets → удалить AWS-секреты (см. шаг 1)
 
 ---
 
-## Быстрая проверка здоровья после деплоя
+## Notes
 
-```bash
-# App reachable?
-curl -fsS https://pickthescore.app/api/health
-
-# Fetcher synced данные?
-docker compose -f /opt/pckthscr/docker-compose.yml exec postgres \
-    psql -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT COUNT(*) FROM matches;"
-
-# Systemd timers работают?
-systemctl list-timers fetcher.timer backup.timer
-
-# Последний fetcher run?
-journalctl -u fetcher.service -n 20 --no-pager
-
-# Бэкап уехал в Object Storage?
-rclone ls hetzner:pckthscr-backups/
-```
+- **Object Storage (S3) — отложено.** Пока бэкапы лежат локально в `/opt/pckthscr/backups/` (5 rolling, age-encrypted, 38 GB диска хватит надолго). Когда понадобится off-site хранение — расширить `backup.sh` через rclone.
+- **Avatars** — колонка `users.profile_image` есть, но upload-endpoint пока не сделан. Когда добавим — аватарки тоже могут жить на локальном диске (или в S3 позже).
+- **Origin IP защищён**: UFW на `:8080` открыт только для Cloudflare IP-диапазонов, прямой доступ `http://49.13.201.110:8080` снаружи не работает.

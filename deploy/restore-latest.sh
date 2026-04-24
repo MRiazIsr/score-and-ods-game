@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
-# Pull latest backup from Hetzner Object Storage, decrypt, and restore into a
-# temporary database `pckthscr_restore` on the same Postgres container.
+# Pull latest backup from local disk, decrypt, and restore into a
+# temporary database `pckthscr_restore` on the Postgres container.
 #
-# Use this to validate backups or to stage recovery. It does NOT touch the
-# production `pckthscr` database. For destructive restore-over-prod, see RESTORE.md.
+# Does NOT touch the production `pckthscr` database. For destructive
+# restore-over-prod, see RESTORE.md.
 #
-# Optional flags:
+# Flags:
 #   --verify-only  : restore into temp DB, print row counts of key tables, drop temp DB.
 set -euo pipefail
 
 : "${POSTGRES_USER:?POSTGRES_USER not set}"
-: "${BACKUP_RCLONE_REMOTE:?BACKUP_RCLONE_REMOTE not set}"
-: "${BACKUP_BUCKET:?BACKUP_BUCKET not set}"
 
 COMPOSE_FILE="${COMPOSE_FILE:-/opt/pckthscr/docker-compose.yml}"
+BACKUP_DIR="${BACKUP_LOCAL_DIR:-/opt/pckthscr/backups}"
 AGE_KEY_FILE="${BACKUP_AGE_KEY_FILE:-/opt/pckthscr/.age-key}"
 VERIFY_ONLY=0
 if [ "${1:-}" = "--verify-only" ]; then VERIFY_ONLY=1; fi
@@ -23,23 +22,17 @@ if [ ! -f "${AGE_KEY_FILE}" ]; then
     exit 1
 fi
 
-# Find most recent backup.
-LATEST=$(rclone lsf "${BACKUP_RCLONE_REMOTE}:${BACKUP_BUCKET}/" \
-    | grep -E '^pckthscr-[0-9]{8}-[0-9]{6}\.dump\.age$' \
-    | sort -r | head -n 1)
+LATEST=$(ls -1t "${BACKUP_DIR}" 2>/dev/null | grep -E '^pckthscr-[0-9]{8}-[0-9]{6}\.dump\.age$' | head -n 1)
 if [ -z "${LATEST}" ]; then
-    echo "No backups found."
+    echo "No backups found in ${BACKUP_DIR}"
     exit 1
 fi
 
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
-echo "Downloading ${LATEST}"
-rclone copy "${BACKUP_RCLONE_REMOTE}:${BACKUP_BUCKET}/${LATEST}" "${TMP_DIR}/"
-
-echo "Decrypting"
-age -d -i "${AGE_KEY_FILE}" -o "${TMP_DIR}/restore.dump" "${TMP_DIR}/${LATEST}"
+echo "Decrypting ${LATEST}"
+age -d -i "${AGE_KEY_FILE}" -o "${TMP_DIR}/restore.dump" "${BACKUP_DIR}/${LATEST}"
 
 echo "Creating temp database pckthscr_restore"
 docker compose -f "${COMPOSE_FILE}" exec -T postgres \
