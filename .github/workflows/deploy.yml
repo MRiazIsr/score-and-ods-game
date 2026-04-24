@@ -76,22 +76,32 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          # Write secret, strip CR line endings, and ensure a trailing newline.
-          # This fixes cases where the secret has Windows line endings or missing/extra whitespace.
-          printf '%s\n' "${{ secrets.HETZNER_SSH_KEY }}" | tr -d '\r' | sed -e 's/[[:space:]]*$//' > ~/.ssh/deploy_key
-          # Collapse any trailing blank lines to exactly one.
-          awk 'NR==1,/^$/{print}' ~/.ssh/deploy_key > /dev/null
+          # Normalize: strip BOM, strip CR, strip trailing whitespace per line, ensure LF line endings.
+          printf '%s' "${{ secrets.HETZNER_SSH_KEY }}" \
+            | sed '1s/^\xEF\xBB\xBF//' \
+            | tr -d '\r' \
+            | sed -E 's/[[:space:]]+$//' > ~/.ssh/deploy_key
+          # Ensure exactly one trailing newline (ssh requires this).
+          if [ "$(tail -c 1 ~/.ssh/deploy_key | od -An -c | tr -d ' ')" != "\n" ]; then
+            printf '\n' >> ~/.ssh/deploy_key
+          fi
           chmod 600 ~/.ssh/deploy_key
-          echo "--- first line ---"
-          head -n 1 ~/.ssh/deploy_key
-          echo "--- last line ---"
-          tail -n 1 ~/.ssh/deploy_key
+          echo "--- first 3 lines ---"
+          head -n 3 ~/.ssh/deploy_key
+          echo "--- last 3 lines ---"
+          tail -n 3 ~/.ssh/deploy_key
           echo "--- byte length ---"
           wc -c ~/.ssh/deploy_key
+          echo "--- line count ---"
+          wc -l ~/.ssh/deploy_key
+          echo "--- raw bytes of first 40 + last 40 (detect hidden garbage) ---"
+          head -c 40 ~/.ssh/deploy_key | od -An -c
+          echo "    [...]"
+          tail -c 40 ~/.ssh/deploy_key | od -An -c
           echo "--- fingerprint ---"
           ssh-keygen -l -f ~/.ssh/deploy_key || echo "WARNING: could not read key"
-          echo "--- public part (for comparing against authorized_keys) ---"
-          ssh-keygen -y -f ~/.ssh/deploy_key || echo "WARNING: could not derive pubkey"
+          echo "--- public part ---"
+          ssh-keygen -y -f ~/.ssh/deploy_key 2>&1 || echo "WARNING: could not derive pubkey"
 
       - name: Deploy
         env:
