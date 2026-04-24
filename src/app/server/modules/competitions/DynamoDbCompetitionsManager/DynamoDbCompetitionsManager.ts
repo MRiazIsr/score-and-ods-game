@@ -12,22 +12,15 @@ export class DynamoDbCompetitionsManager {
         this.dataAccess = dataAccess;
     }
 
-    public async getActiveDayMatches(competitionId: number, season: number, userId: string)
+    public async getAllMatchesWithPredictions(competitionId: number, matchDay: number, season: number, userId: string)
     {
         const competitionRawData: GetCommandOutput = await this.dataAccess.getCompetitionData(competitionId, season);
         const now = new Date();
+        console.log('Competition Raw Data', competitionRawData);
         const matches: Match[] = competitionRawData.Item?.rawData?.matches;
-
-        // Фильтруем матчи сначала
-        const filteredMatches = matches.filter((match: Match) => {
-            if (match.competition.type === 'CUP') {
-                return match.status === 'TIMED' && match.stage !== 'LEAGUE_STAGE';
-            }
-            return match.matchday === match.season.currentMatchday;
-        });
-
+        console.log('Matches', matches);
         return await Promise.all(
-            filteredMatches.map(async (match: Match): Promise<Match> => {
+            matches.filter((match) => match.matchday === matchDay).map(async (match: Match): Promise<Match> => {
                 const matchDate = new Date(match.utcDate);
                 match.isStarted = matchDate < now;
                 try {
@@ -59,7 +52,7 @@ export class DynamoDbCompetitionsManager {
         return helperCompetitionData.Item?.ActiveSeason;
     }
 
-    public async getCompetitionData(competitionId: number): Promise<Competition[]>
+    public async getCompetitionData(competitionId: number): Promise<Competition>
     {
         const helperCompetitionData: GetCommandOutput = await this.dataAccess.getCompetitionHelperData(competitionId);
         return helperCompetitionData.Item?.competitionData;
@@ -84,7 +77,7 @@ export class DynamoDbCompetitionsManager {
         try {
             const season = await this.getActiveSeason(competitionId);
             const competitionData = await this.getCompetitionData(competitionId);
-            const competitionName = competitionData.length > 0 ? competitionData[0].name : `Competition ${competitionId}`;
+            const competitionName = competitionData.name ?? `Competition ${competitionId}`;
 
             const matchesResponse = await this.dataAccess.getCompetitionData(competitionId, season);
             if (!matchesResponse.Item?.rawData) {

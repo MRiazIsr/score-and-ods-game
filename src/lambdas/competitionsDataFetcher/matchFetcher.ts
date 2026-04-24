@@ -54,13 +54,26 @@ const saveRawMatchesResponseToDynamoDB = async (competitions: Record<string, Mat
 
         console.log('COMPT_ID', competitionId, 'SEASON', competitionData.filters.season);
         console.log('LENGTH', competitionData.matches?.length || 0);
+        const activeMatchDay = competitionData.matches?.[0]?.season?.currentMatchday ?? 0;
+        const matchDaysSet = new Set<number>();
+        competitionData.matches.forEach(match => {
+            matchDaysSet.add(match.matchday);
+        });
 
+        const competitionStructureData = {
+            ...competitionData.competition,
+            activeMatchDay,
+            matchDays: Array.from(matchDaysSet).sort((a, b) => a - b),
+            season: competitionData.filters.season,
+        }
         const helperItem = {
             PartitionKey: `COMPETITION_ID#${competitionId}`,
             SortKey: `HELPER`,
             ActiveSeason: competitionData.filters.season,
-            competitionData: competitionData.competition,
+            competitionData: competitionStructureData,
         }
+
+        console.log('HELPER_ITEM', helperItem);
 
         const helperCommand = new PutCommand({
             TableName: process.env.AWS_TABLE_NAME,

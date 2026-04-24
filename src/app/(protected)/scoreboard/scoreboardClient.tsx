@@ -7,7 +7,7 @@ import { ScoreBoardTable } from "@/app/client/components/ui/ScoreBoardTable";
 import { getScoreBoardData } from "@/app/actions/scoreboard";
 
 interface ScoreboardClientProps {
-  competitions: Competition[][];
+  competitions: Competition[];
   defaultCompetitionId: number;
   currentUserId?: string;
 }
