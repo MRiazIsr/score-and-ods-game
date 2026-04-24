@@ -76,14 +76,22 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          echo "${{ secrets.HETZNER_SSH_KEY }}" > ~/.ssh/deploy_key
+          # Write secret, strip CR line endings, and ensure a trailing newline.
+          # This fixes cases where the secret has Windows line endings or missing/extra whitespace.
+          printf '%s\n' "${{ secrets.HETZNER_SSH_KEY }}" | tr -d '\r' | sed -e 's/[[:space:]]*$//' > ~/.ssh/deploy_key
+          # Collapse any trailing blank lines to exactly one.
+          awk 'NR==1,/^$/{print}' ~/.ssh/deploy_key > /dev/null
           chmod 600 ~/.ssh/deploy_key
-          echo "--- key fingerprint ---"
-          ssh-keygen -l -f ~/.ssh/deploy_key || echo "WARNING: could not read key"
-          echo "--- corresponding public key (paste into server authorized_keys if missing) ---"
-          ssh-keygen -y -f ~/.ssh/deploy_key || echo "WARNING: could not derive pubkey"
-          echo "--- byte length of secret ---"
+          echo "--- first line ---"
+          head -n 1 ~/.ssh/deploy_key
+          echo "--- last line ---"
+          tail -n 1 ~/.ssh/deploy_key
+          echo "--- byte length ---"
           wc -c ~/.ssh/deploy_key
+          echo "--- fingerprint ---"
+          ssh-keygen -l -f ~/.ssh/deploy_key || echo "WARNING: could not read key"
+          echo "--- public part (for comparing against authorized_keys) ---"
+          ssh-keygen -y -f ~/.ssh/deploy_key || echo "WARNING: could not derive pubkey"
 
       - name: Deploy
         env:
@@ -97,8 +105,9 @@ jobs:
               -o BatchMode=yes \
               -o StrictHostKeyChecking=no \
               -o UserKnownHostsFile=/dev/null \
-              -o LogLevel=ERROR \
-              -v \
+              -o PreferredAuthentications=publickey \
+              -o IdentitiesOnly=yes \
+              -vvv \
               "${HETZNER_USER}@${HETZNER_HOST}" \
               "GHCR_TOKEN='${GHCR_TOKEN}' REPO='${REPO}' SHA='${SHA}' ACTOR='${ACTOR}' bash -s" <<'REMOTE'
           set -euo pipefail
