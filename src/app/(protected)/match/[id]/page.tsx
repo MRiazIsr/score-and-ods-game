@@ -2,8 +2,10 @@ import { notFound } from "next/navigation";
 import { CompetitionsService, type TeamFormResult } from "@/app/server/services/auth/CompetitionsService";
 import { CompetitionsEntity } from "@/app/server/entities/CompetitionsEntity";
 import { CrowdService, type CrowdBucket } from "@/app/server/services/auth/CrowdService";
-import { CompetitionModel } from "@/app/server/models/CompetitionModel";
-import { selectFactory } from "@/app/server/modules/factories/competitionsFactory/CompetitionsFactorySelector";
+import { competitionRepository } from "@/app/server/db/repositories/competitionRepository";
+import { matchRepository } from "@/app/server/db/repositories/matchRepository";
+import { predictionRepository } from "@/app/server/db/repositories/predictionRepository";
+import { toApiCompetition, toApiMatch } from "@/app/server/services/mappers";
 import type { Match } from "@/app/server/modules/competitions/types";
 import { getSession } from "@/app/actions/auth";
 import MatchDetailClient from "./matchDetailClient";
@@ -39,19 +41,12 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
 
     const { match, season } = found;
 
-    // Attach user prediction to match
     try {
-        const existing = await CompetitionModel.getMatchScore(
-            userId,
-            match.competition.id,
-            season,
-            match.matchday,
-            match.id,
-        );
-        if (existing.Item) {
+        const existing = await predictionRepository.findByUserAndMatch(userId, matchId);
+        if (existing) {
             match.predictedScore = {
-                home: existing.Item.homeScore as number,
-                away: existing.Item.awayScore as number,
+                home: existing.homeScore,
+                away: existing.awayScore,
                 isPredicted: true,
             };
         }
@@ -59,9 +54,15 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         console.error("Error loading user prediction:", e);
     }
 
+    const comp = await competitionRepository.findByIdWithActiveSeason(match.competition.id);
+    const allMatchesPromise: Promise<Match[]> = (async () => {
+        if (!comp || !comp.activeSeason) return [];
+        const rawMatches = await matchRepository.findByCompetitionSeason(match.competition.id, comp.activeSeason.id);
+        const apiComp = toApiCompetition(comp, []);
+        return rawMatches.map((m) => toApiMatch(m, apiComp, comp.activeSeason!));
+    })();
+
     const crowdService = new CrowdService();
-    const factory = selectFactory(process.env.DB_TYPE);
-    const manager = factory.createCompetitionsManager();
 
     const [homeForm, awayForm, crowd, allMatchesInCompetition]: [
         TeamFormResult[],
@@ -80,7 +81,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
             5,
         ),
         crowdService.getCrowdPicks(match.id, match.competition.id, season, match.matchday),
-        manager.getAllMatches(match.competition.id, season),
+        allMatchesPromise,
     ]);
 
     const h2h = h2hInSeason(allMatchesInCompetition, match.homeTeam.id, match.awayTeam.id);

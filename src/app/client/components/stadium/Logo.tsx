@@ -6,7 +6,7 @@ interface LogoProps {
     tone?: "brand" | "ink";
 }
 
-export function PitchrLogo({ size = 28, label = "Pitchr", tone = "brand" }: LogoProps) {
+export function AppLogo({ size = 28, label = "Pick The Score", tone = "brand" }: LogoProps) {
     const fill = tone === "brand" ? "#9D0010" : "#0B0F0A";
     const markStyle: CSSProperties = {
         width: size,

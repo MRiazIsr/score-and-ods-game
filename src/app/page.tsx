@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PitchrLogo } from "@/app/client/components/stadium/Logo";
+import { AppLogo } from "@/app/client/components/stadium/Logo";
 import { HeroGallery } from "@/app/client/components/stadium/HeroGallery";
 import { Chip } from "@/app/client/components/stadium/Chip";
 
@@ -11,7 +11,7 @@ export default function Landing() {
                 className="flex items-center justify-between border-b border-line"
                 style={{ padding: "18px 32px" }}
             >
-                <PitchrLogo />
+                <AppLogo />
                 <div className="hidden md:flex gap-7 text-ink2" style={{ fontSize: 13, fontWeight: 500 }}>
                     <span>Private leagues</span>
                     <span>Widgets</span>
@@ -144,7 +144,7 @@ export default function Landing() {
                                 border: "1px dashed #E4E1D6",
                             }}
                         >
-                            pitchr.app/j/4Fk9-Tm2
+                            pickthescore.app/j/4Fk9-Tm2
                         </div>
                     </div>
                 </div>
@@ -238,7 +238,7 @@ export default function Landing() {
                                     fontSize: 11,
                                 }}
                             >
-                                <div style={{ color: "#6AB3F3", fontWeight: 600, fontSize: 10 }}>Pitchr Bot</div>
+                                <div style={{ color: "#6AB3F3", fontWeight: 600, fontSize: 10 }}>Pick The Score Bot</div>
                                 <div style={{ marginTop: 2 }}>🏟 ARS vs LIV · picks close in 18m</div>
                             </div>
                             <button
@@ -255,7 +255,7 @@ export default function Landing() {
                                     fontWeight: 600,
                                 }}
                             >
-                                Open Pitchr
+                                Open Pick The Score
                             </button>
                         </div>
                     </div>
@@ -297,7 +297,7 @@ export default function Landing() {
                     className="flex items-center justify-between"
                 >
                     <span className="font-mono" style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>
-                        {'<script src="pitchr.app/embed.js" data-match="ars-liv"/>'}
+                        {'<script src="pickthescore.app/embed.js" data-match="ars-liv"/>'}
                     </span>
                     <button type="button" style={{ fontSize: 11, fontWeight: 700, color: "#FCA5A5", background: "transparent", border: "none" }}>
                         Copy
@@ -404,8 +404,8 @@ export default function Landing() {
             {/* footer */}
             <footer className="border-t border-line text-ink2" style={{ padding: "24px 32px" }}>
                 <div className="mx-auto flex items-center justify-between" style={{ maxWidth: 1080, fontSize: 11 }}>
-                    <span>© Pitchr · Call the score.</span>
-                    <span className="font-mono">pitchr.app</span>
+                    <span>© Pick The Score · Call the score.</span>
+                    <span className="font-mono">pickthescore.app</span>
                 </div>
             </footer>
         </div>

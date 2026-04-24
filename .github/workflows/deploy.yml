@@ -1,280 +1,146 @@
-name: Deploy stack & Lightsail
+name: Build & Deploy to Hetzner
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
-  id-token: write
   contents: read
+  packages: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
-  AWS_REGION: eu-central-1
   NODE_VERSION: '20'
-  LIGHTSAIL_SERVICE_NAME: score-game
-  TABLE_NAME: SoccerGameData
-  DEPLOY_TIMEOUT_MINUTES: 10
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
 
 jobs:
-  filter:
+  build-and-push:
     runs-on: ubuntu-latest
     outputs:
-      sls: ${{ steps.changes.outputs.sls }}
-      app: ${{ steps.changes.outputs.app }}
+      image: ${{ steps.meta.outputs.image }}
+      tag: ${{ steps.meta.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
-      - id: changes
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            sls:
-              - 'serverless.yml'
-              - 'src/lambdas/**'
-            
 
-  serverless-deploy:
-    concurrency:
-      group: serverless-${{ github.ref }}
-      cancel-in-progress: true
-    needs: filter
-    if: needs.filter.outputs.sls == 'true'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image name (lowercase)
+        id: meta
+        run: |
+          IMAGE=$(echo "${IMAGE_NAME}" | tr '[:upper:]' '[:lower:]')
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare build secrets
+        run: |
+          echo -n "${{ secrets.SESSION_PASSWORD }}" > /tmp/session_password
+          echo -n "${{ secrets.SESSION_COOKIE_NAME }}" > /tmp/session_cookie_name
+          echo -n "${{ secrets.API_KEY }}" > /tmp/api_key
+
+      - name: Build & push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ github.sha }}
+            ${{ steps.meta.outputs.image }}:latest
+          secret-files: |
+            session_password=/tmp/session_password
+            session_cookie_name=/tmp/session_cookie_name
+            api_key=/tmp/api_key
+
+      - name: Cleanup build secrets
+        if: always()
+        run: rm -f /tmp/session_password /tmp/session_cookie_name /tmp/api_key
+
+  deploy-to-hetzner:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - uses: unfor19/install-aws-cli-action@v1
-        with:
-          version: '2'
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: github-ci
-          aws-region: ${{ env.AWS_REGION }}
-
-      - run: npm ci
-      - name: Deploy serverless with validation
-        env:
-          API_KEY: ${{ secrets.API_KEY }}
-        run: |
-          echo "Validating Serverless configuration..."
-          npx serverless print --stage production
-
-          if [ $? -eq 0 ]; then
-            echo "✅ Configuration validation successful, proceeding with deployment..."
-            npx serverless deploy --stage production
-          else
-            echo "❌ Configuration validation failed"
-            exit 1
-          fi
-
-  lightsail-deploy:
-    concurrency:
-      group: lightsail-${{ github.ref }}
-      cancel-in-progress: true
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
+    needs: build-and-push
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Copy deploy artifacts (compose, Caddyfile, systemd units, backup scripts)
+        uses: appleboy/scp-action@v0.1.7
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          source: "deploy/docker-compose.yml,deploy/Caddyfile,deploy/fetcher.service,deploy/fetcher.timer,deploy/backup.service,deploy/backup.timer,deploy/backup.sh,deploy/restore-latest.sh,deploy/RESTORE.md"
+          target: "/opt/tipmgr/"
+          strip_components: 1
 
-      - uses: unfor19/install-aws-cli-action@v1
+      - name: Deploy — pull image, apply migrations, restart app
+        uses: appleboy/ssh-action@v1
         with:
-          version: '2'
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          envs: IMAGE_TAG
+          script: |
+            set -euo pipefail
+            cd /opt/tipmgr
 
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: github-ci
-          aws-region: ${{ env.AWS_REGION }}
+            # Set IMAGE_TAG for this deploy (sourced by docker-compose).
+            export IMAGE_TAG="${{ github.sha }}"
+            grep -v '^IMAGE_TAG=' .env > .env.tmp || true
+            echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.tmp
+            mv .env.tmp .env
+            chmod 600 .env
 
-      - name: Install Lightsail tools
+            # Make scripts executable after scp (flags don't survive scp).
+            chmod +x backup.sh restore-latest.sh
+
+            # Ensure systemd units are in /etc/systemd/system and current.
+            sudo cp fetcher.service fetcher.timer backup.service backup.timer /etc/systemd/system/
+            sudo systemctl daemon-reload
+
+            # Pull new image and recreate app; migrations run inside container CMD.
+            docker compose pull app
+            docker compose up -d postgres
+            docker compose up -d app
+            docker compose up -d caddy
+
+            # Enable timers (idempotent).
+            sudo systemctl enable --now fetcher.timer backup.timer
+
+            # Wait for app health.
+            for i in $(seq 1 30); do
+              if docker compose exec -T app curl -fsS http://localhost:3000/api/health > /dev/null 2>&1; then
+                echo "App is healthy."
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "App health check failed after 30 attempts"
+                docker compose logs --tail=100 app
+                exit 1
+              fi
+              sleep 2
+            done
+
+      - name: External smoke test
         run: |
-          sudo apt-get update && sudo apt-get install -y jq curl
-          curl -s "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "lightsailctl"
-          sudo mv lightsailctl /usr/local/bin/lightsailctl
-          sudo chmod +x /usr/local/bin/lightsailctl
-          aws configure set plugins.lightsail lightsailctl
-          
-          echo "Verifying Lightsail plugin installation..."
-          aws lightsail help | head -5 || echo "Plugin installed but help may not be available"
-      - run: npm ci
-
-      - name: Build Next.js (verify locally first)
-        run: npm run build
-        env:
-          SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
-          SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
-          API_KEY: ${{ secrets.API_KEY }}
-          TABLE_NAME: SoccerGameData
-
-      - name: Docker build with secrets
-        env:
-          SESSION_PASSWORD: ${{ secrets.SESSION_PASSWORD }}
-          SESSION_COOKIE_NAME: ${{ secrets.SESSION_COOKIE_NAME }}
-          API_KEY: ${{ secrets.API_KEY }}
-          TABLE_NAME: SoccerGameData
-        run: |
-          echo "Building Docker image with secrets..."
-          set -e
-
-          # Create temporary secret files
-          echo "$SESSION_PASSWORD" > /tmp/session_password
-          echo "$SESSION_COOKIE_NAME" > /tmp/session_cookie_name
-          echo "$API_KEY" > /tmp/api_key
-
-          export DOCKER_BUILDKIT=1
-
-          # Build with secrets
-          docker build \
-            -t score-game:latest \
-            --build-arg TABLE_NAME="$TABLE_NAME" \
-            --secret id=session_password,src=/tmp/session_password \
-            --secret id=session_cookie_name,src=/tmp/session_cookie_name \
-            --secret id=api_key,src=/tmp/api_key \
-            .
-
-          # Cleanup
-          rm -f /tmp/session_password /tmp/session_cookie_name /tmp/api_key
-
-          echo "Docker build completed successfully"
-          
-          if [ $? -ne 0 ]; then
-            echo "Docker build failed"
-            exit 1
-          fi
-
-      - name: Push & deploy
-        run: |
-          set -eo pipefail
-
-          # Ensure the container service exists (idempotent)
-          echo "Creating/verifying Lightsail container service..."
-          aws lightsail create-container-service \
-            --no-cli-pager \
-            --service-name "$LIGHTSAIL_SERVICE_NAME" \
-            --power nano \
-            --scale 1 2>/dev/null || echo "Container service may already exist"
-
-          # Wait a moment for service to be ready
-          sleep 10
-
-          # Verify AWS credentials and connection
-          echo "Verifying AWS credentials..."
-          aws sts get-caller-identity
-
-          # Check if lightsailctl is properly configured
-          echo "Verifying Lightsail plugin..."
-          which lightsailctl || echo "lightsailctl not found in PATH"
-
-          # Push the Docker image to Lightsail
-          echo "Pushing image to Lightsail..."
-          PUSH_RESULT=0
-          PUSH_OUTPUT=$(aws lightsail push-container-image \
-            --no-cli-pager \
-            --service-name "$LIGHTSAIL_SERVICE_NAME" \
-            --label score-game-app \
-            --image score-game:latest 2>&1) || PUSH_RESULT=$?
-
-          if [ $PUSH_RESULT -ne 0 ]; then
-            echo "Error pushing image to Lightsail: $PUSH_OUTPUT"
-            echo "Exit code: $PUSH_RESULT"
-
-            # Try alternative approach with direct lightsailctl
-            echo "Attempting direct lightsailctl push..."
-            lightsailctl push-container-image \
-              --service-name "$LIGHTSAIL_SERVICE_NAME" \
-              --label score-game-app \
-              --image score-game:latest || exit $PUSH_RESULT
-          fi
-
-          echo "Push output: $PUSH_OUTPUT"
-
-          # Wait for image to be processed
-          sleep 5
-
-          # Extract image reference using the AWS CLI query parameter instead of regex
-          echo "Getting container images..."
-          CONTAINER_IMAGES=$(aws lightsail get-container-images \
-            --no-cli-pager \
-            --service-name "$LIGHTSAIL_SERVICE_NAME")
-
-          echo "Container images: $CONTAINER_IMAGES"
-
-          # Get the most recent image (first in the list)
-          IMAGE_REF=$(echo "$CONTAINER_IMAGES" | jq -r '.containerImages[0].image')
-
-          if [ -z "$IMAGE_REF" ] || [ "$IMAGE_REF" = "null" ]; then
-            echo "Failed to extract image reference"
-            echo "Available images:"
-            echo "$CONTAINER_IMAGES" | jq '.containerImages[].image'
-            exit 1
-          fi
-
-          echo "Image pushed: $IMAGE_REF"
-
-          # Define container and public endpoint configurations using workflow variables
-          # Note: Runtime secrets will need to be passed through Lightsail environment variables
-          CONTAINERS_JSON='{"score-game-app":{"image":"'"$IMAGE_REF"'","environment":{"AWS_REGION":"'"$AWS_REGION"'","AWS_TABLE_NAME":"'"$TABLE_NAME"'","AWS_ACCESS_KEY_ID":"'"${{ secrets.LIGHTSAIL_AWS_ACCESS_KEY_ID }}"'","AWS_SECRET_ACCESS_KEY":"'"${{ secrets.LIGHTSAIL_AWS_SECRET_ACCESS_KEY }}"'","SESSION_PASSWORD":"'"${{ secrets.SESSION_PASSWORD }}"'","SESSION_COOKIE_NAME":"'"${{ secrets.SESSION_COOKIE_NAME }}"'","API_KEY":"'"${{ secrets.API_KEY }}"'"},"ports":{"3000":"HTTP"}}}'
-          PUBLIC_ENDPOINT_JSON='{"containerName":"score-game-app","containerPort":3000,"healthCheck":{"path":"/api/health","successCodes":"200","healthyThreshold":10,"unhealthyThreshold":2,"intervalSeconds":10,"timeoutSeconds":5}}'
-
-          echo "Deploying with containers config..."
-          echo "Public endpoint config: $PUBLIC_ENDPOINT_JSON"
-
-          # Deploy the new version using the configurations
-          aws lightsail create-container-service-deployment \
-            --no-cli-pager \
-            --service-name "$LIGHTSAIL_SERVICE_NAME" \
-            --containers "$CONTAINERS_JSON" \
-            --public-endpoint "$PUBLIC_ENDPOINT_JSON"
-
-          echo "Deployment initiated. Monitoring status..."
-
-          # Monitor deployment status with timeout
-          START_TIME=$(date +%s)
-          TIMEOUT=$((${DEPLOY_TIMEOUT_MINUTES} * 60))
-
-          while true; do
-            CURRENT_TIME=$(date +%s)
-            ELAPSED=$((CURRENT_TIME - START_TIME))
-
-            if [ $ELAPSED -gt $TIMEOUT ]; then
-              echo "Deployment timeout after ${DEPLOY_TIMEOUT_MINUTES} minutes!"
-              exit 1
+          for i in $(seq 1 12); do
+            if curl -fsS "https://${{ secrets.CADDY_DOMAIN || 'pickthescore.app' }}/api/health" > /dev/null; then
+              echo "External health check passed."
+              exit 0
             fi
-
-            # Use correct command - get-container-services with service filter
-            SERVICE_INFO=$(aws lightsail get-container-services \
-              --no-cli-pager \
-              --service-name "$LIGHTSAIL_SERVICE_NAME")
-
-            STATE=$(echo "$SERVICE_INFO" | jq -r '.containerServices[0].state')
-            echo "Current state: $STATE (elapsed: $((ELAPSED/60))m $((ELAPSED%60))s)"
-
-            if [ "$STATE" == "RUNNING" ]; then
-              echo "✅ Deployment completed successfully!"
-
-              # Get the public endpoint URL
-              ENDPOINT_URL=$(echo "$SERVICE_INFO" | jq -r '.containerServices[0].url')
-              echo "Application available at: $ENDPOINT_URL"
-
-              # Verify the health endpoint is responding
-              echo "Verifying health endpoint..."
-              curl -s "${ENDPOINT_URL}/api/health" || echo "Warning: Health check failed but deployment completed"
-
-              break
-            elif [ "$STATE" == "DEPLOYING" ] || [ "$STATE" == "PENDING" ]; then
-              echo "Deployment in progress..."
-              sleep 20
-            else
-              echo "❌ Deployment failed with state: $STATE"
-              echo "Container logs may provide more information."
-              exit 1
-            fi
+            echo "Waiting for external health... ($i/12)"
+            sleep 5
           done
+          echo "External health check failed."
+          exit 1

@@ -1,12 +1,23 @@
-
 services:
-  dynamodb-local:
-    command: "-jar DynamoDBLocal.jar -cors * -sharedDb -dbPath ./data"
-    image: "amazon/dynamodb-local:latest"
-    container_name: dynamodb-local
-    user: root
+  postgres:
+    image: postgres:16-alpine
+    container_name: pckthscr-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tip_manager
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "8000:8000"
+      - "5435:5432"
     volumes:
-      - "./docker/dynamodb:/home/dynamodblocal/data"
-    working_dir: /home/dynamodblocal
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tip_manager"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres-data:
+    driver: local

@@ -27,7 +27,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "Pitchr — Score Prediction Game",
+    title: "Pick The Score — Score Prediction Game",
     description: "Your group. Your league. Predict every fixture before kickoff.",
 };
 

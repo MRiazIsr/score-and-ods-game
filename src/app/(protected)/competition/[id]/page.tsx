@@ -12,6 +12,7 @@ export default async function CompetitionPage({ params }: {params: Promise<{ id:
     if (Number.isNaN(competitionId)) notFound();
 
     const competition = await getCompetitionData(competitionId);
+    if (!competition) notFound();
     const matchDays = await getAllMatchDays(competitionId);
 
     return <MatchesClient competition={competition} matchDays={matchDays} />;

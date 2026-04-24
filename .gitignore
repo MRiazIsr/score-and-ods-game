@@ -19,6 +19,14 @@
 
 # production
 /build
+/dist
+
+# IDE / tooling state
+/.claude/
+/.idea/copilot.*
+
+# Legacy local service data (pre-migration DynamoDB + Postgres attempts)
+/docker/
 
 # misc
 .DS_Store

@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Match } from "@/app/server/modules/competitions/types";
 import { Chip } from "./Chip";
-import { computePoints } from "@/app/server/modules/competitions/scoring";
+import { calculatePoints as computePoints } from "@/app/server/services/ScoringService";
 
 type CardVariant = "scheduled" | "live" | "final";
 

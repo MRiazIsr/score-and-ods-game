@@ -1,4 +1,4 @@
-import { UserModel } from "@/app/server/models/UserModel";
+import { predictionRepository } from "@/app/server/db/repositories/predictionRepository";
 
 export interface CrowdBucket {
     score: string;
@@ -7,29 +7,23 @@ export interface CrowdBucket {
 }
 
 export class CrowdService {
-
     async getCrowdPicks(
         matchId: number,
-        competitionId: number,
-        season: number,
-        matchDay: number,
+        _competitionId: number,
+        _season: number,
+        _matchDay: number,
     ): Promise<CrowdBucket[]> {
-        const usersResponse = await UserModel.getAllUsers();
-        const usersData = (usersResponse.Item?.usersData as Array<{ userId: string }> | undefined) ?? [];
-        if (!usersData.length) return [];
-
-        const userIds = usersData.map((u) => u.userId);
-        const picks = await UserModel.batchGetMatchScores(userIds, competitionId, season, matchDay, matchId);
-        if (!picks.length) return [];
+        const picks = await predictionRepository.findVisibleUsersPredictionsForMatch(matchId);
+        if (picks.length === 0) return [];
 
         const counts = new Map<string, number>();
-        for (const pick of picks) {
-            const key = `${pick.homeScore}–${pick.awayScore}`;
+        for (const p of picks) {
+            const key = `${p.homeScore}–${p.awayScore}`;
             counts.set(key, (counts.get(key) ?? 0) + 1);
         }
 
         const total = picks.length;
-        const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+        const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
 
         return sorted.slice(0, 5).map(([score, count]) => ({
             score,

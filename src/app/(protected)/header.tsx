@@ -5,7 +5,7 @@ import { useActionState, useEffect, useState } from "react";
 import { signOut } from "@/app/actions/auth";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { PitchrLogo } from "@/app/client/components/stadium/Logo";
+import { AppLogo } from "@/app/client/components/stadium/Logo";
 
 function useIsNarrowViewport(): boolean {
     const [isNarrow, setIsNarrow] = useState(false);
@@ -58,8 +58,8 @@ export default function Header() {
             >
                 {/* left: logo + primary nav */}
                 <div className="flex items-center gap-6">
-                    <Link href="/dashboard" aria-label="Pitchr home">
-                        <PitchrLogo />
+                    <Link href="/dashboard" aria-label="Pick The Score home">
+                        <AppLogo />
                     </Link>
 
                     <nav className="flex gap-1" style={{ display: isNarrow ? "none" : "flex" }}>

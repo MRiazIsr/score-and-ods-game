@@ -1,32 +1,41 @@
-"use server"
+"use server";
 
-import {ICompetitionsFactory} from "@/app/server/modules/factories/competitionsFactory/ICompetitionsFactory";
-import {selectFactory} from "@/app/server/modules/factories/competitionsFactory/CompetitionsFactorySelector";
-import {CompetitionsEntity} from "@/app/server/entities/CompetitionsEntity";
+import { CompetitionsEntity } from "@/app/server/entities/CompetitionsEntity";
 import { Competition } from "@/app/server/modules/competitions/types";
+import { CompetitionsService } from "@/app/server/services/auth/CompetitionsService";
+import { logError } from "@/app/lib/errors";
 
 export async function getCompetitions(): Promise<Array<Competition>> {
-    const competitionsFactory: ICompetitionsFactory = selectFactory(process.env.DB_TYPE);
-    const competitionsService = competitionsFactory.createCompetitionsService();
-
-    const competitions = [];
+    const service = new CompetitionsService();
+    const competitions: Competition[] = [];
 
     for (const competitionId of CompetitionsEntity.competitionsIdArray) {
-        competitions.push(await competitionsService.getCompetitionData(competitionId));
+        try {
+            competitions.push(await service.getCompetitionData(competitionId));
+        } catch (err) {
+            logError("actions/competitions.getCompetitions.one", err, { competitionId });
+        }
     }
 
     return competitions;
 }
 
-export async function getCompetitionData(competitionId: number): Promise<Competition> {
-    const competitionsFactory: ICompetitionsFactory = selectFactory(process.env.DB_TYPE);
-    const competitionsService = competitionsFactory.createCompetitionsService();
-
-    return await competitionsService.getCompetitionData(competitionId);
+export async function getCompetitionData(competitionId: number): Promise<Competition | null> {
+    try {
+        const service = new CompetitionsService();
+        return await service.getCompetitionData(competitionId);
+    } catch (err) {
+        logError("actions/competitions.getCompetitionData", err, { competitionId });
+        return null;
+    }
 }
 
 export async function getAllMatchDays(competitionId: number): Promise<number[]> {
-    const competitionsFactory: ICompetitionsFactory = selectFactory(process.env.DB_TYPE);
-    const competitionsService = competitionsFactory.createCompetitionsService();
-    return await competitionsService.getAllCompetitionMatchDays(competitionId);
+    try {
+        const service = new CompetitionsService();
+        return await service.getAllCompetitionMatchDays(competitionId);
+    } catch (err) {
+        logError("actions/competitions.getAllMatchDays", err, { competitionId });
+        return [];
+    }
 }

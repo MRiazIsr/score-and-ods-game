@@ -1,4 +1,4 @@
-// Stadium design tokens — ported from the Pitchr design bundle.
+// Stadium design tokens — ported from the Pick The Score design bundle.
 // Deep navy (#1E3A8A) is the accent; deep red (#9D0010) is the brand surface.
 // Body ink stays conservative near-black so text remains readable on bone paper.
 

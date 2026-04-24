@@ -1,37 +1,29 @@
-import { selectFactory } from "@/app/server/modules/factories/competitionsFactory/CompetitionsFactorySelector";
 import { CompetitionsEntity } from "@/app/server/entities/CompetitionsEntity";
-import type { Competition, Match } from "@/app/server/modules/competitions/types";
-import { UserModel } from "@/app/server/models/UserModel";
-import { computePoints } from "@/app/server/modules/competitions/scoring";
+import { competitionRepository } from "@/app/server/db/repositories/competitionRepository";
+import { matchRepository } from "@/app/server/db/repositories/matchRepository";
+import { predictionRepository } from "@/app/server/db/repositories/predictionRepository";
+import { toApiCompetition, toApiMatch } from "@/app/server/services/mappers";
 import { getSession } from "@/app/actions/auth";
 import LeaguesClient, { type LeagueSummary } from "./leaguesClient";
+import type { Match } from "@/app/server/modules/competitions/types";
 
 export const revalidate = 300;
 
 const UPCOMING_STATUSES = new Set(["SCHEDULED", "TIMED"]);
 
-function extractMatchId(sortKey: string): number | null {
-    const m = sortKey.match(/MATCH#(\d+)$/);
-    return m ? parseInt(m[1], 10) : null;
-}
-
 export default async function LeaguesPage() {
     const session = await getSession();
     const userId = session.user?.userId;
 
-    const factory = selectFactory(process.env.DB_TYPE);
-    const manager = factory.createCompetitionsManager();
-
     const leagues: LeagueSummary[] = [];
 
     for (const cid of CompetitionsEntity.competitionsIdArray) {
-        const competition: Competition | undefined = await manager.getCompetitionData(cid);
-        if (!competition) continue;
+        const comp = await competitionRepository.findByIdWithActiveSeason(cid);
+        if (!comp) continue;
 
-        const season = await manager.getActiveSeason(cid);
-        if (!season) {
+        if (!comp.activeSeason) {
             leagues.push({
-                competition,
+                competition: toApiCompetition(comp, []),
                 fixturesCount: 0,
                 userPoints: 0,
                 nextFixtures: [],
@@ -40,44 +32,45 @@ export default async function LeaguesPage() {
             continue;
         }
 
-        const matches: Match[] = await manager.getAllMatches(cid, season);
-        const scheduled = matches
+        const matchdays = await matchRepository.getMatchdaysForCompetitionSeason(cid, comp.activeSeason.id);
+        const apiComp = toApiCompetition(comp, matchdays);
+
+        const allMatches = await matchRepository.findByCompetitionSeason(cid, comp.activeSeason.id);
+
+        const scheduledDb = allMatches
             .filter((m) => UPCOMING_STATUSES.has(m.status) && !!m.homeTeam?.name && !!m.awayTeam?.name)
-            .sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime())
+            .sort((a, b) => a.utcDate.getTime() - b.utcDate.getTime())
             .slice(0, 4);
 
         let userPoints = 0;
+        const predMap = new Map<number, { home: number; away: number }>();
+
         if (userId) {
-            const preds = await UserModel.getUserPredictions(userId, cid, season);
-            const predMap = new Map<number, { home: number; away: number }>();
-            (preds.Items ?? []).forEach((p) => {
-                const id = extractMatchId(p.SortKey as string);
-                if (id !== null) predMap.set(id, { home: p.homeScore, away: p.awayScore });
-            });
-
-            for (const match of matches) {
-                if (match.status !== "FINISHED") continue;
-                const predicted = predMap.get(match.id);
-                if (!predicted) continue;
-                const home = match.score.fullTime.home;
-                const away = match.score.fullTime.away;
-                if (home === null || away === null) continue;
-                userPoints += computePoints(predicted, { home, away });
-            }
-
-            // Attach user predictions onto next fixtures for display
-            for (const m of scheduled) {
-                const pick = predMap.get(m.id);
-                if (pick) m.predictedScore = { home: pick.home, away: pick.away, isPredicted: true };
+            const preds = await predictionRepository.findByUserAndCompetition(userId, cid, comp.activeSeason.id);
+            for (const p of preds) {
+                predMap.set(p.matchId, { home: p.homeScore, away: p.awayScore });
+                if (p.match.status === "FINISHED" && p.pointsAwarded != null) {
+                    userPoints += p.pointsAwarded;
+                }
             }
         }
 
+        const nextFixtures: Match[] = scheduledDb.map((m) => {
+            const pick = predMap.get(m.id);
+            return toApiMatch(
+                m,
+                apiComp,
+                comp.activeSeason!,
+                pick ? { home: pick.home, away: pick.away, isPredicted: true } : undefined,
+            );
+        });
+
         leagues.push({
-            competition,
-            fixturesCount: matches.length,
+            competition: apiComp,
+            fixturesCount: allMatches.length,
             userPoints,
-            nextFixtures: scheduled,
-            season,
+            nextFixtures,
+            season: comp.activeSeason.year,
         });
     }
 

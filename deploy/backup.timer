@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Pick The Score Postgres backup at 03:00 UTC
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+Persistent=true
+Unit=backup.service
+
+[Install]
+WantedBy=timers.target

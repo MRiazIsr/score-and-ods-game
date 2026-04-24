@@ -1,0 +1,12 @@
+[Unit]
+Description=Trigger Pick The Score fetcher hourly
+
+[Timer]
+# 5 min after boot, then hourly. Persistent catches up missed runs after downtime.
+OnBootSec=5min
+OnUnitActiveSec=1h
+Unit=fetcher.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target

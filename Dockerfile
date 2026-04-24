@@ -1,99 +1,94 @@
-# Define build arguments at the top
+# syntax=docker/dockerfile:1.7
 ARG NODE_VERSION=20
 
-# ---------- 1. base deps ------------- #
-FROM node:${NODE_VERSION}-alpine AS base
+# ──────────────────────────────────────────────────────────────────────────────
+# 1. deps — install all npm deps (prod + dev), needed for build.
+#    libc6-compat + openssl cover Prisma engines on Alpine.
+# ──────────────────────────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS deps
 WORKDIR /app
-
-# Install base dependencies
-RUN apk add --no-cache curl
-
-# ---------- 2. deps (prod only) ------------- #
-FROM base AS deps
-WORKDIR /app
-
-# Copy package files for dependency installation
-COPY package.json package-lock.json ./
-
-# Install production dependencies with cache mount
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev && npm cache clean --force
-
-# ---------- 3. builder (prod + dev + build) --- #
-FROM base AS builder
-WORKDIR /app
-
-# Accept non-sensitive build args only
-ARG TABLE_NAME=SoccerGameData
-
-# Set non-sensitive environment variables for Next.js build
-ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1 \
-    TABLE_NAME=${TABLE_NAME} \
-    AWS_TABLE_NAME=${TABLE_NAME} \
-    DB_TYPE=dynamodb \
-    AWS_REGION=eu-central-1 \
-    API_URL=https://api.football-data.org/v4
-
-# 3.1 install **all** deps (prod+dev) with clean install
+RUN apk add --no-cache libc6-compat openssl python3 make g++
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --include=dev
 
-# 3.2 copy source files
+# ──────────────────────────────────────────────────────────────────────────────
+# 2. builder — prisma generate + next build + fetcher bundle.
+# ──────────────────────────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine AS builder
+WORKDIR /app
+RUN apk add --no-cache libc6-compat openssl
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build Next.js application with secrets mounted
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    NODE_ENV=production
+
+# Prisma generate — produces .prisma/client and @prisma/client types.
+RUN npx prisma generate
+
+# Build Next.js (secrets forwarded via build args — only needed at compile time
+# for iron-session password validation).
 RUN --mount=type=secret,id=session_password \
     --mount=type=secret,id=session_cookie_name \
     --mount=type=secret,id=api_key \
     export SESSION_PASSWORD="$(cat /run/secrets/session_password)" && \
     export SESSION_COOKIE_NAME="$(cat /run/secrets/session_cookie_name)" && \
     export API_KEY="$(cat /run/secrets/api_key)" && \
-    echo "Starting build with secrets loaded..." && \
     npm run build
 
-# 3.3 prune dev-deps
-RUN npm prune --omit=dev
+# Bundle fetcher to a single node-compatible .js file.
+RUN npm run fetcher:build
 
-# ---------- 4. runtime image ------------- #
+# ──────────────────────────────────────────────────────────────────────────────
+# 3. runtime — minimal image running Next.js server + carries fetcher binary.
+# ──────────────────────────────────────────────────────────────────────────────
 FROM node:${NODE_VERSION}-alpine AS runtime
 WORKDIR /app
-
-# Install dumb-init and curl for proper process handling and health checks
-RUN apk add --no-cache dumb-init curl && \
+RUN apk add --no-cache dumb-init curl libc6-compat openssl && \
     addgroup -S app && adduser -S -G app app
 
-# Set non-sensitive runtime environment variables
 ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
-    NEXT_TELEMETRY_DISABLED=1 \
-    DB_TYPE=dynamodb \
-    AWS_REGION=eu-central-1
+    NEXT_TELEMETRY_DISABLED=1
 
-# Accept non-sensitive runtime args
-ARG TABLE_NAME=SoccerGameData
-ENV TABLE_NAME=${TABLE_NAME} \
-    AWS_TABLE_NAME=${TABLE_NAME}
-
-# Copy built application from builder stage
-COPY --from=builder --chown=app:app /app/next.config.js ./next.config.js
-COPY --from=builder --chown=app:app /app/package.json ./package.json
-# ✅ Using standalone build (smaller size)
+# Next.js standalone output — includes minimal runtime deps.
 COPY --from=builder --chown=app:app /app/.next/standalone ./
 COPY --from=builder --chown=app:app /app/.next/static ./.next/static
 COPY --from=builder --chown=app:app /app/public ./public
 
-# Verify the build was successful
-RUN ls -la .next/ && echo "Build verification complete"
+# Prisma: schema + migrations for `migrate deploy` at container start.
+COPY --from=builder --chown=app:app /app/prisma ./prisma
 
-# Health check with appropriate timings
+# Prisma generated client is NOT auto-traced by Next.js standalone — copy explicitly.
+COPY --from=builder --chown=app:app /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=app:app /app/node_modules/@prisma ./node_modules/@prisma
+
+# Prisma CLI binary for `migrate deploy` (bundled via npx).
+COPY --from=builder --chown=app:app /app/node_modules/prisma ./node_modules/prisma
+
+# argon2 native binding — NOT auto-traced either.
+COPY --from=builder --chown=app:app /app/node_modules/argon2 ./node_modules/argon2
+COPY --from=builder --chown=app:app /app/node_modules/node-addon-api ./node_modules/node-addon-api
+COPY --from=builder --chown=app:app /app/node_modules/node-gyp-build ./node_modules/node-gyp-build
+COPY --from=builder --chown=app:app /app/node_modules/@phc ./node_modules/@phc
+
+# Bundled fetcher + its external dep `axios` (marked external by esbuild).
+COPY --from=builder --chown=app:app /app/dist ./dist
+COPY --from=builder --chown=app:app /app/node_modules/axios ./node_modules/axios
+COPY --from=builder --chown=app:app /app/node_modules/follow-redirects ./node_modules/follow-redirects
+COPY --from=builder --chown=app:app /app/node_modules/form-data ./node_modules/form-data
+COPY --from=builder --chown=app:app /app/node_modules/proxy-from-env ./node_modules/proxy-from-env
+
+COPY --from=builder --chown=app:app /app/package.json ./package.json
+
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+  CMD curl -fsS http://localhost:3000/api/health || exit 1
 
 USER app
 EXPOSE 3000
 ENTRYPOINT ["dumb-init", "--"]
-# ✅ For standalone builds, use server.js instead of npm start
-CMD ["node", "server.js"]
+# Apply pending Prisma migrations, then start Next.js.
+# If migrate fails, container exits — old container keeps serving.
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node server.js"]

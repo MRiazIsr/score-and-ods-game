@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { PitchrLogo } from "./Logo";
+import { AppLogo } from "./Logo";
 import { AuthPreviewPanel } from "./AuthPreviewPanel";
 
 interface AuthShellProps {
@@ -22,7 +22,7 @@ export function AuthShell({ eyebrow, headline, sub, children, footer }: AuthShel
                     <section className="flex flex-col min-h-screen" style={{ padding: "32px 40px" }}>
                         <div className="flex items-center justify-between">
                             <Link href="/" aria-label="Back home">
-                                <PitchrLogo />
+                                <AppLogo />
                             </Link>
                             <Link
                                 href="/"
@@ -73,7 +73,7 @@ export function AuthShell({ eyebrow, headline, sub, children, footer }: AuthShel
                             className="uppercase text-ink2"
                             style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5 }}
                         >
-                            © Pitchr · Call the score.
+                            © Pick The Score · Call the score.
                         </div>
                     </section>
 

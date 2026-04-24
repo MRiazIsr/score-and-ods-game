@@ -1,0 +1,15 @@
+[Unit]
+Description=Pick The Score Postgres backup → Hetzner Object Storage
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/pckthscr
+EnvironmentFile=/opt/pckthscr/.env
+ExecStart=/opt/pckthscr/backup.sh
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=15min

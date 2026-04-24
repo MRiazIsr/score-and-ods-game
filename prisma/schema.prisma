@@ -1,0 +1,222 @@
+// tip-manager — Prisma schema
+// Generated as part of the AWS DynamoDB → PostgreSQL migration.
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+enum MatchStatus {
+  SCHEDULED
+  TIMED
+  IN_PLAY
+  PAUSED
+  FINISHED
+  POSTPONED
+  SUSPENDED
+  CANCELED
+}
+
+enum StandingTableType {
+  TOTAL
+  HOME
+  AWAY
+}
+
+model User {
+  id              String    @id @default(uuid()) @db.Uuid
+  username        String    @unique @db.VarChar(64)
+  email           String    @unique @db.VarChar(255)
+  passwordHash    String    @map("password_hash")
+  name            String    @db.VarChar(128)
+  profileImage    String?   @map("profile_image")
+  isAdmin         Boolean   @default(false) @map("is_admin")
+  isBanned        Boolean   @default(false) @map("is_banned")
+  isDeleted       Boolean   @default(false) @map("is_deleted")
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  predictions UserPrediction[]
+
+  @@index([isDeleted])
+  @@map("users")
+}
+
+model Competition {
+  id              Int       @id
+  code            String    @unique @db.VarChar(16)
+  name            String    @db.VarChar(128)
+  type            String    @db.VarChar(32)
+  emblemUrl       String?   @map("emblem_url")
+  currentMatchday Int?      @map("current_matchday")
+  activeSeasonId  String?   @map("active_season_id") @db.Uuid
+  lastSyncedAt    DateTime? @map("last_synced_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  activeSeason Season?     @relation("ActiveSeason", fields: [activeSeasonId], references: [id], onDelete: SetNull)
+  seasons      Season[]    @relation("CompetitionSeasons")
+  matches      Match[]
+  standings    Standing[]
+  topScorers   TopScorer[]
+
+  @@map("competitions")
+}
+
+model Season {
+  id            String    @id @default(uuid()) @db.Uuid
+  competitionId Int       @map("competition_id")
+  year          Int
+  startDate     DateTime? @map("start_date") @db.Date
+  endDate       DateTime? @map("end_date") @db.Date
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  competition Competition   @relation("CompetitionSeasons", fields: [competitionId], references: [id], onDelete: Cascade)
+  activeFor   Competition[] @relation("ActiveSeason")
+  matches     Match[]
+  standings   Standing[]
+  topScorers  TopScorer[]
+
+  @@unique([competitionId, year])
+  @@map("seasons")
+}
+
+model Team {
+  id        Int      @id
+  name      String   @db.VarChar(128)
+  shortName String?  @map("short_name") @db.VarChar(64)
+  tla       String?  @db.VarChar(8)
+  crestUrl  String?  @map("crest_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  homeMatches Match[]     @relation("HomeTeam")
+  awayMatches Match[]     @relation("AwayTeam")
+  standings   Standing[]
+  scorers     TopScorer[]
+
+  @@map("teams")
+}
+
+model Player {
+  id          Int       @id
+  name        String    @db.VarChar(128)
+  position    String?   @db.VarChar(32)
+  nationality String?   @db.VarChar(64)
+  dateOfBirth DateTime? @map("date_of_birth") @db.Date
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  topScorers TopScorer[]
+
+  @@map("players")
+}
+
+model Match {
+  id            Int         @id
+  competitionId Int         @map("competition_id")
+  seasonId      String      @map("season_id") @db.Uuid
+  matchday      Int?
+  stage         String?     @db.VarChar(64)
+  homeTeamId    Int         @map("home_team_id")
+  awayTeamId    Int         @map("away_team_id")
+  utcDate       DateTime    @map("utc_date")
+  status        MatchStatus
+  homeScoreFt   Int?        @map("home_score_ft")
+  awayScoreFt   Int?        @map("away_score_ft")
+  homeScoreHt   Int?        @map("home_score_ht")
+  awayScoreHt   Int?        @map("away_score_ht")
+  rawData       Json?       @map("raw_data")
+  lastSyncedAt  DateTime?   @map("last_synced_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  competition Competition      @relation(fields: [competitionId], references: [id])
+  season      Season           @relation(fields: [seasonId], references: [id])
+  homeTeam    Team             @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam    Team             @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  predictions UserPrediction[]
+
+  @@index([competitionId, seasonId, matchday])
+  @@index([status, utcDate])
+  @@index([utcDate])
+  @@map("matches")
+}
+
+model UserPrediction {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  matchId       Int      @map("match_id")
+  homeScore     Int      @map("home_score")
+  awayScore     Int      @map("away_score")
+  pointsAwarded Int?     @map("points_awarded")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, matchId])
+  @@index([userId, pointsAwarded])
+  @@index([matchId])
+  @@map("user_predictions")
+}
+
+model Standing {
+  id             String            @id @default(uuid()) @db.Uuid
+  competitionId  Int               @map("competition_id")
+  seasonId       String            @map("season_id") @db.Uuid
+  tableType      StandingTableType @map("table_type")
+  position       Int
+  teamId         Int               @map("team_id")
+  played         Int
+  won            Int
+  draw           Int
+  lost           Int
+  points         Int
+  goalsFor       Int               @map("goals_for")
+  goalsAgainst   Int               @map("goals_against")
+  goalDifference Int               @map("goal_difference")
+  lastSyncedAt   DateTime?         @map("last_synced_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  competition Competition @relation(fields: [competitionId], references: [id])
+  season      Season      @relation(fields: [seasonId], references: [id])
+  team        Team        @relation(fields: [teamId], references: [id])
+
+  @@unique([competitionId, seasonId, tableType, teamId])
+  @@index([competitionId, seasonId, tableType, position])
+  @@map("standings")
+}
+
+model TopScorer {
+  id            String    @id @default(uuid()) @db.Uuid
+  competitionId Int       @map("competition_id")
+  seasonId      String    @map("season_id") @db.Uuid
+  teamId        Int       @map("team_id")
+  playerId      Int       @map("player_id")
+  goals         Int
+  assists       Int?
+  penalties     Int?
+  playedMatches Int?      @map("played_matches")
+  lastSyncedAt  DateTime? @map("last_synced_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  competition Competition @relation(fields: [competitionId], references: [id])
+  season      Season      @relation(fields: [seasonId], references: [id])
+  team        Team        @relation(fields: [teamId], references: [id])
+  player      Player      @relation(fields: [playerId], references: [id])
+
+  @@unique([competitionId, seasonId, playerId])
+  @@index([competitionId, seasonId, goals(sort: Desc)])
+  @@map("top_scorers")
+}

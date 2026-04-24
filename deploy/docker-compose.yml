@@ -1,0 +1,66 @@
+# Production Docker Compose for Hetzner VPS.
+# Deployed to /opt/pckthscr/docker-compose.yml during CI.
+#
+# Services:
+#   - postgres: Postgres 16 with persistent volume
+#   - app:      Next.js app image from ghcr.io (runs prisma migrate deploy + server.js)
+#   - caddy:    reverse proxy with auto Let's Encrypt for pickthescore.app
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pckthscr-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pckthscr}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-pckthscr}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./volumes/postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY:-mriazisr/score-and-ods-game}:${IMAGE_TAG:-latest}
+    container_name: pckthscr-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pckthscr}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-pckthscr}?schema=public
+      SESSION_PASSWORD: ${SESSION_PASSWORD}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME}
+      API_KEY: ${API_KEY}
+      API_URL: https://api.football-data.org/v4
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: pckthscr-caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./volumes/caddy-data:/data
+      - ./volumes/caddy-config:/config
+    environment:
+      CADDY_DOMAIN: ${CADDY_DOMAIN:-pickthescore.app}

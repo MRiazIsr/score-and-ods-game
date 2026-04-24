@@ -1,31 +1,38 @@
 "use server";
 
-import { FormState, SignInFormSchema, SignUpFormSchema } from "@/app/lib/auth/definitions";
-import { selectFactory } from '@/app/server/modules/factories/authFactory/AuthFactorySelector'
-import { SessionUser, User } from "@/app/server/modules/user/types/userTypes";
-import { SafeParseReturnType } from "zod";
-import { DynamoDbAuthFactory } from "@/app/server/modules/factories/authFactory/DynamoDbAuthFactory";
-import { AuthService} from "@/app/server/services/auth/AuthService";
-import { FormFieldsKeysEntity } from "@/app/server/entities/FormFieldsKeysEntity";
 import { getIronSession, IronSession } from "iron-session";
 import { cookies } from "next/headers";
-import { SessionData } from "@/app/lib/auth/types";
-import { sessionOptions } from "@/app/lib/auth/definitions";
+import { FormState, SignInFormSchema, SignUpFormSchema, sessionOptions } from "@/app/lib/auth/definitions";
+import { EMPTY_SESSION_USER, SessionData } from "@/app/lib/auth/types";
+import { AuthService } from "@/app/server/services/auth/AuthService";
+import { userRepository } from "@/app/server/db/repositories/userRepository";
+import { FormFieldsKeysEntity } from "@/app/server/entities/FormFieldsKeysEntity";
+import { friendlyMessage, logError } from "@/app/lib/errors";
 
-export async function getSession(): Promise<IronSession<SessionData>>
-{
+export async function getSession(): Promise<IronSession<SessionData>> {
     const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
     if (!session.isLoggedIn) {
         session.isLoggedIn = false;
-        session.user = {
-            name: '',
-            email: '',
-            userId: '',
-            userName: '',
-            userType: 0,
-        };
+        session.user = { ...EMPTY_SESSION_USER };
+        return session;
     }
 
+    // Validate the session's user still exists in Postgres.
+    // Covers: user deleted after login, user banned, and stale cookies from before a DB reset.
+    const userId = session.user?.userId;
+    if (!userId) {
+        session.destroy();
+        return session;
+    }
+    try {
+        const user = await userRepository.findById(userId);
+        if (!user || user.isBanned) {
+            session.destroy();
+        }
+    } catch (err) {
+        logError("actions/auth.getSession.validate", err, { userId });
+        // On DB error, keep session as-is — downstream calls will surface the error.
+    }
     return session;
 }
 
@@ -33,78 +40,61 @@ export async function signUp(state: FormState, formData: FormData): Promise<{
     message: string;
     success: boolean;
     shouldRedirect?: boolean;
-    errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
+    errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] };
     values?: { name?: string; email?: string; userName?: string; password?: string };
 }> {
     const formFields = {
-        name: formData.get(FormFieldsKeysEntity.signUpGroup.NAME)?.toString() ?? '',
-        email: formData.get(FormFieldsKeysEntity.signUpGroup.EMAIL)?.toString() ?? '',
-        userName: formData.get(FormFieldsKeysEntity.signUpGroup.USERNAME)?.toString(),
-        password: formData.get(FormFieldsKeysEntity.signUpGroup.PASSWORD)?.toString()
-    }
+        name: formData.get(FormFieldsKeysEntity.signUpGroup.NAME)?.toString() ?? "",
+        email: formData.get(FormFieldsKeysEntity.signUpGroup.EMAIL)?.toString() ?? "",
+        userName: formData.get(FormFieldsKeysEntity.signUpGroup.USERNAME)?.toString() ?? "",
+        password: formData.get(FormFieldsKeysEntity.signUpGroup.PASSWORD)?.toString() ?? "",
+    };
 
-    const validatedFields: SafeParseReturnType<User, User> = SignUpFormSchema.safeParse( formFields )
+    const validatedFields = SignUpFormSchema.safeParse(formFields);
 
     if (!validatedFields.success) {
         const fieldErrors = validatedFields.error.flatten().fieldErrors;
-
         const cleanValues = {
             ...formFields,
-            ...Object.keys(fieldErrors).reduce((acc, key) => ({
-                ...acc,
-                [key]: undefined
-            }), {})
+            ...Object.keys(fieldErrors).reduce(
+                (acc, key) => ({ ...acc, [key]: undefined }),
+                {},
+            ),
         };
-
         return {
-            message: 'Field Validation Error',
+            message: "Please fix the highlighted fields.",
             success: false,
-            errors: validatedFields.error.flatten().fieldErrors,
-            values: cleanValues
-        }
+            errors: fieldErrors,
+            values: cleanValues,
+        };
     }
 
-    const authFactory = selectFactory(process.env.DB_TYPE)
-    const authService = authFactory.createAuthService();
-    //TODO: add type for user creation result
     try {
-        const userCreationResult: SessionUser = await authService.createUser( validatedFields.data )
+        const authService = new AuthService();
+        const sessionUser = await authService.createUser(validatedFields.data);
 
-        // Get session and store user data
         const session = await getSession();
         session.isLoggedIn = true;
-        session.user = {
-            userName: userCreationResult.userName,
-            userId: userCreationResult.userId,
-            userType: userCreationResult.userType,
-            name: userCreationResult.name,
-            email: userCreationResult.email,
-        };
+        session.user = sessionUser;
         await session.save();
 
         return {
             success: true,
-            message: 'Registration successful',
-            shouldRedirect: true
+            message: "Registration successful",
+            shouldRedirect: true,
         };
-
-    } catch (error: unknown) {
-        console.error(error)
-        if (error instanceof Error) {
-            return {
-                success: false,
-                message: error.message,
-                values: {
-                    ...formFields,
-                    [error.cause as string]: undefined
-                }
-            }
-        }
+    } catch (err) {
+        logError("actions/auth.signUp", err, {
+            userName: formFields.userName,
+            email: formFields.email,
+        });
         return {
             success: false,
-            message: 'An unknown error occurred.',
-            values: formFields
-        }
+            message: friendlyMessage(err, "Registration failed. Please try again."),
+            values: err instanceof Error && typeof err.cause === "string"
+                ? { ...formFields, [err.cause]: undefined }
+                : formFields,
+        };
     }
 }
 
@@ -112,68 +102,51 @@ export async function signIn(state: FormState, formData: FormData): Promise<{
     message: string;
     success: boolean;
     shouldRedirect?: boolean;
-    errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] }
-} > {
+    errors?: { name?: string[]; email?: string[]; userName?: string[]; password?: string[] };
+}> {
     const formFields = {
-        userName: formData.get(FormFieldsKeysEntity.signInGroup.USERNAME)?.toString() ?? '',
-        password: formData.get(FormFieldsKeysEntity.signInGroup.PASSWORD)?.toString() ?? '',
-    }
+        userName: formData.get(FormFieldsKeysEntity.signInGroup.USERNAME)?.toString() ?? "",
+        password: formData.get(FormFieldsKeysEntity.signInGroup.PASSWORD)?.toString() ?? "",
+    };
 
-    const validatedFields: SafeParseReturnType<User, User> = SignInFormSchema.safeParse(formFields)
+    const validatedFields = SignInFormSchema.safeParse(formFields);
 
     if (!validatedFields.success) {
         return {
-            message: 'Field Validation Error',
+            message: "Please check your inputs.",
             success: false,
             errors: validatedFields.error.flatten().fieldErrors,
-        }
+        };
     }
 
-    const authFactory: DynamoDbAuthFactory = selectFactory(process.env.DB_TYPE)
-    const authService: AuthService = authFactory.createAuthService();
     try {
-        const userSignInResult: {
-            status: boolean,
-            message: string,
-            sessionUser: SessionUser
-        } = await authService.signIn(validatedFields.data)
+        const authService = new AuthService();
+        const { sessionUser } = await authService.signIn(validatedFields.data);
 
         const session = await getSession();
-
         session.isLoggedIn = true;
-        session.user = {
-            userName: userSignInResult.sessionUser.userName,
-            userId: userSignInResult.sessionUser.userId,
-            userType: userSignInResult.sessionUser.userType,
-            name: userSignInResult.sessionUser.name,
-            email: userSignInResult.sessionUser.email,
-        };
+        session.user = sessionUser;
         await session.save();
 
         return {
             success: true,
-            message: 'Login successful',
-            shouldRedirect: true // Флаг для клиента
+            message: "Login successful",
+            shouldRedirect: true,
         };
-
-    } catch (error: unknown) {
-        if (error instanceof Error) {
-            return {
-                success: false,
-                message: error.message
-            }
-        }
+    } catch (err) {
+        logError("actions/auth.signIn", err, { userName: formFields.userName });
         return {
             success: false,
-            message: 'An unknown error occurred.'
-        }
+            message: friendlyMessage(err, "Sign-in failed. Please try again."),
+        };
     }
-
 }
 
 export async function signOut() {
-    const session = await getSession();
-
-    session.destroy();
-    //redirect('/');
+    try {
+        const session = await getSession();
+        session.destroy();
+    } catch (err) {
+        logError("actions/auth.signOut", err);
+    }
 }

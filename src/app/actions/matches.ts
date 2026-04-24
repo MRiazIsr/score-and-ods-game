@@ -1,46 +1,77 @@
-"use server"
+"use server";
 
 import { Match } from "@/app/server/modules/competitions/types";
-import { selectFactory } from "@/app/server/modules/factories/competitionsFactory/CompetitionsFactorySelector";
+import { CompetitionsService } from "@/app/server/services/auth/CompetitionsService";
 import { getSession } from "@/app/actions/auth";
+import { friendlyMessage, logError } from "@/app/lib/errors";
 
-type SaveMatchScoreState = {
-  success: boolean;
-  message: string;
-} | undefined;
+type SaveMatchScoreState =
+    | {
+          success: boolean;
+          message: string;
+      }
+    | undefined;
 
-
-export async function getCompetitionMatches(competitionId: number, matchDay: number): Promise<Match[]> {
-  const competitionsFactory = selectFactory(process.env.DB_TYPE);
-  const competitionsService = competitionsFactory.createCompetitionsService();
-  const session = await getSession();
-
-  return await competitionsService.getCompetitionActiveMatches(competitionId, matchDay, session.user.userId);
+export async function getCompetitionMatches(
+    competitionId: number,
+    matchDay: number,
+): Promise<Match[]> {
+    try {
+        const service = new CompetitionsService();
+        const session = await getSession();
+        return await service.getCompetitionActiveMatches(
+            competitionId,
+            matchDay,
+            session.user.userId,
+        );
+    } catch (err) {
+        logError("actions/matches.getCompetitionMatches", err, { competitionId, matchDay });
+        return [];
+    }
 }
 
-export async function saveMatchScore(prevState: SaveMatchScoreState, formData: FormData): Promise<{ success: boolean; message: string }> {
-  try {
-    const competitionId = parseInt(formData.get('competitionId') as string);
-    const matchId = parseInt(formData.get('matchId') as string);
-    const homeScore = parseInt(formData.get('homeScore') as string);
-    const awayScore = parseInt(formData.get('awayScore') as string);
-    const matchDay = parseInt(formData.get('matchDay') as string);
+export async function saveMatchScore(
+    prevState: SaveMatchScoreState,
+    formData: FormData,
+): Promise<{ success: boolean; message: string }> {
+    const competitionId = parseInt(formData.get("competitionId") as string);
+    const matchId = parseInt(formData.get("matchId") as string);
+    const homeScore = parseInt(formData.get("homeScore") as string);
+    const awayScore = parseInt(formData.get("awayScore") as string);
+    const matchDay = parseInt(formData.get("matchDay") as string);
+
     const session = await getSession();
 
-    if (isNaN(competitionId) || isNaN(matchId) || isNaN(homeScore) || isNaN(awayScore)) {
-      return { success: false, message: 'Invalid data provided' };
+    if (!session.isLoggedIn || !session.user?.userId) {
+        return { success: false, message: "Please sign in to save your prediction." };
     }
 
-    const competitionsFactory = selectFactory(process.env.DB_TYPE);
-    const competitionsService = competitionsFactory.createCompetitionsService();
+    if (
+        isNaN(competitionId) ||
+        isNaN(matchId) ||
+        isNaN(homeScore) ||
+        isNaN(awayScore)
+    ) {
+        return { success: false, message: "Invalid data provided." };
+    }
 
-    // Assuming you need to implement this method in your service
-    await competitionsService.saveMatchScore(competitionId, matchDay, matchId, { home: homeScore, away: awayScore }, session.user.userId);
-
-    return { success: true, message: 'Score saved successfully!' };
-  } catch (error) {
-    console.error('Error saving match score:', error);
-    return { success: false, message: 'Failed to save score' };
-  }
+    try {
+        const service = new CompetitionsService();
+        await service.saveMatchScore(
+            competitionId,
+            matchDay,
+            matchId,
+            { home: homeScore, away: awayScore },
+            session.user.userId,
+        );
+        return { success: true, message: "Score saved successfully!" };
+    } catch (err) {
+        logError("actions/matches.saveMatchScore", err, {
+            userId: session.user.userId,
+            competitionId,
+            matchId,
+            matchDay,
+        });
+        return { success: false, message: friendlyMessage(err, "Failed to save score.") };
+    }
 }
-

@@ -12,7 +12,7 @@ import { FormRibbon, type FormResult } from "@/app/client/components/stadium/For
 import { CrowdBars } from "@/app/client/components/stadium/CrowdBars";
 import { SectionHead } from "@/app/client/components/stadium/SectionHead";
 import { saveMatchScore } from "@/app/actions/matches";
-import { RULES } from "@/app/server/modules/competitions/constants";
+import { SCORING_RULES as RULES } from "@/app/server/services/ScoringService";
 
 interface MatchDetailClientProps {
     match: Match;

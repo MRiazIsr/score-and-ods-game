@@ -1,0 +1,17 @@
+[Unit]
+Description=Pick The Score fetcher — sync football-data.org → Postgres
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/pckthscr
+# Runs the bundled fetcher inside the already-running `app` container so it
+# shares network (reaches postgres container) and Prisma client / argon2 native
+# modules without duplication. Container must be healthy (see app healthcheck).
+ExecStart=/usr/bin/docker compose -f /opt/pckthscr/docker-compose.yml exec -T app node /app/dist/fetcher/index.js
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=10min
