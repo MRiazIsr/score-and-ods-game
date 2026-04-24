@@ -1,8 +1,5 @@
-import { getCompetitions } from "@/app/actions/competitions";
-import HomeClient from "./homeClient";
+import { redirect } from "next/navigation";
 
-export default async function HomePage() {
-    const competitionsNested = await getCompetitions(); // runs on server
-    const competitions = competitionsNested.flat();     // if needed
-    return <HomeClient competitions={competitions} />;
+export default function HomeRedirect() {
+    redirect("/leagues");
 }

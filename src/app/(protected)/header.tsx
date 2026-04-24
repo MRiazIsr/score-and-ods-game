@@ -1,16 +1,29 @@
 "use client";
 
 import { useSession } from "@/app/lib/auth/SessionContext";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { signOut } from "@/app/actions/auth";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { PitchrLogo } from "@/app/client/components/stadium/Logo";
 
+function useIsNarrowViewport(): boolean {
+    const [isNarrow, setIsNarrow] = useState(false);
+    useEffect(() => {
+        const mq = window.matchMedia("(max-width: 767px)");
+        setIsNarrow(mq.matches);
+        const handler = (e: MediaQueryListEvent) => setIsNarrow(e.matches);
+        mq.addEventListener("change", handler);
+        return () => mq.removeEventListener("change", handler);
+    }, []);
+    return isNarrow;
+}
+
 function navItems() {
     return [
-        { href: "/home", label: "Matches" },
-        { href: "/scoreboard", label: "Leaderboard" },
+        { href: "/dashboard", label: "Dashboard" },
+        { href: "/leagues", label: "Leagues" },
+        { href: "/scoreboard", label: "Global Leaderboard" },
     ];
 }
 
@@ -20,6 +33,7 @@ export default function Header() {
     const pathname = usePathname();
     const router = useRouter();
     const [menuOpen, setMenuOpen] = useState(false);
+    const isNarrow = useIsNarrowViewport();
 
     const name = session?.user?.name || "Player";
     const initial = name.slice(0, 2).toUpperCase();
@@ -44,11 +58,11 @@ export default function Header() {
             >
                 {/* left: logo + primary nav */}
                 <div className="flex items-center gap-6">
-                    <Link href="/home" aria-label="Pitchr home">
+                    <Link href="/dashboard" aria-label="Pitchr home">
                         <PitchrLogo />
                     </Link>
 
-                    <nav className="hidden md:flex gap-1">
+                    <nav className="flex gap-1" style={{ display: isNarrow ? "none" : "flex" }}>
                         {navItems().map((item) => {
                             const active = pathname === item.href || pathname.startsWith(item.href + "/");
                             return (
@@ -77,7 +91,7 @@ export default function Header() {
                 </div>
 
                 {/* right: avatar + sign out */}
-                <div className="hidden md:flex items-center gap-3">
+                <div className="items-center gap-3" style={{ display: isNarrow ? "none" : "flex" }}>
                     <div className="text-ink2 text-right" style={{ fontSize: 12, lineHeight: 1.2 }}>
                         <div className="uppercase" style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5 }}>
                             Signed in
@@ -122,33 +136,33 @@ export default function Header() {
                 </div>
 
                 {/* mobile menu button */}
-                <button
-                    type="button"
-                    onClick={() => setMenuOpen((v) => !v)}
-                    className="md:hidden"
-                    aria-label="Toggle menu"
-                    style={{
-                        width: 36,
-                        height: 36,
-                        background: "transparent",
-                        border: "1.5px solid #E4E1D6",
-                        borderRadius: 6,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                    }}
-                >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B0F0A" strokeWidth="2" strokeLinecap="round">
-                        <path d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
+                {isNarrow && (
+                    <button
+                        type="button"
+                        onClick={() => setMenuOpen((v) => !v)}
+                        aria-label="Toggle menu"
+                        style={{
+                            width: 36,
+                            height: 36,
+                            background: "transparent",
+                            border: "1.5px solid #E4E1D6",
+                            borderRadius: 6,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                        }}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B0F0A" strokeWidth="2" strokeLinecap="round">
+                            <path d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                )}
             </div>
 
             {/* mobile drawer */}
-            {menuOpen && (
+            {isNarrow && menuOpen && (
                 <div
-                    className="md:hidden"
                     style={{
                         position: "absolute",
                         top: 56,

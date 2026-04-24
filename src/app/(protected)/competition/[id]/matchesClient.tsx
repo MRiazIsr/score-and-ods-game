@@ -2,6 +2,7 @@
 
 import { Competition, Match } from "@/app/server/modules/competitions/types";
 import Image from "next/image";
+import Link from "next/link";
 import { useActionState, useState, useEffect, useCallback, useTransition } from "react";
 import { MatchScoreInput } from "@/app/client/components/ui/MatchScoreInput";
 import { getCompetitionMatches, saveMatchScore } from "@/app/actions/matches";
@@ -398,6 +399,22 @@ function MatchCard({ match }: MatchCardProps) {
                         {state.message}
                     </div>
                 )}
+
+                <div style={{ marginTop: 10, borderTop: "1px solid #F3F1EA", paddingTop: 10, textAlign: "right" }}>
+                    <Link
+                        href={`/match/${match.id}`}
+                        className="uppercase"
+                        style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            letterSpacing: 0.4,
+                            color: "#1E3A8A",
+                            textDecoration: "none",
+                        }}
+                    >
+                        View stats · crowd →
+                    </Link>
+                </div>
             </div>
         </article>
     );

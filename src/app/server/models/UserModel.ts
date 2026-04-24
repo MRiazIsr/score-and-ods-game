@@ -12,7 +12,8 @@ import {
     UpdateCommandInput,
     QueryCommandOutput,
     QueryCommandInput,
-    QueryCommand
+    QueryCommand,
+    BatchGetCommand,
 } from "@aws-sdk/lib-dynamodb";
 import type { DbUser } from "@/app/server/modules/user/types/userTypes";
 
@@ -124,6 +125,46 @@ export class UserModel {
 
         const command = new QueryCommand(input);
         return this.documentClient.send(command);
+    }
+
+    static async batchGetMatchScores(
+        userIds: string[],
+        competitionId: number,
+        season: number,
+        matchDay: number,
+        matchId: number,
+    ): Promise<Array<{ homeScore: number; awayScore: number }>> {
+        if (!userIds.length) return [];
+
+        const sortKey = `COMPETITION_ID#${competitionId}SEASON#${season}MATCH_DAY#${matchDay}MATCH#${matchId}`;
+        const results: Array<{ homeScore: number; awayScore: number }> = [];
+
+        // DynamoDB BatchGet caps at 100 keys per request
+        for (let i = 0; i < userIds.length; i += 100) {
+            const chunk = userIds.slice(i, i + 100);
+            const response = await this.documentClient.send(
+                new BatchGetCommand({
+                    RequestItems: {
+                        [this.tableName]: {
+                            Keys: chunk.map((uid) => ({
+                                PartitionKey: `USER#${uid}`,
+                                SortKey: sortKey,
+                            })),
+                            ProjectionExpression: "homeScore, awayScore",
+                        },
+                    },
+                }),
+            );
+
+            const items = response.Responses?.[this.tableName] ?? [];
+            for (const item of items) {
+                if (typeof item.homeScore === "number" && typeof item.awayScore === "number") {
+                    results.push({ homeScore: item.homeScore, awayScore: item.awayScore });
+                }
+            }
+        }
+
+        return results;
     }
 
     static async addUserToGlobalList(user: { userName: string; userId: string }): Promise<UpdateCommandOutput> {

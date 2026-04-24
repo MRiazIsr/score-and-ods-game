@@ -1,8 +1,9 @@
 import {
     IDynamoDbCompetitionsDataAccess
 } from "@/app/server/modules/competitions/DynamoDbCompetitionsManager/IDynamoDbCompetitionsDataAccess";
-import {GetCommandOutput, PutCommandOutput} from "@aws-sdk/lib-dynamodb";
-import {Competition, Match, MatchResult, ScoreBoardData} from "@/app/server/modules/competitions/types";
+import {GetCommandOutput} from "@aws-sdk/lib-dynamodb";
+import {Competition, Match, ScoreBoardData} from "@/app/server/modules/competitions/types";
+import { breakdown, computePoints } from "@/app/server/modules/competitions/scoring";
 
 export class DynamoDbCompetitionsManager {
 
@@ -12,15 +13,14 @@ export class DynamoDbCompetitionsManager {
         this.dataAccess = dataAccess;
     }
 
-    public async getAllMatchesWithPredictions(competitionId: number, matchDay: number, season: number, userId: string)
+    public async getAllMatchesWithPredictions(competitionId: number, matchDay: number, season: number, userId: string): Promise<Match[]>
     {
-        const competitionRawData: GetCommandOutput = await this.dataAccess.getCompetitionData(competitionId, season);
+        const allMatches: Match[] = await this.dataAccess.getAllMatchesBySeason(competitionId, season);
         const now = new Date();
-        console.log('Competition Raw Data', competitionRawData);
-        const matches: Match[] = competitionRawData.Item?.rawData?.matches;
-        console.log('Matches', matches);
+        const filtered = allMatches.filter((match) => match.matchday === matchDay);
+
         return await Promise.all(
-            matches.filter((match) => match.matchday === matchDay).map(async (match: Match): Promise<Match> => {
+            filtered.map(async (match: Match): Promise<Match> => {
                 const matchDate = new Date(match.utcDate);
                 match.isStarted = matchDate < now;
                 try {
@@ -58,6 +58,11 @@ export class DynamoDbCompetitionsManager {
         return helperCompetitionData.Item?.competitionData;
     }
 
+    public async getAllMatches(competitionId: number, season: number): Promise<Match[]>
+    {
+        return this.dataAccess.getAllMatchesBySeason(competitionId, season);
+    }
+
     public async getMatchScoreByUser(userId: string, competitionId: number, season: number, matchDay: number, matchId: number): Promise<GetCommandOutput>
     {
         return await this.dataAccess.getMatchScoreByUser(userId, competitionId, season, matchDay, matchId);
@@ -66,124 +71,67 @@ export class DynamoDbCompetitionsManager {
     public async saveMatchScore(competitionId: number, matchDay: number, matchId: number, score: { home: number, away: number }, userId: string): Promise<boolean>
     {
         const activeSeason: number = await this.getActiveSeason(competitionId);
-        const saveResult: PutCommandOutput = await this.dataAccess.saveMatchScore(competitionId, matchDay, activeSeason, matchId, score, userId);
-
+        await this.dataAccess.saveMatchScore(competitionId, matchDay, activeSeason, matchId, score, userId);
         return true;
     }
-
-
 
     async getScoreBoardData(competitionId: number): Promise<ScoreBoardData> {
         try {
             const season = await this.getActiveSeason(competitionId);
             const competitionData = await this.getCompetitionData(competitionId);
-            const competitionName = competitionData.name ?? `Competition ${competitionId}`;
+            const competitionName = competitionData?.name ?? `Competition ${competitionId}`;
 
-            const matchesResponse = await this.dataAccess.getCompetitionData(competitionId, season);
-            if (!matchesResponse.Item?.rawData) {
-                return {
-                    competitionId,
-                    competitionName,
-                    entries: []
-                };
-            }
-
-            const matchesData = matchesResponse.Item.rawData;
-            const finishedMatches = matchesData.matches.filter((match: Match) =>
+            const allMatches: Match[] = await this.dataAccess.getAllMatchesBySeason(competitionId, season);
+            const settledMatches = allMatches.filter((match) =>
                 match.status === 'FINISHED' || match.status === 'IN_PLAY'
             );
 
-            const matchResults: Map<number, MatchResult> = new Map();
-            finishedMatches.forEach((match: Match) => {
-                matchResults.set(match.id, {
-                    matchId: match.id,
-                    homeScore: match.score.fullTime.home,
-                    awayScore: match.score.fullTime.away,
-                    status: match.status
-                });
+            const actualByMatchId = new Map<number, { home: number; away: number }>();
+            settledMatches.forEach((match) => {
+                const home = match.score.fullTime.home;
+                const away = match.score.fullTime.away;
+                if (home !== null && away !== null) {
+                    actualByMatchId.set(match.id, { home, away });
+                }
             });
 
-            // Получаем всех пользователей
             const usersResponse = await this.dataAccess.getAllUsers();
-            console.log('USERS', usersResponse);
 
-            if (!usersResponse.Item || usersResponse.Item.length === 0) {
-                return {
-                    competitionId,
-                    competitionName,
-                    entries: []
-                };
+            if (!usersResponse.Item?.usersData?.length) {
+                return { competitionId, competitionName, entries: [] };
             }
 
-            // Обрабатываем предсказания каждого пользователя
             const scoreboardEntries = await Promise.all(
-                usersResponse.Item?.usersData.map(async (userItem: { userName: string; userId: string; }) => {
+                (usersResponse.Item.usersData as Array<{ userName: string; userId: string }>).map(async (userItem) => {
                     const user = await this.dataAccess.getUserById(userItem.userId);
                     const userId = userItem.userId;
                     const userName = user.Item?.userName || 'Unknown User';
                     const name = user.Item?.name || 'Unknown Name';
 
-                    // Получаем все предсказания пользователя для данной компетеции
                     const predictionsResponse = await this.dataAccess.getUserPredictions(userId, competitionId, season);
-                    if (!predictionsResponse.Items || predictionsResponse.Items.length === 0) {
-                        return {
-                            userId,
-                            userName,
-                            name,
-                            predictedCount: 0,
-                            predictedDifference: 0,
-                            predictedOutcome: 0,
-                            points: 0
-                        };
-                    }
+                    const items = predictionsResponse.Items ?? [];
 
-                    // Обрабатываем каждое предсказание и рассчитываем очки
                     let totalPoints = 0;
                     let exactScoreCount = 0;
                     let correctDifferenceCount = 0;
                     let correctOutcomeCount = 0;
 
-                    predictionsResponse.Items.forEach(prediction => {
-                        // Извлекаем ID матча из SortKey
-                        const sortKey = prediction.SortKey;
-                        const matchIdMatch = sortKey.match(/MATCH#(\d+)$/);
+                    items.forEach((prediction) => {
+                        const matchIdMatch = (prediction.SortKey as string).match(/MATCH#(\d+)$/);
                         if (!matchIdMatch) return;
 
-                        const matchId = parseInt(matchIdMatch[1]);
-                        const matchResult = matchResults.get(matchId);
+                        const matchId = parseInt(matchIdMatch[1], 10);
+                        const actual = actualByMatchId.get(matchId);
+                        if (!actual) return;
 
-                        // Пропускаем, если матч еще не завершен или нет предсказания
-                        if (!matchResult || matchResult.homeScore === null || matchResult.awayScore === null) return;
-
-                        const predictedHome = prediction.homeScore;
-                        const predictedAway = prediction.awayScore;
-                        const actualHome = matchResult.homeScore;
-                        const actualAway = matchResult.awayScore;
-
-                        // Рассчитываем очки по правилам
-                        let points = 0;
-
-                        // Точный счет: 3 очка
-                        if (predictedHome === actualHome && predictedAway === actualAway) {
-                            points = 3;
-                            exactScoreCount++;
-                        } 
-                        // Правильная разница: 2 очка
-                        else if ((predictedHome - predictedAway) === (actualHome - actualAway)) {
-                            points = 2;
-                            correctDifferenceCount++;
-                        } 
-                        // Правильный исход: 1 очко
-                        else if (
-                            (predictedHome > predictedAway && actualHome > actualAway) ||
-                            (predictedHome < predictedAway && actualHome < actualAway) ||
-                            (predictedHome === predictedAway && actualHome === actualAway)
-                        ) {
-                            points = 1;
-                            correctOutcomeCount++;
-                        }
-
+                        const predicted = { home: prediction.homeScore, away: prediction.awayScore };
+                        const points = computePoints(predicted, actual);
                         totalPoints += points;
+
+                        const kind = breakdown(predicted, actual);
+                        if (kind === 'exact') exactScoreCount++;
+                        else if (kind === 'goalDiff') correctDifferenceCount++;
+                        else if (kind === 'outcome') correctOutcomeCount++;
                     });
 
                     return {
@@ -193,36 +141,19 @@ export class DynamoDbCompetitionsManager {
                         predictedCount: exactScoreCount,
                         predictedDifference: correctDifferenceCount,
                         predictedOutcome: correctOutcomeCount,
-                        points: totalPoints
+                        points: totalPoints,
                     };
                 })
             );
 
             scoreboardEntries.sort((a, b) => {
-                // Сначала сортируем по очкам
-                if (b.points !== a.points) {
-                    return b.points - a.points;
-                }
-
-                // Если очки равны, сортируем по угаданным счетам
-                if (b.predictedCount !== a.predictedCount) {
-                    return b.predictedCount - a.predictedCount;
-                }
-
-                // Если угаданные счета равны, сортируем по угаданным разницам
-                if (b.predictedDifference !== a.predictedDifference) {
-                    return b.predictedDifference - a.predictedDifference;
-                }
-
-                // Если все вышеперечисленное равно, сортируем по угаданным исходам
+                if (b.points !== a.points) return b.points - a.points;
+                if (b.predictedCount !== a.predictedCount) return b.predictedCount - a.predictedCount;
+                if (b.predictedDifference !== a.predictedDifference) return b.predictedDifference - a.predictedDifference;
                 return b.predictedOutcome - a.predictedOutcome;
             });
 
-            return {
-                competitionId,
-                competitionName,
-                entries: scoreboardEntries
-            };
+            return { competitionId, competitionName, entries: scoreboardEntries };
         } catch (error) {
             console.error('Error calculating scoreboard data:', error);
             throw error;

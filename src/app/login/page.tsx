@@ -9,7 +9,7 @@ const LoginPage = async () => {
     const session: IronSession<SessionData> = await getSession();
 
     if (session.isLoggedIn) {
-        redirect("/home");
+        redirect("/dashboard");
     }
 
     return ( <LoginForm/> );

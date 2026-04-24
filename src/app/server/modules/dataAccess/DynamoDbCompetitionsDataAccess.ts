@@ -6,11 +6,16 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { CompetitionModel } from "@/app/server/models/CompetitionModel";
 import { UserModel } from "@/app/server/models/UserModel";
+import type { Match } from "@/app/server/modules/competitions/types";
 
 export class DynamoDbCompetitionsDataAccess implements IDynamoDbCompetitionsDataAccess {
 
     async getCompetitionData(competitionId: number, season: number): Promise<GetCommandOutput> {
         return CompetitionModel.getCompetitionData(competitionId, season);
+    }
+
+    async getAllMatchesBySeason(competitionId: number, season: number): Promise<Match[]> {
+        return CompetitionModel.getAllMatchesBySeason(competitionId, season);
     }
 
     async getCompetitionHelperData(competitionId: number): Promise<GetCommandOutput> {

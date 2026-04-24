@@ -5,8 +5,10 @@ import {
     PutCommand,
     PutCommandInput,
     PutCommandOutput,
+    QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
-import type { GetCommandInput, GetCommandOutput } from "@aws-sdk/lib-dynamodb";
+import type { GetCommandInput, GetCommandOutput, QueryCommandInput, QueryCommandOutput } from "@aws-sdk/lib-dynamodb";
+import type { Match } from "@/app/server/modules/competitions/types";
 
 export class CompetitionModel {
     private static client = new DynamoDBClient({
@@ -37,6 +39,21 @@ export class CompetitionModel {
 
         const command = new GetCommand(input);
         return this.documentClient.send(command);
+    }
+
+    static async getAllMatchesBySeason(competitionId: number, season: number): Promise<Match[]> {
+        const input: QueryCommandInput = {
+            TableName: this.tableName,
+            KeyConditionExpression: "PartitionKey = :pk AND begins_with(SortKey, :sk)",
+            ExpressionAttributeValues: {
+                ":pk": `COMPETITION_ID#${competitionId}`,
+                ":sk": `SEASON#${season}#STAGE#`,
+            },
+        };
+
+        const out: QueryCommandOutput = await this.documentClient.send(new QueryCommand(input));
+        const items = out.Items ?? [];
+        return items.flatMap((item) => (item.matches as Match[] | undefined) ?? []);
     }
 
     static async getCompetitionHelperData(competitionId: number): Promise<GetCommandOutput> {
