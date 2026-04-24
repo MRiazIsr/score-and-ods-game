@@ -3,6 +3,19 @@ node_modules
 .git
 .github
 .next
+
+# Legacy local service data (pre-migration DynamoDB + Postgres, root-owned — breaks build context)
+docker/
+
+# Regenerated inside the Dockerfile
+dist/
+
+# Deploy artifacts (copied by CI on the VPS, not baked into the image)
+deploy/
+
+# Project-local tooling state
+.claude/
+.idea/
 .env
 .env.local
 .env.development

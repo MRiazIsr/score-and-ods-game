@@ -68,9 +68,10 @@ COPY --from=builder --chown=app:app /app/node_modules/@prisma ./node_modules/@pr
 # Prisma CLI binary for `migrate deploy` (bundled via npx).
 COPY --from=builder --chown=app:app /app/node_modules/prisma ./node_modules/prisma
 
-# argon2 native binding — NOT auto-traced either.
+# argon2 native binding + its runtime deps — NOT auto-traced by Next.js standalone.
+# argon2 uses prebuilt binaries from its own `prebuilds/` dir, loaded via node-gyp-build;
+# @phc/format is used for hash serialization. node-addon-api is build-time only (nested).
 COPY --from=builder --chown=app:app /app/node_modules/argon2 ./node_modules/argon2
-COPY --from=builder --chown=app:app /app/node_modules/node-addon-api ./node_modules/node-addon-api
 COPY --from=builder --chown=app:app /app/node_modules/node-gyp-build ./node_modules/node-gyp-build
 COPY --from=builder --chown=app:app /app/node_modules/@phc ./node_modules/@phc
 
