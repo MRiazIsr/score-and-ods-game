@@ -69,55 +69,55 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Copy deploy artifacts
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HETZNER_HOST }}
-          username: ${{ secrets.HETZNER_USER }}
-          key: ${{ secrets.HETZNER_SSH_KEY }}
-          source: "deploy/docker-compose.yml,deploy/fetcher.service,deploy/fetcher.timer,deploy/backup.service,deploy/backup.timer,deploy/backup.sh,deploy/restore-latest.sh,deploy/RESTORE.md"
-          target: "/opt/pckthscr/"
-          strip_components: 1
-
-      - name: Deploy — login to ghcr.io, pull, migrate, restart
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
         with:
           host: ${{ secrets.HETZNER_HOST }}
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          envs: GHCR_TOKEN
+          envs: GHCR_TOKEN,REPO,SHA,ACTOR
+          command_timeout: 15m
           script: |
             set -euo pipefail
             cd /opt/pckthscr
 
-            # 1. Log in to ghcr.io so `docker compose pull` can fetch the private image.
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            # 1. Sync deploy/ artifacts via shallow git clone into a staging dir.
+            rm -rf .repo-staging
+            git clone --depth 1 --branch main \
+              "https://x-access-token:${GHCR_TOKEN}@github.com/${REPO}.git" .repo-staging
+
+            cp .repo-staging/deploy/docker-compose.yml .
+            cp .repo-staging/deploy/*.service .repo-staging/deploy/*.timer .
+            cp .repo-staging/deploy/backup.sh .repo-staging/deploy/restore-latest.sh .
+            cp .repo-staging/deploy/RESTORE.md .
+            rm -rf .repo-staging
+            chmod +x backup.sh restore-latest.sh
 
             # 2. Pin IMAGE_TAG for this deploy.
-            export IMAGE_TAG="${{ github.sha }}"
             grep -v '^IMAGE_TAG=' .env > .env.tmp || true
-            echo "IMAGE_TAG=${IMAGE_TAG}" >> .env.tmp
+            echo "IMAGE_TAG=${SHA}" >> .env.tmp
             mv .env.tmp .env
             chmod 600 .env
 
-            # 3. Make scripts executable (scp strips +x bit).
-            chmod +x backup.sh restore-latest.sh
+            # 3. Log in to ghcr.io so `docker compose pull` can fetch the image.
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "${ACTOR}" --password-stdin
 
             # 4. Install systemd units (idempotent).
-            sudo cp fetcher.service fetcher.timer backup.service backup.timer /etc/systemd/system/
-            sudo systemctl daemon-reload
+            cp fetcher.service fetcher.timer backup.service backup.timer /etc/systemd/system/
+            systemctl daemon-reload
 
-            # 5. Pull + (re)start containers. App CMD applies prisma migrate deploy.
+            # 5. Pull + (re)start containers. App CMD applies `prisma migrate deploy`.
             docker compose pull app
             docker compose up -d postgres
             docker compose up -d app
 
             # 6. Enable timers.
-            sudo systemctl enable --now fetcher.timer backup.timer
+            systemctl enable --now fetcher.timer backup.timer
 
             # 7. Wait for app health (loopback, no Cloudflare involved).
             for i in $(seq 1 30); do
@@ -125,6 +125,6 @@ jobs:
                 echo "App is healthy."
                 exit 0
               fi
-              [ $i -eq 30 ] && { echo "Health check failed"; docker compose logs --tail=100 app; exit 1; }
+              [ "$i" = 30 ] && { echo "Health check failed"; docker compose logs --tail=100 app; exit 1; }
               sleep 2
             done
