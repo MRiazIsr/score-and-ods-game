@@ -68,63 +68,77 @@ jobs:
   deploy-to-hetzner:
     runs-on: ubuntu-latest
     needs: build-and-push
+    env:
+      HETZNER_HOST: ${{ secrets.HETZNER_HOST }}
+      HETZNER_USER: ${{ secrets.HETZNER_USER }}
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+      - name: Prepare SSH key
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          # Write the key as-is from the secret.
+          echo "${{ secrets.HETZNER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Diagnostic: show fingerprint (not the key itself).
+          echo "--- key fingerprint ---"
+          ssh-keygen -l -f ~/.ssh/deploy_key || echo "WARNING: ssh-keygen could not read key"
+          echo "--- known_hosts ---"
+          ssh-keyscan -T 10 -H "${HETZNER_HOST}" >> ~/.ssh/known_hosts 2>&1
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
           ACTOR: ${{ github.actor }}
-        with:
-          host: ${{ secrets.HETZNER_HOST }}
-          username: ${{ secrets.HETZNER_USER }}
-          key: ${{ secrets.HETZNER_SSH_KEY }}
-          envs: GHCR_TOKEN,REPO,SHA,ACTOR
-          command_timeout: 15m
-          script: |
-            set -euo pipefail
-            cd /opt/pckthscr
+        run: |
+          ssh -i ~/.ssh/deploy_key -o ConnectTimeout=15 -o BatchMode=yes \
+              "${HETZNER_USER}@${HETZNER_HOST}" \
+              "GHCR_TOKEN='${GHCR_TOKEN}' REPO='${REPO}' SHA='${SHA}' ACTOR='${ACTOR}' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd /opt/pckthscr
 
-            # 1. Sync deploy/ artifacts via shallow git clone into a staging dir.
-            rm -rf .repo-staging
-            git clone --depth 1 --branch main \
-              "https://x-access-token:${GHCR_TOKEN}@github.com/${REPO}.git" .repo-staging
+          # 1. Sync deploy/ artifacts via shallow git clone into a staging dir.
+          rm -rf .repo-staging
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${GHCR_TOKEN}@github.com/${REPO}.git" .repo-staging
 
-            cp .repo-staging/deploy/docker-compose.yml .
-            cp .repo-staging/deploy/*.service .repo-staging/deploy/*.timer .
-            cp .repo-staging/deploy/backup.sh .repo-staging/deploy/restore-latest.sh .
-            cp .repo-staging/deploy/RESTORE.md .
-            rm -rf .repo-staging
-            chmod +x backup.sh restore-latest.sh
+          cp .repo-staging/deploy/docker-compose.yml .
+          cp .repo-staging/deploy/*.service .repo-staging/deploy/*.timer .
+          cp .repo-staging/deploy/backup.sh .repo-staging/deploy/restore-latest.sh .
+          cp .repo-staging/deploy/RESTORE.md .
+          rm -rf .repo-staging
+          chmod +x backup.sh restore-latest.sh
 
-            # 2. Pin IMAGE_TAG for this deploy.
-            grep -v '^IMAGE_TAG=' .env > .env.tmp || true
-            echo "IMAGE_TAG=${SHA}" >> .env.tmp
-            mv .env.tmp .env
-            chmod 600 .env
+          # 2. Pin IMAGE_TAG for this deploy.
+          grep -v '^IMAGE_TAG=' .env > .env.tmp || true
+          echo "IMAGE_TAG=${SHA}" >> .env.tmp
+          mv .env.tmp .env
+          chmod 600 .env
 
-            # 3. Log in to ghcr.io so `docker compose pull` can fetch the image.
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "${ACTOR}" --password-stdin
+          # 3. Log in to ghcr.io.
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "${ACTOR}" --password-stdin
 
-            # 4. Install systemd units (idempotent).
-            cp fetcher.service fetcher.timer backup.service backup.timer /etc/systemd/system/
-            systemctl daemon-reload
+          # 4. Install systemd units.
+          cp fetcher.service fetcher.timer backup.service backup.timer /etc/systemd/system/
+          systemctl daemon-reload
 
-            # 5. Pull + (re)start containers. App CMD applies `prisma migrate deploy`.
-            docker compose pull app
-            docker compose up -d postgres
-            docker compose up -d app
+          # 5. Pull + (re)start containers.
+          docker compose pull app
+          docker compose up -d postgres
+          docker compose up -d app
 
-            # 6. Enable timers.
-            systemctl enable --now fetcher.timer backup.timer
+          # 6. Enable timers.
+          systemctl enable --now fetcher.timer backup.timer
 
-            # 7. Wait for app health (loopback, no Cloudflare involved).
-            for i in $(seq 1 30); do
-              if docker compose exec -T app curl -fsS http://localhost:3000/api/health > /dev/null 2>&1; then
-                echo "App is healthy."
-                exit 0
-              fi
-              [ "$i" = 30 ] && { echo "Health check failed"; docker compose logs --tail=100 app; exit 1; }
-              sleep 2
-            done
+          # 7. Wait for app health.
+          for i in $(seq 1 30); do
+            if docker compose exec -T app curl -fsS http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "App is healthy."
+              exit 0
+            fi
+            [ "$i" = 30 ] && { echo "Health check failed"; docker compose logs --tail=100 app; exit 1; }
+            sleep 2
+          done
+          REMOTE
