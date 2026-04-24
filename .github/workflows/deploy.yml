@@ -76,15 +76,10 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          # Write the key as-is from the secret.
           echo "${{ secrets.HETZNER_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # Diagnostic: show fingerprint (not the key itself).
           echo "--- key fingerprint ---"
-          ssh-keygen -l -f ~/.ssh/deploy_key || echo "WARNING: ssh-keygen could not read key"
-          echo "--- known_hosts ---"
-          ssh-keyscan -T 10 -H "${HETZNER_HOST}" >> ~/.ssh/known_hosts 2>&1
-          chmod 600 ~/.ssh/known_hosts
+          ssh-keygen -l -f ~/.ssh/deploy_key || echo "WARNING: could not read key"
 
       - name: Deploy
         env:
@@ -93,7 +88,13 @@ jobs:
           SHA: ${{ github.sha }}
           ACTOR: ${{ github.actor }}
         run: |
-          ssh -i ~/.ssh/deploy_key -o ConnectTimeout=15 -o BatchMode=yes \
+          ssh -i ~/.ssh/deploy_key \
+              -o ConnectTimeout=15 \
+              -o BatchMode=yes \
+              -o StrictHostKeyChecking=no \
+              -o UserKnownHostsFile=/dev/null \
+              -o LogLevel=ERROR \
+              -v \
               "${HETZNER_USER}@${HETZNER_HOST}" \
               "GHCR_TOKEN='${GHCR_TOKEN}' REPO='${REPO}' SHA='${SHA}' ACTOR='${ACTOR}' bash -s" <<'REMOTE'
           set -euo pipefail
