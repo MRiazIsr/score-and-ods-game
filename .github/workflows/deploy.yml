@@ -76,32 +76,14 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          # Normalize: strip BOM, strip CR, strip trailing whitespace per line, ensure LF line endings.
+          # Normalize pasted key: strip BOM/CR/trailing whitespace, ensure trailing LF.
           printf '%s' "${{ secrets.HETZNER_SSH_KEY }}" \
             | sed '1s/^\xEF\xBB\xBF//' \
             | tr -d '\r' \
             | sed -E 's/[[:space:]]+$//' > ~/.ssh/deploy_key
-          # Ensure exactly one trailing newline (ssh requires this).
-          if [ "$(tail -c 1 ~/.ssh/deploy_key | od -An -c | tr -d ' ')" != "\n" ]; then
-            printf '\n' >> ~/.ssh/deploy_key
-          fi
+          [ "$(tail -c 1 ~/.ssh/deploy_key | od -An -c | tr -d ' ')" = "\n" ] || printf '\n' >> ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          echo "--- first 3 lines ---"
-          head -n 3 ~/.ssh/deploy_key
-          echo "--- last 3 lines ---"
-          tail -n 3 ~/.ssh/deploy_key
-          echo "--- byte length ---"
-          wc -c ~/.ssh/deploy_key
-          echo "--- line count ---"
-          wc -l ~/.ssh/deploy_key
-          echo "--- raw bytes of first 40 + last 40 (detect hidden garbage) ---"
-          head -c 40 ~/.ssh/deploy_key | od -An -c
-          echo "    [...]"
-          tail -c 40 ~/.ssh/deploy_key | od -An -c
-          echo "--- fingerprint ---"
-          ssh-keygen -l -f ~/.ssh/deploy_key || echo "WARNING: could not read key"
-          echo "--- public part ---"
-          ssh-keygen -y -f ~/.ssh/deploy_key 2>&1 || echo "WARNING: could not derive pubkey"
+          ssh-keygen -l -f ~/.ssh/deploy_key
 
       - name: Deploy
         env:
@@ -117,7 +99,6 @@ jobs:
               -o UserKnownHostsFile=/dev/null \
               -o PreferredAuthentications=publickey \
               -o IdentitiesOnly=yes \
-              -vvv \
               "${HETZNER_USER}@${HETZNER_HOST}" \
               "GHCR_TOKEN='${GHCR_TOKEN}' REPO='${REPO}' SHA='${SHA}' ACTOR='${ACTOR}' bash -s" <<'REMOTE'
           set -euo pipefail
