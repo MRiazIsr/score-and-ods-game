@@ -80,6 +80,10 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           echo "--- key fingerprint ---"
           ssh-keygen -l -f ~/.ssh/deploy_key || echo "WARNING: could not read key"
+          echo "--- corresponding public key (paste into server authorized_keys if missing) ---"
+          ssh-keygen -y -f ~/.ssh/deploy_key || echo "WARNING: could not derive pubkey"
+          echo "--- byte length of secret ---"
+          wc -c ~/.ssh/deploy_key
 
       - name: Deploy
         env:
