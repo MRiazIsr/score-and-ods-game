@@ -1,114 +1,115 @@
+"use client";
 
-'use client';
-
-import React from 'react';
+import React from "react";
 
 interface MatchScoreInputProps {
-  homeScore: number;
-  awayScore: number;
-  onHomeScoreChange: (value: number) => void;
-  onAwayScoreChange: (value: number) => void;
-  disabled?: boolean;
+    homeScore: number;
+    awayScore: number;
+    onHomeScoreChange: (value: number) => void;
+    onAwayScoreChange: (value: number) => void;
+    disabled?: boolean;
 }
 
 export const MatchScoreInput: React.FC<MatchScoreInputProps> = ({
-                                                                  homeScore,
-                                                                  awayScore,
-                                                                  onHomeScoreChange,
-                                                                  onAwayScoreChange,
-                                                                  disabled = false
-                                                                }) => {
-  const increaseScore = (currentScore: number, onChange: (value: number) => void) => {
-    if (!disabled) {
-      onChange(Math.min(99, currentScore + 1));
-    }
-  };
+    homeScore,
+    awayScore,
+    onHomeScoreChange,
+    onAwayScoreChange,
+    disabled = false,
+}) => {
+    const inc = (v: number, set: (n: number) => void) => {
+        if (!disabled) set(Math.min(99, v + 1));
+    };
+    const dec = (v: number, set: (n: number) => void) => {
+        if (!disabled) set(Math.max(0, v - 1));
+    };
+    const onInput = (value: string, set: (n: number) => void) => {
+        if (!disabled) {
+            const n = Number(value);
+            if (!Number.isNaN(n)) set(Math.max(0, Math.min(99, n)));
+        }
+    };
 
-  const decreaseScore = (currentScore: number, onChange: (value: number) => void) => {
-    if (!disabled) {
-      onChange(Math.max(0, currentScore - 1));
-    }
-  };
+    const boxStyle: React.CSSProperties = {
+        width: 72,
+        height: 72,
+        border: `1.5px solid ${disabled ? "#E4E1D6" : "#9D0010"}`,
+        borderRadius: 8,
+        background: "#fff",
+        color: disabled ? "#4A5148" : "#9D0010",
+        fontSize: 36,
+        fontWeight: 700,
+        textAlign: "center",
+        fontFamily: "var(--font-display), Inter, sans-serif",
+        outline: "none",
+        WebkitAppearance: "none",
+        MozAppearance: "textfield",
+        padding: 0,
+    };
 
-  const handleInputChange = (value: string, onChange: (value: number) => void) => {
-    if (!disabled) {
-      onChange(Number(value));
-    }
-  };
-    // sf
-  return (
-      <div className="flex items-center justify-center space-x-8">
-        {/* Home Score Input */}
-        <div className="w-16 h-[100px] relative">
-          {!disabled && (
-              <button
-                  onClick={() => increaseScore(homeScore, onHomeScoreChange)}
-                  className="w-full h-[18px] bg-gray-700 hover:bg-gray-600 rounded-t-lg flex items-center justify-center text-white transition-colors absolute top-0"
-              >
-                +
-              </button>
-          )}
+    const stepStyle: React.CSSProperties = {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        border: "1.5px solid #E4E1D6",
+        background: "#fff",
+        color: "#4A5148",
+        fontSize: 14,
+        fontWeight: 600,
+        lineHeight: 1,
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+    };
 
-          <input
-              type="text"
-              min="0"
-              value={homeScore}
-              onChange={(e) => handleInputChange(e.target.value, onHomeScoreChange)}
-              disabled={disabled}
-              className={`w-full h-16 text-3xl font-bold text-center border-2 border-gray-700 text-white appearance-none overflow-hidden absolute ${
-                  disabled
-                      ? 'bg-gray-600 cursor-not-allowed top-[18px] rounded-lg border-0'
-                      : 'bg-gray-800 border-t-0 border-b-0 top-[18px]'
-              }`}
-              style={{ MozAppearance: 'textfield', paddingLeft: 0, paddingRight: 0, borderRadius: disabled ? '0.5rem' : 0 }}
-          />
-
-          {!disabled && (
-              <button
-                  onClick={() => decreaseScore(homeScore, onHomeScoreChange)}
-                  className="w-full h-[18px] bg-gray-700 hover:bg-gray-600 rounded-b-lg flex items-center justify-center text-white transition-colors absolute top-[82px]"
-              >
-                -
-              </button>
-          )}
+    return (
+        <div className="flex items-center justify-center gap-3">
+            <div className="flex flex-col items-center gap-1">
+                {!disabled && (
+                    <button type="button" aria-label="Increase home score" onClick={() => inc(homeScore, onHomeScoreChange)} style={stepStyle}>
+                        +
+                    </button>
+                )}
+                <input
+                    type="text"
+                    inputMode="numeric"
+                    value={homeScore}
+                    onChange={(e) => onInput(e.target.value, onHomeScoreChange)}
+                    disabled={disabled}
+                    style={boxStyle}
+                    aria-label="Home score"
+                />
+                {!disabled && (
+                    <button type="button" aria-label="Decrease home score" onClick={() => dec(homeScore, onHomeScoreChange)} style={stepStyle}>
+                        −
+                    </button>
+                )}
+            </div>
+            <span className="font-display text-ink2" style={{ fontSize: 28, fontWeight: 500 }}>
+                –
+            </span>
+            <div className="flex flex-col items-center gap-1">
+                {!disabled && (
+                    <button type="button" aria-label="Increase away score" onClick={() => inc(awayScore, onAwayScoreChange)} style={stepStyle}>
+                        +
+                    </button>
+                )}
+                <input
+                    type="text"
+                    inputMode="numeric"
+                    value={awayScore}
+                    onChange={(e) => onInput(e.target.value, onAwayScoreChange)}
+                    disabled={disabled}
+                    style={boxStyle}
+                    aria-label="Away score"
+                />
+                {!disabled && (
+                    <button type="button" aria-label="Decrease away score" onClick={() => dec(awayScore, onAwayScoreChange)} style={stepStyle}>
+                        −
+                    </button>
+                )}
+            </div>
         </div>
-
-        <div className="text-white text-2xl font-bold">:</div>
-
-        {/* Away Score Input */}
-        <div className="w-16 h-[100px] relative">
-          {!disabled && (
-              <button
-                  onClick={() => increaseScore(awayScore, onAwayScoreChange)}
-                  className="w-full h-[18px] bg-gray-700 hover:bg-gray-600 rounded-t-lg flex items-center justify-center text-white transition-colors absolute top-0"
-              >
-                +
-              </button>
-          )}
-
-          <input
-              type="text"
-              min="0"
-              value={awayScore}
-              onChange={(e) => handleInputChange(e.target.value, onAwayScoreChange)}
-              disabled={disabled}
-              className={`w-full h-16 text-3xl font-bold text-center border-2 border-gray-700 text-white appearance-none overflow-hidden absolute ${
-                  disabled
-                      ? 'bg-gray-600 cursor-not-allowed top-[18px] rounded-lg border-0'
-                      : 'bg-gray-800 border-t-0 border-b-0 top-[18px]'
-              }`}
-              style={{ MozAppearance: 'textfield', paddingLeft: 0, paddingRight: 0, borderRadius: disabled ? '0.5rem' : 0 }}
-          />
-
-          {!disabled && (
-              <button
-                  onClick={() => decreaseScore(awayScore, onAwayScoreChange)}
-                  className="w-full h-[18px] bg-gray-700 hover:bg-gray-600 rounded-b-lg flex items-center justify-center text-white transition-colors absolute top-[82px]"
-              >
-                -
-              </button>
-          )}
-        </div>
-      </div>
-  );
+    );
 };

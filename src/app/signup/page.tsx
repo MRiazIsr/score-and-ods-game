@@ -1,31 +1,33 @@
+"use client";
 
-'use client';
-
-import { Card } from "@/app/client/components/ui/Card";
 import { SubmitButton } from "@/app/client/components/ui/SubmitButton";
 import { Input } from "@/app/client/components/ui/Input";
+import { PasswordInput } from "@/app/client/components/ui/PasswordInput";
+import { ErrorNotification } from "@/app/client/components/ui/ErrorNotice";
+import { AuthShell } from "@/app/client/components/stadium/AuthShell";
 import Link from "next/link";
 import Form from "next/form";
-import {useActionState, useRef, useState} from 'react';
+import { useActionState } from "react";
 import { signUp } from "@/app/actions/auth";
-import { PasswordInput } from "@/app/client/components/ui/PasswordInput";
 import { FormFieldsKeysEntity } from "@/app/server/entities/FormFieldsKeysEntity";
-import { redirect } from "next/navigation";
-import { ErrorNotification } from "@/app/client/components/ui/ErrorNotice";
 
 export default function SignUpPage() {
     const [state, action, pending] = useActionState(signUp, undefined);
-    // if (state?.success) {
-    //     redirect('/')
-    // }
-
     const signUpFormValues = state?.values || {};
 
     return (
-        <Card
-            title="TJ Score Game"
-            description="Please Register Your Account"
-            variant="form"
+        <AuthShell
+            eyebrow="Start a prediction league"
+            headline={{ blue: "Start the", italic: "party." }}
+            sub="30 seconds, one invite link. Your group, your league, your trash talk."
+            footer={
+                <div className="text-ink2" style={{ fontSize: 12, textAlign: "center" }}>
+                    Already playing?{" "}
+                    <Link href="/login" style={{ color: "#9D0010", fontWeight: 700 }}>
+                        Sign in
+                    </Link>
+                </div>
+            }
         >
             {!state?.success && (
                 <ErrorNotification
@@ -33,73 +35,66 @@ export default function SignUpPage() {
                     error={state?.message}
                 />
             )}
-            <Form action={action} className="space-y-4">
-                {/* Name Input */}
+
+            <Form action={action}>
                 <Input
-                    name={'name'}
+                    name="name"
                     id={FormFieldsKeysEntity.signUpGroup.NAME}
-                    type={'text'}
+                    type="text"
+                    label="Name"
                     value={signUpFormValues.name}
-                    placeHolder={'Anton'}
+                    placeHolder="Anton"
+                    error={state?.errors?.name}
                 />
-                {state?.errors?.name && <p className="text-red-500">{state.errors.name}</p>}
 
-                {/* Email Input */}
                 <Input
-                    name={'email'}
-                    id={'email'}
-                    type={'email'}
+                    name="email"
+                    id="email"
+                    type="email"
+                    label="Email"
                     value={signUpFormValues.email}
-                    placeHolder={'email@example.com'}
+                    placeHolder="you@example.com"
+                    error={state?.errors?.email}
                 />
-                {state?.errors?.email && <p className="text-red-500">{state.errors.email}</p>}
 
-                {/* Username Input */}
                 <Input
-                    name={'userName'}
-                    id={'userName'}
-                    type={'text'}
+                    name="userName"
+                    id="userName"
+                    type="text"
+                    label="Handle"
                     value={signUpFormValues.userName}
-                    placeHolder={'tj'}
+                    placeHolder="tj"
+                    error={state?.errors?.userName}
                 />
-                {state?.errors?.userName && <p className="text-red-500">{state.errors.userName}</p>}
 
-                {/* Password Input */}
                 <PasswordInput
+                    label="Password"
                     value={signUpFormValues.password}
                     error={state?.errors?.password?.[0]}
                 />
+
                 {state?.errors?.password && (
-                    <div className="space-y-1">
-                        <ul className="list-disc pl-5 space-y-1 text-red-500">
-                            {state.errors.password.map((error) => {
-                                const text: string = error === 'Required' ? 'Password' : 'Password Required';
-                                return (
-                                    <li key={error}>
-                                        {text} - {error}
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    </div>
+                    <ul style={{ margin: "6px 0 12px", paddingLeft: 18, color: "#9D0010", fontSize: 12 }}>
+                        {state.errors.password.map((error) => (
+                            <li key={error}>{error}</li>
+                        ))}
+                    </ul>
                 )}
 
-                {/* Submit Button */}
-                <div className="flex justify-center">
-                    <SubmitButton buttonText="Sign Up" pending={pending} />
-                </div>
-            </Form>
-
-            {/* Sign In Link */}
-            <div className="flex flex-row space-x-2 justify-center pt-4">
-                <Link
-                    href="/login"
-                    className="text-blue-500 hover:text-blue-700 text-xs rounded-lg transition-colors"
-                    aria-label="Navigate to Login page"
+                <label
+                    className="flex items-start gap-2 text-ink2"
+                    style={{ fontSize: 12, margin: "8px 0 18px" }}
                 >
-                    Already have an account? Sign In
-                </Link>
-            </div>
-        </Card>
+                    <input type="checkbox" defaultChecked style={{ accentColor: "#1E3A8A", marginTop: 2 }} />
+                    <span>
+                        I agree to the{" "}
+                        <span style={{ textDecoration: "underline" }}>Terms</span> and{" "}
+                        <span style={{ textDecoration: "underline" }}>Privacy</span>.
+                    </span>
+                </label>
+
+                <SubmitButton buttonText="Create account" pending={pending} />
+            </Form>
+        </AuthShell>
     );
 }

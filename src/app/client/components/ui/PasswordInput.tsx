@@ -1,36 +1,51 @@
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+"use client";
+
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { Input } from "@/app/client/components/ui/Input";
-import { useState } from 'react'
+import { useState } from "react";
 
 export function PasswordInput({
-                                  value,
-                                  error,
-                              }: {
+    value,
+    error,
+    label,
+}: {
     value?: string;
     error?: string;
+    label?: string;
 }) {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
-        <div className="relative group">
+        <div className="relative">
             <Input
-                name={"password"}
-                id={"password"}
+                name="password"
+                id="password"
                 type={showPassword ? "text" : "password"}
                 value={value || ""}
-                placeHolder={"********"}
+                placeHolder="••••••••"
+                label={label}
                 error={error}
             />
             <button
                 type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-200 transition-colors"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                style={{
+                    position: "absolute",
+                    right: 10,
+                    top: label ? 30 : 10,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 28,
+                    height: 28,
+                    background: "transparent",
+                    border: "none",
+                    color: "#4A5148",
+                    cursor: "pointer",
+                }}
             >
-                {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5 transition-transform transform group-hover:scale-110" />
-                ) : (
-                    <EyeIcon className="h-5 w-5 transition-transform transform group-hover:scale-110" />
-                )}
+                {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
             </button>
         </div>
     );

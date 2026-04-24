@@ -17,9 +17,12 @@ export default async function ScoreboardPage() {
   const defaultCompetitionId = CompetitionsEntity.competitionsIds.ENGLISH_PREMIER_LEAGUE_ID;
 
   return (
-    <div className="pt-16 px-4 max-w-6xl mx-auto">
-      <ScoreboardClient 
-        competitions={competitions} 
+    <div
+      className="w-full"
+      style={{ maxWidth: 1080, margin: "0 auto", padding: "32px 24px 48px" }}
+    >
+      <ScoreboardClient
+        competitions={competitions}
         defaultCompetitionId={defaultCompetitionId}
         currentUserId={session.user?.userId}
       />

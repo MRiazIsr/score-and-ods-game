@@ -1,262 +1,404 @@
 "use client";
 
-import {Competition, Match} from "@/app/server/modules/competitions/types";
-import { Card } from "@/app/client/components/ui/Card";
+import { Competition, Match } from "@/app/server/modules/competitions/types";
 import Image from "next/image";
-import {useActionState, useState, useEffect, useCallback, useTransition } from "react";
+import { useActionState, useState, useEffect, useCallback, useTransition } from "react";
 import { MatchScoreInput } from "@/app/client/components/ui/MatchScoreInput";
-import {getCompetitionMatches, saveMatchScore} from "@/app/actions/matches";
+import { getCompetitionMatches, saveMatchScore } from "@/app/actions/matches";
+import { Chip } from "@/app/client/components/stadium/Chip";
 import Form from "next/form";
 
 interface Props {
-  competition: Competition;
-  matchDays: number[];
+    competition: Competition;
+    matchDays: number[];
 }
 
-export default function MatchesClient({competition, matchDays }: Props) {
-  const [selectedMatchDay, setSelectedMatchDay] = useState<number>(competition.activeMatchDay);
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [pending, startTransition] = useTransition();
-
-  const selectMatchDay = useCallback((day: number) => {
-    startTransition(async () => {
-      const data = await getCompetitionMatches(competition.id, day);
-      setSelectedMatchDay(day);
-      setMatches(data ?? []);
+function formatKickoff(dateString: string) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
     });
-  }, [competition.id]);
+}
 
-  useEffect(() => {
-    selectMatchDay(selectedMatchDay);
-  }, [selectedMatchDay, selectMatchDay]);
+export default function MatchesClient({ competition, matchDays }: Props) {
+    const [selectedMatchDay, setSelectedMatchDay] = useState<number>(competition.activeMatchDay);
+    const [matches, setMatches] = useState<Match[]>([]);
+    const [pending, startTransition] = useTransition();
 
-  return (
-      <div className="z-10 max-w-5xl w-full items-center justify-between px-4 md:px-0">
-        <div className="flex flex-col md:flex-row items-center justify-center mb-6 md:mb-8">
-          {competition && (
-              <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4">
-                <div className="bg-amber-50 rounded-lg p-2 md:p-3 flex items-center justify-center">
-                  <Image
-                      src={competition.emblem}
-                      alt={competition.name}
-                      width={40}
-                      height={40}
-                      className="object-contain md:w-[60px] md:h-[60px]"
-                  />
+    const selectMatchDay = useCallback(
+        (day: number) => {
+            startTransition(async () => {
+                const data = await getCompetitionMatches(competition.id, day);
+                setSelectedMatchDay(day);
+                setMatches(data ?? []);
+            });
+        },
+        [competition.id]
+    );
+
+    useEffect(() => {
+        selectMatchDay(selectedMatchDay);
+    }, [selectedMatchDay, selectMatchDay]);
+
+    return (
+        <div className="w-full" style={{ maxWidth: 1080, margin: "0 auto", padding: "32px 24px 48px" }}>
+            {/* header */}
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4" style={{ marginBottom: 24 }}>
+                <div className="flex items-center gap-4">
+                    <div
+                        className="flex items-center justify-center"
+                        style={{
+                            width: 68,
+                            height: 68,
+                            background: "#fff",
+                            border: "1px solid #E4E1D6",
+                            borderRadius: 12,
+                        }}
+                    >
+                        <Image
+                            src={competition.emblem}
+                            alt={competition.name}
+                            width={48}
+                            height={48}
+                            className="object-contain"
+                            style={{ width: "auto", height: 48 }}
+                        />
+                    </div>
+                    <div>
+                        <div
+                            className="uppercase"
+                            style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: "#4A5148" }}
+                        >
+                            Match prediction · {competition.code || competition.type}
+                        </div>
+                        <h1 className="font-display" style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.8, marginTop: 2 }}>
+                            {competition.name}
+                        </h1>
+                    </div>
                 </div>
-                <h1 className="text-2xl md:text-4xl font-bold text-center text-white">
-                  {competition.name} Matches
-                </h1>
-              </div>
-          )}
-        </div>
+                <div className="flex items-center gap-2">
+                    <Chip tone="brand">Matchday {selectedMatchDay}</Chip>
+                    <Chip>Lock in before kickoff</Chip>
+                </div>
+            </div>
 
-        <div className="mb-4 overflow-x-auto no-scrollbar overflow-y-hidden">
-          <div className="inline-flex space-x-2 overflow-y-hidden">
-            {matchDays.map((matchDay) => {
-              const isActive = matchDay === selectedMatchDay;
-              return (
-                  <button
-                      key={matchDay}
-                      onClick={() => setSelectedMatchDay(matchDay)}
-                      className={`px-2 py-2 w-20 rounded text-sm transition-colors ${
-                          isActive
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                      }`}
-                  >
-                    Match Day {matchDay}
-                  </button>
-              );
-            })}
-          </div>
-        </div>
+            {/* matchday tabs */}
+            <div className="overflow-x-auto" style={{ marginBottom: 20 }}>
+                <div className="inline-flex gap-1.5">
+                    {matchDays.map((md) => {
+                        const active = md === selectedMatchDay;
+                        return (
+                            <button
+                                key={md}
+                                type="button"
+                                onClick={() => setSelectedMatchDay(md)}
+                                className="uppercase"
+                                style={{
+                                    padding: "8px 14px",
+                                    background: active ? "#0B0F0A" : "#fff",
+                                    color: active ? "#fff" : "#4A5148",
+                                    border: `1px solid ${active ? "#0B0F0A" : "#E4E1D6"}`,
+                                    borderRadius: 6,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    letterSpacing: 0.4,
+                                    cursor: "pointer",
+                                    fontFamily: "inherit",
+                                    whiteSpace: "nowrap",
+                                    transition: "all 0.15s",
+                                }}
+                            >
+                                MD {md}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
 
-        <div className="flex flex-col gap-4 md:gap-6">
-          {matches.map((match) => (
-              <MatchCard key={match.id} match={match} />
-          ))}
+            {/* loading state */}
+            {pending && matches.length === 0 ? (
+                <div className="flex justify-center" style={{ padding: "60px 0" }}>
+                    <svg className="animate-spin" style={{ color: "#1E3A8A" }} width="32" height="32" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
+                        <path
+                            fill="currentColor"
+                            opacity="0.75"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                    </svg>
+                </div>
+            ) : (
+                <div className="grid gap-3">
+                    {matches.map((match) => (
+                        <MatchCard key={match.id} match={match} />
+                    ))}
+                </div>
+            )}
         </div>
-      </div>
-  );
+    );
 }
 
 interface MatchCardProps {
-  match: Match;
+    match: Match;
 }
 
 function MatchCard({ match }: MatchCardProps) {
-  const [homeScore, setHomeScore] = useState<number>(match.predictedScore?.home ?? 0);
-  const [awayScore, setAwayScore] = useState<number>(match.predictedScore?.away ?? 0);
-  const [isPredicted, setIsPredicted] = useState<boolean>(match.predictedScore?.isPredicted ?? false);
-  const [isEditing, setIsEditing] = useState<boolean>(!isPredicted);
-  const [state, action, pending] = useActionState(saveMatchScore, undefined);
-  const [showMessage, setShowMessage] = useState(false);
+    const [homeScore, setHomeScore] = useState<number>(match.predictedScore?.home ?? 0);
+    const [awayScore, setAwayScore] = useState<number>(match.predictedScore?.away ?? 0);
+    const [isPredicted, setIsPredicted] = useState<boolean>(match.predictedScore?.isPredicted ?? false);
+    const [isEditing, setIsEditing] = useState<boolean>(!isPredicted);
+    const [state, action, pending] = useActionState(saveMatchScore, undefined);
+    const [showMessage, setShowMessage] = useState(false);
 
-  useEffect(() => {
-    if (state?.message) {
-      setShowMessage(true);
-      if (state?.success) {
-        setIsPredicted(true);
-        setIsEditing(false);
-      }
-      const timer = setTimeout(() => {
-        setShowMessage(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [state]);
+    useEffect(() => {
+        if (state?.message) {
+            setShowMessage(true);
+            if (state?.success) {
+                setIsPredicted(true);
+                setIsEditing(false);
+            }
+            const timer = setTimeout(() => {
+                setShowMessage(false);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [state]);
 
-  const handleEditClick = () => {
-    setIsEditing(true);
-  };
+    const live = match.isStarted;
+    const fullTimeHome = match.score?.fullTime?.home;
+    const fullTimeAway = match.score?.fullTime?.away;
+    const hasResult = fullTimeHome !== null && fullTimeHome !== undefined && fullTimeAway !== null && fullTimeAway !== undefined;
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  return (
-      <Card
-          title={`${match.homeTeam?.tla ?? 'HOME'} ${match.score?.fullTime?.home ?? '-'} : ${match.score?.fullTime?.away ?? '-'} ${match.awayTeam?.tla ?? 'AWAY'}`}
-          description={formatDate(match.utcDate)}
-          width="w-full"
-      >
-        {/* Mobile layout */}
-        <div className="md:hidden flex flex-col items-center justify-center py-3">
-          <div className="flex flex-row items-center justify-center">
-            {/* Home Team */}
-            <div className="flex flex-col items-center w-32">
-              <div className="bg-white p-2 rounded w-12 h-12 flex items-center justify-center mb-2">
-                <Image
-                    src={match.homeTeam.crest}
-                    alt={match.homeTeam.name}
-                    width={32}
-                    height={32}
-                    className="object-contain"
-                />
-              </div>
-              <span className="text-white text-sm font-medium text-center">{match.homeTeam.shortName}</span>
+    return (
+        <article
+            style={{
+                background: "#fff",
+                border: "1px solid #E4E1D6",
+                borderRadius: 10,
+                boxShadow: "0 1px 0 rgba(0,0,0,0.04), 0 8px 24px rgba(15,25,15,0.06)",
+                overflow: "hidden",
+            }}
+        >
+            {/* header */}
+            <div
+                className="flex justify-between items-center uppercase"
+                style={{
+                    padding: "10px 16px",
+                    borderBottom: "1px solid #F3F1EA",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: "#4A5148",
+                    letterSpacing: 0.5,
+                }}
+            >
+                <span>
+                    {match.competition?.name ?? match.competition?.code ?? "League"} · MD {match.matchday}
+                </span>
+                {live ? <Chip tone="live">Live</Chip> : <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>{formatKickoff(match.utcDate)}</span>}
             </div>
 
-            {/* Away Team */}
-            <div className="flex flex-col items-center w-32">
-              <div className="bg-white p-2 rounded w-12 h-12 flex items-center justify-center mb-2">
-                <Image
-                    src={match.awayTeam.crest}
-                    alt={match.awayTeam.name}
-                    width={32}
-                    height={32}
-                    className="object-contain"
-                />
-              </div>
-              <span className="text-white text-sm font-medium text-center">{match.awayTeam.shortName}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center w-32 mx-4">
-            <MatchScoreInput
-                homeScore={homeScore}
-                awayScore={awayScore}
-                onHomeScoreChange={setHomeScore}
-                onAwayScoreChange={setAwayScore}
-                disabled={!isEditing}
-            />
-          </div>
-        </div>
-        {/* Desktop layout */}
-        <div className="hidden md:flex items-center justify-between px-6 py-4">
-          <div className="flex flex-col items-center w-1/3">
-            <div className="bg-white p-4 rounded-lg mb-4 w-24 h-24 flex items-center justify-center">
-              <Image
-                  src={match.homeTeam.crest}
-                  alt={match.homeTeam.name}
-                  width={80}
-                  height={80}
-                  className="object-contain"
-              />
-            </div>
-            <h3 className="text-white text-lg font-semibold text-center">{match.homeTeam.shortName}</h3>
-          </div>
-
-          <div className="flex items-center justify-center w-1/3">
-            <div className="h-24 flex items-start -mt-12">
-              <MatchScoreInput
-                  homeScore={homeScore}
-                  awayScore={awayScore}
-                  onHomeScoreChange={setHomeScore}
-                  onAwayScoreChange={setAwayScore}
-                  disabled={!isEditing}
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center w-1/3">
-            <div className="bg-white p-4 rounded-lg mb-4 w-24 h-24 flex items-center justify-center">
-              <Image
-                  src={match.awayTeam.crest}
-                  alt={match.awayTeam.name}
-                  width={80}
-                  height={80}
-                  className="object-contain"
-              />
-            </div>
-            <h3 className="text-white text-lg font-semibold text-center">{match.awayTeam.shortName}</h3>
-          </div>
-        </div>
-
-        <div className="mt-4 px-4 md:px-6 pb-4">
-          {showMessage && state?.message && (
-              <div className={`mb-4 p-3 rounded text-center text-sm ${
-                  state.success
-                      ? 'bg-green-100 text-green-800 border border-green-300'
-                      : 'bg-red-100 text-red-800 border border-red-300'
-              }`}>
-                {state.message}
-              </div>
-          )}
-
-          <div className="flex justify-center space-x-2">
-            {!match.isStarted && (
-                <div>
-                  {isEditing ? (
-                      <Form action={action} className="flex justify-center space-x-2">
-                        <input type="hidden" name="competitionId" value={match.competition.id}/>
-                        <input type="hidden" name="matchId" value={match.id}/>
-                        <input type="hidden" name="homeScore" value={homeScore}/>
-                        <input type="hidden" name="awayScore" value={awayScore}/>
-                        <input type="hidden" name="matchDay" value={match.matchday}/>
-
-                        <button
-                            type="submit"
-                            disabled={pending}
-                            className={`font-bold py-2 px-4 md:px-6 rounded text-sm transition-colors duration-200 ${
-                                pending
-                                    ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                            }`}
+            {/* teams + score */}
+            <div style={{ padding: "22px 20px 16px" }}>
+                <div className="grid items-center" style={{ gridTemplateColumns: "1fr auto 1fr", gap: 16 }}>
+                    {/* home */}
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div
+                            className="flex items-center justify-center"
+                            style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 10,
+                                background: "#F4F2EC",
+                                border: "1px solid #E4E1D6",
+                                flexShrink: 0,
+                            }}
                         >
-                          {pending ? 'Saving...' : 'Save Prediction'}
-                        </button>
-                      </Form>
-                  ) : (
-                      <button
-                          onClick={handleEditClick}
-                          className="font-bold py-2 px-4 md:px-6 rounded text-sm transition-colors duration-200 bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        Edit
-                      </button>
-                  )}
+                            <Image
+                                src={match.homeTeam.crest}
+                                alt={match.homeTeam.name}
+                                width={36}
+                                height={36}
+                                className="object-contain"
+                                style={{ width: "auto", height: 36 }}
+                            />
+                        </div>
+                        <div className="min-w-0">
+                            <div
+                                className="font-display truncate"
+                                style={{ fontSize: 15, fontWeight: 700, color: "#0B0F0A" }}
+                            >
+                                {match.homeTeam.shortName || match.homeTeam.name}
+                            </div>
+                            <div className="text-ink2 uppercase" style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.4 }}>
+                                {match.homeTeam.tla}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* score */}
+                    <div className="flex flex-col items-center">
+                        {hasResult ? (
+                            <div className="flex items-center gap-2 font-display" style={{ fontSize: 28, fontWeight: 700 }}>
+                                <span style={{ color: "#0B0F0A" }}>{fullTimeHome}</span>
+                                <span className="text-ink2">–</span>
+                                <span style={{ color: "#0B0F0A" }}>{fullTimeAway}</span>
+                            </div>
+                        ) : (
+                            <MatchScoreInput
+                                homeScore={homeScore}
+                                awayScore={awayScore}
+                                onHomeScoreChange={setHomeScore}
+                                onAwayScoreChange={setAwayScore}
+                                disabled={!isEditing || live}
+                            />
+                        )}
+                    </div>
+
+                    {/* away */}
+                    <div className="flex items-center gap-3 justify-end min-w-0">
+                        <div className="min-w-0 text-right">
+                            <div className="font-display truncate" style={{ fontSize: 15, fontWeight: 700, color: "#0B0F0A" }}>
+                                {match.awayTeam.shortName || match.awayTeam.name}
+                            </div>
+                            <div className="text-ink2 uppercase" style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.4 }}>
+                                {match.awayTeam.tla}
+                            </div>
+                        </div>
+                        <div
+                            className="flex items-center justify-center"
+                            style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 10,
+                                background: "#F4F2EC",
+                                border: "1px solid #E4E1D6",
+                                flexShrink: 0,
+                            }}
+                        >
+                            <Image
+                                src={match.awayTeam.crest}
+                                alt={match.awayTeam.name}
+                                width={36}
+                                height={36}
+                                className="object-contain"
+                                style={{ width: "auto", height: 36 }}
+                            />
+                        </div>
+                    </div>
                 </div>
-            )}
-          </div>
-        </div>
-      </Card>
-  );
+
+                {/* status + action */}
+                <div className="flex flex-wrap items-center justify-between gap-2" style={{ marginTop: 16 }}>
+                    {isPredicted && !isEditing && !live && !hasResult && (
+                        <span
+                            className="inline-flex items-center"
+                            style={{
+                                padding: "5px 10px",
+                                background: "#E0E7FF",
+                                color: "#1E3A8A",
+                                fontSize: 11,
+                                fontWeight: 700,
+                                borderRadius: 999,
+                                letterSpacing: 0.3,
+                            }}
+                        >
+                            Locked in {homeScore}–{awayScore}
+                        </span>
+                    )}
+                    {live && (
+                        <span
+                            className="inline-flex items-center"
+                            style={{
+                                padding: "5px 10px",
+                                background: "#FFFBEB",
+                                color: "#92400E",
+                                fontSize: 11,
+                                fontWeight: 600,
+                                borderRadius: 999,
+                            }}
+                        >
+                            Your pick: {homeScore}–{awayScore} · result pending
+                        </span>
+                    )}
+                    {!live && !hasResult && !isPredicted && !isEditing && <span />}
+                    {!live && !hasResult && !isPredicted && isEditing && <span />}
+
+                    <div style={{ marginLeft: "auto" }}>
+                        {!live && !hasResult && (
+                            <>
+                                {isEditing ? (
+                                    <Form action={action} className="inline-flex">
+                                        <input type="hidden" name="competitionId" value={match.competition.id} />
+                                        <input type="hidden" name="matchId" value={match.id} />
+                                        <input type="hidden" name="homeScore" value={homeScore} />
+                                        <input type="hidden" name="awayScore" value={awayScore} />
+                                        <input type="hidden" name="matchDay" value={match.matchday} />
+                                        <button
+                                            type="submit"
+                                            disabled={pending}
+                                            className="uppercase"
+                                            style={{
+                                                padding: "8px 16px",
+                                                background: pending ? "#4A5148" : "#9D0010",
+                                                color: "#fff",
+                                                border: "none",
+                                                borderRadius: 6,
+                                                fontSize: 11,
+                                                fontWeight: 700,
+                                                letterSpacing: 0.4,
+                                                cursor: pending ? "not-allowed" : "pointer",
+                                                fontFamily: "inherit",
+                                            }}
+                                        >
+                                            {pending ? "Saving…" : isPredicted ? "Update pick" : "Lock in pick"}
+                                        </button>
+                                    </Form>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsEditing(true)}
+                                        className="uppercase"
+                                        style={{
+                                            padding: "8px 16px",
+                                            background: "transparent",
+                                            color: "#9D0010",
+                                            border: "1.5px solid #9D0010",
+                                            borderRadius: 6,
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            letterSpacing: 0.4,
+                                            cursor: "pointer",
+                                            fontFamily: "inherit",
+                                        }}
+                                    >
+                                        Edit pick
+                                    </button>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {showMessage && state?.message && (
+                    <div
+                        style={{
+                            marginTop: 12,
+                            padding: "8px 12px",
+                            borderRadius: 6,
+                            fontSize: 12,
+                            border: `1px solid ${state.success ? "#86EFAC" : "#FCA5A5"}`,
+                            background: state.success ? "#F0FDF4" : "#FEF2F2",
+                            color: state.success ? "#166534" : "#991B1B",
+                        }}
+                    >
+                        {state.message}
+                    </div>
+                )}
+            </div>
+        </article>
+    );
 }

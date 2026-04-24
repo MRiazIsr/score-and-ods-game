@@ -5,104 +5,144 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
 interface CompetitionDropdownProps {
-  competitions: Competition[];
-  selectedCompetitionId: number;
-  onSelect: (competitionId: number) => void;
+    competitions: Competition[];
+    selectedCompetitionId: number;
+    onSelect: (competitionId: number) => void;
 }
 
 export function CompetitionDropdown({
-  competitions,
-  selectedCompetitionId,
-  onSelect
+    competitions,
+    selectedCompetitionId,
+    onSelect,
 }: CompetitionDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Flatten competitions array
-  const flatCompetitions = competitions.flat();
+    const flatCompetitions = competitions.flat();
+    const selected = flatCompetitions.find((c) => c.id === selectedCompetitionId);
 
-  // Find selected competition
-  const selectedCompetition = flatCompetitions.find(
-    (comp) => comp.id === selectedCompetitionId
-  );
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors"
-      >
-        {selectedCompetition && (
-          <div className="flex items-center space-x-2">
-            <div className="bg-white rounded-full p-1 w-7 h-7 flex items-center justify-center">
-              <Image 
-                src={selectedCompetition.emblem} 
-                alt={selectedCompetition.name} 
-                width={20} 
-                height={20} 
-                className="object-contain"
-              />
-            </div>
-            <span>{selectedCompetition.name}</span>
-          </div>
-        )}
-        <svg
-          className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </button>
-
-      {isOpen && (
-        <div className="absolute mt-2 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
-          {flatCompetitions.map((competition) => (
-            <button
-              key={competition.id}
-              onClick={() => {
-                onSelect(competition.id);
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
-              }}
-              className={`w-full flex items-center space-x-2 px-4 py-2 text-left hover:bg-gray-700 transition-colors ${
-                competition.id === selectedCompetitionId
-                  ? "bg-gray-700"
-                  : ""
-              }`}
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 12px 8px 8px",
+                    background: "#fff",
+                    border: "1.5px solid #E4E1D6",
+                    borderRadius: 6,
+                    color: "#0B0F0A",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "border-color 0.15s",
+                }}
             >
-              <div className="bg-white rounded-full p-1 w-7 h-7 flex items-center justify-center">
-                <Image 
-                  src={competition.emblem} 
-                  alt={competition.name} 
-                  width={20} 
-                  height={20} 
-                  className="object-contain"
-                />
-              </div>
-              <span className="text-white">{competition.name}</span>
+                {selected && (
+                    <span className="flex items-center gap-2">
+                        <span
+                            style={{
+                                background: "#F4F2EC",
+                                borderRadius: "50%",
+                                width: 28,
+                                height: 28,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
+                            <Image src={selected.emblem} alt={selected.name} width={20} height={20} className="object-contain" />
+                        </span>
+                        <span>{selected.name}</span>
+                    </span>
+                )}
+                <svg
+                    className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                >
+                    <polyline points="6 9 12 15 18 9" />
+                </svg>
             </button>
-          ))}
+
+            {isOpen && (
+                <div
+                    style={{
+                        position: "absolute",
+                        top: "calc(100% + 6px)",
+                        right: 0,
+                        minWidth: 220,
+                        background: "#fff",
+                        border: "1px solid #E4E1D6",
+                        borderRadius: 8,
+                        boxShadow: "0 12px 32px rgba(15,25,15,0.10)",
+                        zIndex: 50,
+                        overflow: "hidden",
+                    }}
+                >
+                    {flatCompetitions.map((c) => {
+                        const active = c.id === selectedCompetitionId;
+                        return (
+                            <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => {
+                                    onSelect(c.id);
+                                    setIsOpen(false);
+                                }}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 10,
+                                    width: "100%",
+                                    padding: "10px 14px",
+                                    background: active ? "#E0E7FF" : "transparent",
+                                    color: active ? "#1E3A8A" : "#0B0F0A",
+                                    border: "none",
+                                    textAlign: "left",
+                                    cursor: "pointer",
+                                    fontSize: 13,
+                                    fontWeight: active ? 700 : 500,
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        background: "#F4F2EC",
+                                        borderRadius: "50%",
+                                        width: 24,
+                                        height: 24,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <Image src={c.emblem} alt={c.name} width={16} height={16} className="object-contain" />
+                                </span>
+                                <span>{c.name}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }
