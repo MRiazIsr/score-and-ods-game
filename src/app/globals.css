@@ -42,6 +42,10 @@ button { font: inherit; }
 
 .s1-pulse { animation: s1pulse 1s infinite; }
 
+/* Hide native scrollbar — used by the MD tabs scroll row */
+.md-tabs-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+.md-tabs-scroll::-webkit-scrollbar { display: none; }
+
 /* Autofill styling — keep inputs on paper background */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,

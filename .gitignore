@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /src/tests/lambda/competitionsDataFetcher/envDumy.ts
+
+# superpowers brainstorming mockups
+.superpowers/
