@@ -246,7 +246,25 @@
         "backToMD": "Back to MD {md}",
         "mdLabel": "MD {md}",
         "nextFixtures": "Next fixtures · {name}",
-        "noFixtures": "No scheduled fixtures."
+        "noFixtures": "No scheduled fixtures.",
+        "stage": {
+            "PRELIMINARY_ROUND": "Preliminary",
+            "PRELIMINARY_SEMI_FINALS": "Prelim. SF",
+            "PRELIMINARY_FINAL": "Prelim. Final",
+            "PLAYOFFS": "Playoffs",
+            "PLAYOFFS_ROUND_1": "Playoff R1",
+            "PLAYOFFS_ROUND_2": "Playoff R2",
+            "FIRST_ROUND": "Round 1",
+            "SECOND_ROUND": "Round 2",
+            "THIRD_ROUND": "Round 3",
+            "LEAGUE_STAGE": "League Stage",
+            "LAST_32": "Last 32",
+            "LAST_16": "Round of 16",
+            "QUARTER_FINALS": "QF",
+            "SEMI_FINALS": "SF",
+            "THIRD_PLACE": "3rd Place",
+            "FINAL": "Final"
+        }
     },
     "scoreboard": {
         "label": "Season · League table",

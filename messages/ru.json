@@ -246,7 +246,25 @@
         "backToMD": "К туру {md}",
         "mdLabel": "Тур {md}",
         "nextFixtures": "Ближайшие матчи · {name}",
-        "noFixtures": "Запланированных матчей нет."
+        "noFixtures": "Запланированных матчей нет.",
+        "stage": {
+            "PRELIMINARY_ROUND": "Квалификация",
+            "PRELIMINARY_SEMI_FINALS": "Квалиф. 1/2",
+            "PRELIMINARY_FINAL": "Квалиф. финал",
+            "PLAYOFFS": "Плей-офф",
+            "PLAYOFFS_ROUND_1": "Плей-офф · Раунд 1",
+            "PLAYOFFS_ROUND_2": "Плей-офф · Раунд 2",
+            "FIRST_ROUND": "1-й раунд",
+            "SECOND_ROUND": "2-й раунд",
+            "THIRD_ROUND": "3-й раунд",
+            "LEAGUE_STAGE": "Лиговый этап",
+            "LAST_32": "1/16",
+            "LAST_16": "1/8",
+            "QUARTER_FINALS": "1/4",
+            "SEMI_FINALS": "1/2",
+            "THIRD_PLACE": "Матч за 3-е место",
+            "FINAL": "Финал"
+        }
     },
     "scoreboard": {
         "label": "Сезон · Таблица лиги",

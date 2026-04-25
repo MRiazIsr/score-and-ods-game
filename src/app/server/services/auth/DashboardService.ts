@@ -2,6 +2,7 @@ import { CompetitionsEntity } from "@/app/server/entities/CompetitionsEntity";
 import { competitionRepository } from "@/app/server/db/repositories/competitionRepository";
 import { matchRepository } from "@/app/server/db/repositories/matchRepository";
 import { predictionRepository } from "@/app/server/db/repositories/predictionRepository";
+import { CompetitionsService, type TeamFormResult } from "@/app/server/services/auth/CompetitionsService";
 import { toApiCompetition, toApiMatch } from "@/app/server/services/mappers";
 import type { Match } from "@/app/server/modules/competitions/types";
 
@@ -16,6 +17,7 @@ export interface DashboardFeed {
     live: Match[];
     upcoming: Match[];
     settled: Match[];
+    formByTeam: Record<number, TeamFormResult[]>;
 }
 
 function currentIsoWeek(now: Date = new Date()): { start: Date; end: Date } {
@@ -72,7 +74,17 @@ export class DashboardService {
         const upcoming = upcomingRaw.map(mapOne).filter((m): m is Match => m != null);
         const settled = settledRaw.map(mapOne).filter((m): m is Match => m != null);
 
-        return { live, upcoming, settled };
+        const teamIds = Array.from(
+            new Set(allMatches.flatMap((m) => [m.homeTeamId, m.awayTeamId])),
+        );
+        const formByTeam = teamIds.length
+            ? await new CompetitionsService().getRecentMatchResultsBatch(
+                  teamIds,
+                  CompetitionsEntity.competitionsIdArray,
+              )
+            : {};
+
+        return { live, upcoming, settled, formByTeam };
     }
 
     async getUserStats(userId: string): Promise<UserStats> {

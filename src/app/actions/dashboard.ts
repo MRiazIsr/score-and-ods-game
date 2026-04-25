@@ -4,7 +4,7 @@ import { getSession } from "@/app/actions/auth";
 import { DashboardService, type DashboardFeed, type UserStats } from "@/app/server/services/auth/DashboardService";
 import { logError } from "@/app/lib/errors";
 
-const EMPTY_FEED: DashboardFeed = { live: [], upcoming: [], settled: [] };
+const EMPTY_FEED: DashboardFeed = { live: [], upcoming: [], settled: [], formByTeam: {} };
 const EMPTY_STATS: UserStats = { total: 0, weekly: 0, streak: 0, hitRate: 0 };
 
 export async function getDashboardFeed(): Promise<DashboardFeed> {

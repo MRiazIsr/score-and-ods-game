@@ -1,8 +1,9 @@
-import type { Competition, Match, ScoreBoardData, ScoreBoardEntry } from "@/app/server/modules/competitions/types";
+import type { Competition, Match, MatchdayTab, ScoreBoardData, ScoreBoardEntry } from "@/app/server/modules/competitions/types";
 import { competitionRepository } from "@/app/server/db/repositories/competitionRepository";
 import { matchRepository } from "@/app/server/db/repositories/matchRepository";
 import { predictionRepository } from "@/app/server/db/repositories/predictionRepository";
 import { userRepository } from "@/app/server/db/repositories/userRepository";
+import { CompetitionsEntity } from "@/app/server/entities/CompetitionsEntity";
 import { toApiCompetition, toApiMatch } from "@/app/server/services/mappers";
 import { calculatePoints, pointsBreakdown } from "@/app/server/services/ScoringService";
 
@@ -34,23 +35,34 @@ export class CompetitionsService {
         return matchRepository.getMatchdaysForCompetitionSeason(competitionId, comp.activeSeason.id);
     }
 
-    async getCompetitionActiveMatches(
-        competitionId: number,
-        matchDay: number,
-        userId: string,
-    ): Promise<Match[]> {
+    async getAllCompetitionMatchTabs(competitionId: number): Promise<MatchdayTab[]> {
         const comp = await competitionRepository.findByIdWithActiveSeason(competitionId);
         if (!comp || !comp.activeSeason) return [];
+        return matchRepository.getMatchTabsForCompetitionSeason(competitionId, comp.activeSeason.id);
+    }
+
+    async getCompetitionTabMatches(
+        competitionId: number,
+        tab: MatchdayTab,
+        userId: string,
+    ): Promise<{ matches: Match[]; formByTeam: Record<number, TeamFormResult[]> }> {
+        const comp = await competitionRepository.findByIdWithActiveSeason(competitionId);
+        if (!comp || !comp.activeSeason) return { matches: [], formByTeam: {} };
+
+        const dbMatchesPromise =
+            tab.kind === "matchday"
+                ? matchRepository.findByCompetitionMatchday(competitionId, comp.activeSeason.id, tab.matchday)
+                : matchRepository.findByCompetitionStage(competitionId, comp.activeSeason.id, tab.stage);
 
         const [dbMatches, predictions] = await Promise.all([
-            matchRepository.findByCompetitionMatchday(competitionId, comp.activeSeason.id, matchDay),
+            dbMatchesPromise,
             predictionRepository.findByUserAndCompetition(userId, competitionId, comp.activeSeason.id),
         ]);
 
         const predMap = new Map(predictions.map((p) => [p.matchId, p]));
-        const apiComp = toApiCompetition(comp, [matchDay]); // minimal matchdays array for performance
+        const apiComp = toApiCompetition(comp, []); // matchdays not needed for inline cards
 
-        return dbMatches.map((m) => {
+        const matches = dbMatches.map((m) => {
             const pred = predMap.get(m.id);
             return toApiMatch(
                 m,
@@ -59,6 +71,16 @@ export class CompetitionsService {
                 pred ? { home: pred.homeScore, away: pred.awayScore, isPredicted: true } : undefined,
             );
         });
+
+        const teamIds = Array.from(
+            new Set(dbMatches.flatMap((m) => [m.homeTeamId, m.awayTeamId])),
+        );
+        const formByTeam = await this.getRecentMatchResultsBatch(
+            teamIds,
+            CompetitionsEntity.competitionsIdArray,
+        );
+
+        return { matches, formByTeam };
     }
 
     async saveMatchScore(
@@ -178,6 +200,46 @@ export class CompetitionsService {
                 scored,
                 conceded,
             });
+        }
+        return out;
+    }
+
+    async getRecentMatchResultsBatch(
+        teamIds: number[],
+        competitionIds: number[],
+        limit = 5,
+    ): Promise<Record<number, TeamFormResult[]>> {
+        const dbResults = await matchRepository.findRecentByTeams(
+            teamIds,
+            competitionIds,
+            limit,
+        );
+        const out: Record<number, TeamFormResult[]> = {};
+        for (const teamId of teamIds) {
+            const matches = dbResults.get(teamId) ?? [];
+            const list: TeamFormResult[] = [];
+            for (const m of matches) {
+                const home = m.homeScoreFt;
+                const away = m.awayScoreFt;
+                if (home === null || away === null) continue;
+
+                const isHome = m.homeTeamId === teamId;
+                const scored = isHome ? home : away;
+                const conceded = isHome ? away : home;
+                const result: "W" | "D" | "L" =
+                    scored > conceded ? "W" : scored < conceded ? "L" : "D";
+
+                list.push({
+                    matchId: m.id,
+                    utcDate: m.utcDate.toISOString(),
+                    opponent: isHome ? m.awayTeam.name : m.homeTeam.name,
+                    isHome,
+                    result,
+                    scored,
+                    conceded,
+                });
+            }
+            out[teamId] = list;
         }
         return out;
     }

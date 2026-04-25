@@ -5,6 +5,14 @@ interface Area {
     flag: string;
 }
 
+export type MatchdayTab =
+    | { kind: "matchday"; matchday: number }
+    | { kind: "stage"; stage: string };
+
+export function tabKey(tab: MatchdayTab): string {
+    return tab.kind === "matchday" ? `md:${tab.matchday}` : `st:${tab.stage}`;
+}
+
 export interface Competition {
     id: number;
     name: string;

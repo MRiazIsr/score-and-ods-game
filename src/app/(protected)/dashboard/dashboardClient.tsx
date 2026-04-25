@@ -6,7 +6,7 @@ import type { DashboardFeed, UserStats } from "@/app/server/services/auth/Dashbo
 import { StatCard } from "@/app/client/components/stadium/StatCard";
 import { SectionHead } from "@/app/client/components/stadium/SectionHead";
 import { SportToggle, type Sport } from "@/app/client/components/stadium/SportToggle";
-import { MatchCard } from "@/app/client/components/stadium/MatchCard";
+import { MatchCardCompact } from "@/app/client/components/stadium/MatchCardCompact";
 import { LeaguesSidebar } from "@/app/client/components/stadium/LeaguesSidebar";
 import { TrashTalk } from "@/app/client/components/stadium/TrashTalk";
 
@@ -18,7 +18,8 @@ interface DashboardClientProps {
 export default function DashboardClient({ feed, stats }: DashboardClientProps) {
     const t = useTranslations();
     const [sport, setSport] = useState<Sport>("football");
-    const { live, upcoming, settled } = feed;
+    const { live, upcoming, settled, formByTeam } = feed;
+    const formFor = (teamId: number) => formByTeam[teamId] ?? [];
 
     return (
         <div
@@ -95,7 +96,12 @@ export default function DashboardClient({ feed, stats }: DashboardClientProps) {
                             />
                             <div className="grid" style={{ gap: 10, marginBottom: 20 }}>
                                 {live.map((m) => (
-                                    <MatchCard key={m.id} match={m} />
+                                    <MatchCardCompact
+                                        key={m.id}
+                                        match={m}
+                                        homeForm={formFor(m.homeTeam.id)}
+                                        awayForm={formFor(m.awayTeam.id)}
+                                    />
                                 ))}
                             </div>
                         </>
@@ -112,7 +118,12 @@ export default function DashboardClient({ feed, stats }: DashboardClientProps) {
                     {upcoming.length > 0 ? (
                         <div className="grid" style={{ gap: 10 }}>
                             {upcoming.map((m) => (
-                                <MatchCard key={m.id} match={m} />
+                                <MatchCardCompact
+                                    key={m.id}
+                                    match={m}
+                                    homeForm={formFor(m.homeTeam.id)}
+                                    awayForm={formFor(m.awayTeam.id)}
+                                />
                             ))}
                         </div>
                     ) : (
@@ -128,7 +139,12 @@ export default function DashboardClient({ feed, stats }: DashboardClientProps) {
                             />
                             <div className="grid" style={{ gap: 10 }}>
                                 {settled.map((m) => (
-                                    <MatchCard key={m.id} match={m} />
+                                    <MatchCardCompact
+                                        key={m.id}
+                                        match={m}
+                                        homeForm={formFor(m.homeTeam.id)}
+                                        awayForm={formFor(m.awayTeam.id)}
+                                    />
                                 ))}
                             </div>
                         </>

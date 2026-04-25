@@ -1,38 +1,35 @@
 "use client";
 
-import { Competition, Match } from "@/app/server/modules/competitions/types";
+import { Competition, Match, MatchdayTab, tabKey } from "@/app/server/modules/competitions/types";
 import Image from "next/image";
-import Link from "next/link";
-import { useActionState, useState, useEffect, useCallback, useTransition, useRef } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { MatchScoreInput } from "@/app/client/components/ui/MatchScoreInput";
-import { getCompetitionMatches, saveMatchScore } from "@/app/actions/matches";
+import { useState, useEffect, useCallback, useTransition, useRef, useMemo } from "react";
+import { useTranslations } from "next-intl";
+import { getCompetitionMatches } from "@/app/actions/matches";
 import { Chip } from "@/app/client/components/stadium/Chip";
-import Form from "next/form";
+import { MatchCardCompact } from "@/app/client/components/stadium/MatchCardCompact";
+import { stageLabel } from "@/app/client/lib/stageLabel";
+import type { TeamFormResult } from "@/app/server/services/auth/CompetitionsService";
 
 interface Props {
     competition: Competition;
-    matchDays: number[];
+    matchTabs: MatchdayTab[];
 }
 
-function useFormatKickoff() {
-    const locale = useLocale();
-    return (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
+function defaultTab(tabs: MatchdayTab[], activeMatchDay: number): MatchdayTab | null {
+    const md = tabs.find(
+        (t) => t.kind === "matchday" && t.matchday === activeMatchDay,
+    );
+    if (md) return md;
+    return tabs[0] ?? null;
 }
 
-export default function MatchesClient({ competition, matchDays }: Props) {
+export default function MatchesClient({ competition, matchTabs }: Props) {
     const t = useTranslations();
-    const [selectedMatchDay, setSelectedMatchDay] = useState<number>(competition.activeMatchDay);
+    const [selectedTab, setSelectedTab] = useState<MatchdayTab | null>(() =>
+        defaultTab(matchTabs, competition.activeMatchDay),
+    );
     const [matches, setMatches] = useState<Match[]>([]);
+    const [formByTeam, setFormByTeam] = useState<Record<number, TeamFormResult[]>>({});
     const [pending, startTransition] = useTransition();
 
     const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -41,22 +38,24 @@ export default function MatchesClient({ competition, matchDays }: Props) {
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
 
-    const selectMatchDay = useCallback(
-        (day: number) => {
+    const selectTab = useCallback(
+        (tab: MatchdayTab) => {
             startTransition(async () => {
-                const data = await getCompetitionMatches(competition.id, day);
-                setSelectedMatchDay(day);
-                setMatches(data ?? []);
+                const data = await getCompetitionMatches(competition.id, tab);
+                setSelectedTab(tab);
+                setMatches(data?.matches ?? []);
+                setFormByTeam(data?.formByTeam ?? {});
             });
         },
-        [competition.id]
+        [competition.id],
     );
 
     useEffect(() => {
-        selectMatchDay(selectedMatchDay);
-    }, [selectedMatchDay, selectMatchDay]);
+        if (selectedTab) selectTab(selectedTab);
+        // We only run this on mount and when the tabs list semantically changes.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-    // Track whether left/right chevrons + fades should be visible
     useEffect(() => {
         const el = tabsContainerRef.current;
         if (!el) return;
@@ -71,21 +70,25 @@ export default function MatchesClient({ competition, matchDays }: Props) {
             el.removeEventListener("scroll", update);
             window.removeEventListener("resize", update);
         };
-    }, [matchDays.length]);
+    }, [matchTabs.length]);
 
-    // Center the live MD on mount and when user taps "Back to MD N"
     useEffect(() => {
-        if (selectedMatchDay !== competition.activeMatchDay) return;
+        if (!selectedTab) return;
+        const isActive =
+            selectedTab.kind === "matchday" &&
+            selectedTab.matchday === competition.activeMatchDay;
+        if (!isActive) return;
         const container = tabsContainerRef.current;
         const target = activeTabRef.current;
         if (!container || !target) return;
-        const left = target.offsetLeft - (container.clientWidth / 2 - target.clientWidth / 2);
+        const left =
+            target.offsetLeft - (container.clientWidth / 2 - target.clientWidth / 2);
         container.scrollTo({
             left: Math.max(0, left),
             behavior: initialCenterDone.current ? "smooth" : "instant",
         });
         initialCenterDone.current = true;
-    }, [selectedMatchDay, competition.activeMatchDay]);
+    }, [selectedTab, competition.activeMatchDay]);
 
     const scrollTabs = (direction: -1 | 1) => {
         const el = tabsContainerRef.current;
@@ -93,10 +96,34 @@ export default function MatchesClient({ competition, matchDays }: Props) {
         el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: "smooth" });
     };
 
+    const onActiveBack = () => {
+        const md = matchTabs.find(
+            (x) => x.kind === "matchday" && x.matchday === competition.activeMatchDay,
+        );
+        if (md) selectTab(md);
+    };
+
+    const tabsToRender = matchTabs;
+    const selectedKey = selectedTab ? tabKey(selectedTab) : null;
+    const activeKey = `md:${competition.activeMatchDay}`;
+
+    const headerChip = useMemo(() => {
+        if (!selectedTab) return null;
+        if (selectedTab.kind === "matchday") {
+            return t("competition.matchday", { matchday: selectedTab.matchday });
+        }
+        return stageLabel(t, selectedTab.stage);
+    }, [selectedTab, t]);
+
     return (
-        <div className="w-full" style={{ maxWidth: 1080, margin: "0 auto", padding: "32px 24px 48px" }}>
-            {/* header */}
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4" style={{ marginBottom: 24 }}>
+        <div
+            className="w-full"
+            style={{ maxWidth: 1080, margin: "0 auto", padding: "32px 24px 48px" }}
+        >
+            <div
+                className="flex flex-col md:flex-row md:items-end md:justify-between gap-4"
+                style={{ marginBottom: 24 }}
+            >
                 <div className="flex items-center gap-4">
                     <div
                         className="flex items-center justify-center"
@@ -120,22 +147,37 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                     <div>
                         <div
                             className="uppercase"
-                            style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: "#4A5148" }}
+                            style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                letterSpacing: 0.6,
+                                color: "#4A5148",
+                            }}
                         >
-                            {t("competition.matchPredictionLabel", { code: competition.code || competition.type })}
+                            {t("competition.matchPredictionLabel", {
+                                code: competition.code || competition.type,
+                            })}
                         </div>
-                        <h1 className="font-display" style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.8, marginTop: 2 }}>
+                        <h1
+                            className="font-display"
+                            style={{
+                                fontSize: 32,
+                                fontWeight: 700,
+                                letterSpacing: -0.8,
+                                marginTop: 2,
+                            }}
+                        >
                             {competition.name}
                         </h1>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <Chip tone="brand">{t("competition.matchday", { matchday: selectedMatchDay })}</Chip>
+                    {headerChip && <Chip tone="brand">{headerChip}</Chip>}
                     <Chip>{t("competition.lockInReminder")}</Chip>
-                    {selectedMatchDay !== competition.activeMatchDay && (
+                    {selectedKey !== activeKey && (
                         <button
                             type="button"
-                            onClick={() => setSelectedMatchDay(competition.activeMatchDay)}
+                            onClick={onActiveBack}
                             className="inline-flex items-center gap-1 font-sans uppercase"
                             style={{
                                 padding: "2px 7px",
@@ -151,14 +193,15 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                                 lineHeight: 1.4,
                             }}
                         >
-                            <span aria-hidden="true" style={{ fontSize: 11, lineHeight: 1 }}>←</span>
+                            <span aria-hidden="true" style={{ fontSize: 11, lineHeight: 1 }}>
+                                ←
+                            </span>
                             {t("competition.backToMD", { md: competition.activeMatchDay })}
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* matchday tabs */}
             <div style={{ marginBottom: 20 }}>
                 <div style={{ position: "relative" }}>
                     <div
@@ -171,10 +214,13 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                             padding: "4px 2px",
                         }}
                     >
-                        {matchDays.map((md) => {
-                            const isSelected = md === selectedMatchDay;
-                            const isCurrent = md === competition.activeMatchDay;
-                            const isPlayed = md < competition.activeMatchDay;
+                        {tabsToRender.map((tab) => {
+                            const key = tabKey(tab);
+                            const isSelected = key === selectedKey;
+                            const isCurrent = key === activeKey;
+                            const isPlayed =
+                                tab.kind === "matchday" &&
+                                tab.matchday < competition.activeMatchDay;
 
                             let bg: string;
                             let color: string;
@@ -197,12 +243,17 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                                 borderColor = "#E4E1D6";
                             }
 
+                            const label =
+                                tab.kind === "matchday"
+                                    ? t("competition.mdLabel", { md: tab.matchday })
+                                    : stageLabel(t, tab.stage);
+
                             return (
                                 <button
-                                    key={md}
+                                    key={key}
                                     ref={isCurrent ? activeTabRef : undefined}
                                     type="button"
-                                    onClick={() => setSelectedMatchDay(md)}
+                                    onClick={() => selectTab(tab)}
                                     className="uppercase"
                                     style={{
                                         padding: "8px 14px",
@@ -223,7 +274,7 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                                         flexShrink: 0,
                                     }}
                                 >
-                                    {t("competition.mdLabel", { md })}
+                                    {label}
                                     {isCurrent && (
                                         <span
                                             style={{
@@ -249,7 +300,8 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                                 left: 0,
                                 width: 36,
                                 pointerEvents: "none",
-                                background: "linear-gradient(to right, #F4F2EC, rgba(244,242,236,0))",
+                                background:
+                                    "linear-gradient(to right, #F4F2EC, rgba(244,242,236,0))",
                             }}
                         />
                     )}
@@ -262,7 +314,8 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                                 right: 0,
                                 width: 36,
                                 pointerEvents: "none",
-                                background: "linear-gradient(to left, #F4F2EC, rgba(244,242,236,0))",
+                                background:
+                                    "linear-gradient(to left, #F4F2EC, rgba(244,242,236,0))",
                             }}
                         />
                     )}
@@ -328,14 +381,26 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                         </button>
                     )}
                 </div>
-
             </div>
 
-            {/* loading state */}
             {pending && matches.length === 0 ? (
                 <div className="flex justify-center" style={{ padding: "60px 0" }}>
-                    <svg className="animate-spin" style={{ color: "#1E3A8A" }} width="32" height="32" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
+                    <svg
+                        className="animate-spin"
+                        style={{ color: "#1E3A8A" }}
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            fill="none"
+                            opacity="0.25"
+                        />
                         <path
                             fill="currentColor"
                             opacity="0.75"
@@ -343,292 +408,33 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                         />
                     </svg>
                 </div>
+            ) : matches.length === 0 ? (
+                <div
+                    style={{
+                        background: "#fff",
+                        border: "1px dashed #E4E1D6",
+                        borderRadius: 8,
+                        padding: "24px 20px",
+                        textAlign: "center",
+                        fontSize: 12,
+                        color: "#4A5148",
+                    }}
+                >
+                    {t("competition.noFixtures")}
+                </div>
             ) : (
                 <div className="grid gap-3">
                     {matches.map((match) => (
-                        <MatchCard key={match.id} match={match} />
+                        <MatchCardCompact
+                            key={match.id}
+                            match={match}
+                            homeForm={formByTeam[match.homeTeam.id] ?? []}
+                            awayForm={formByTeam[match.awayTeam.id] ?? []}
+                            mode="predict"
+                        />
                     ))}
                 </div>
             )}
         </div>
-    );
-}
-
-interface MatchCardProps {
-    match: Match;
-}
-
-function MatchCard({ match }: MatchCardProps) {
-    const t = useTranslations();
-    const formatKickoff = useFormatKickoff();
-    const [homeScore, setHomeScore] = useState<number>(match.predictedScore?.home ?? 0);
-    const [awayScore, setAwayScore] = useState<number>(match.predictedScore?.away ?? 0);
-    const [isPredicted, setIsPredicted] = useState<boolean>(match.predictedScore?.isPredicted ?? false);
-    const [isEditing, setIsEditing] = useState<boolean>(!isPredicted);
-    const [state, action, pending] = useActionState(saveMatchScore, undefined);
-    const [showMessage, setShowMessage] = useState(false);
-
-    useEffect(() => {
-        if (state?.message) {
-            setShowMessage(true);
-            if (state?.success) {
-                setIsPredicted(true);
-                setIsEditing(false);
-            }
-            const timer = setTimeout(() => {
-                setShowMessage(false);
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [state]);
-
-    const live = match.isStarted;
-    const fullTimeHome = match.score?.fullTime?.home;
-    const fullTimeAway = match.score?.fullTime?.away;
-    const hasResult = fullTimeHome !== null && fullTimeHome !== undefined && fullTimeAway !== null && fullTimeAway !== undefined;
-
-    return (
-        <article
-            style={{
-                background: "#fff",
-                border: "1px solid #E4E1D6",
-                borderRadius: 10,
-                boxShadow: "0 1px 0 rgba(0,0,0,0.04), 0 8px 24px rgba(15,25,15,0.06)",
-                overflow: "hidden",
-            }}
-        >
-            {/* header */}
-            <div
-                className="flex justify-between items-center uppercase"
-                style={{
-                    padding: "10px 16px",
-                    borderBottom: "1px solid #F3F1EA",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: "#4A5148",
-                    letterSpacing: 0.5,
-                }}
-            >
-                <span>
-                    {match.competition?.name ?? match.competition?.code ?? t("nav.leagues")} · {t("competition.mdLabel", { md: match.matchday })}
-                </span>
-                {live ? <Chip tone="live">{t("match.live")}</Chip> : <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>{formatKickoff(match.utcDate)}</span>}
-            </div>
-
-            {/* teams + score */}
-            <div style={{ padding: "22px 20px 16px" }}>
-                <div className="grid items-center" style={{ gridTemplateColumns: "1fr auto 1fr", gap: 16 }}>
-                    {/* home */}
-                    <div className="flex items-center gap-3 min-w-0">
-                        <div
-                            className="flex items-center justify-center"
-                            style={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 10,
-                                background: "#F4F2EC",
-                                border: "1px solid #E4E1D6",
-                                flexShrink: 0,
-                            }}
-                        >
-                            <Image
-                                src={match.homeTeam.crest}
-                                alt={match.homeTeam.name}
-                                width={36}
-                                height={36}
-                                className="object-contain"
-                                style={{ width: "auto", height: 36 }}
-                            />
-                        </div>
-                        <div className="min-w-0">
-                            <div
-                                className="font-display truncate"
-                                style={{ fontSize: 15, fontWeight: 700, color: "#0B0F0A" }}
-                            >
-                                {match.homeTeam.shortName || match.homeTeam.name}
-                            </div>
-                            <div className="text-ink2 uppercase" style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.4 }}>
-                                {match.homeTeam.tla}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* score */}
-                    <div className="flex flex-col items-center">
-                        {hasResult ? (
-                            <div className="flex items-center gap-2 font-display" style={{ fontSize: 28, fontWeight: 700 }}>
-                                <span style={{ color: "#0B0F0A" }}>{fullTimeHome}</span>
-                                <span className="text-ink2">–</span>
-                                <span style={{ color: "#0B0F0A" }}>{fullTimeAway}</span>
-                            </div>
-                        ) : (
-                            <MatchScoreInput
-                                homeScore={homeScore}
-                                awayScore={awayScore}
-                                onHomeScoreChange={setHomeScore}
-                                onAwayScoreChange={setAwayScore}
-                                disabled={!isEditing || live}
-                            />
-                        )}
-                    </div>
-
-                    {/* away */}
-                    <div className="flex items-center gap-3 justify-end min-w-0">
-                        <div className="min-w-0 text-right">
-                            <div className="font-display truncate" style={{ fontSize: 15, fontWeight: 700, color: "#0B0F0A" }}>
-                                {match.awayTeam.shortName || match.awayTeam.name}
-                            </div>
-                            <div className="text-ink2 uppercase" style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.4 }}>
-                                {match.awayTeam.tla}
-                            </div>
-                        </div>
-                        <div
-                            className="flex items-center justify-center"
-                            style={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 10,
-                                background: "#F4F2EC",
-                                border: "1px solid #E4E1D6",
-                                flexShrink: 0,
-                            }}
-                        >
-                            <Image
-                                src={match.awayTeam.crest}
-                                alt={match.awayTeam.name}
-                                width={36}
-                                height={36}
-                                className="object-contain"
-                                style={{ width: "auto", height: 36 }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* status + action */}
-                <div className="flex flex-wrap items-center justify-between gap-2" style={{ marginTop: 16 }}>
-                    {isPredicted && !isEditing && !live && !hasResult && (
-                        <span
-                            className="inline-flex items-center"
-                            style={{
-                                padding: "5px 10px",
-                                background: "#E0E7FF",
-                                color: "#1E3A8A",
-                                fontSize: 11,
-                                fontWeight: 700,
-                                borderRadius: 999,
-                                letterSpacing: 0.3,
-                            }}
-                        >
-                            {t("match.lockedInBadge", { home: homeScore, away: awayScore })}
-                        </span>
-                    )}
-                    {live && (
-                        <span
-                            className="inline-flex items-center"
-                            style={{
-                                padding: "5px 10px",
-                                background: "#FFFBEB",
-                                color: "#92400E",
-                                fontSize: 11,
-                                fontWeight: 600,
-                                borderRadius: 999,
-                            }}
-                        >
-                            {t("match.pickPending", { home: homeScore, away: awayScore })}
-                        </span>
-                    )}
-                    {!live && !hasResult && !isPredicted && !isEditing && <span />}
-                    {!live && !hasResult && !isPredicted && isEditing && <span />}
-
-                    <div style={{ marginLeft: "auto" }}>
-                        {!live && !hasResult && (
-                            <>
-                                {isEditing ? (
-                                    <Form action={action} className="inline-flex">
-                                        <input type="hidden" name="competitionId" value={match.competition.id} />
-                                        <input type="hidden" name="matchId" value={match.id} />
-                                        <input type="hidden" name="homeScore" value={homeScore} />
-                                        <input type="hidden" name="awayScore" value={awayScore} />
-                                        <input type="hidden" name="matchDay" value={match.matchday} />
-                                        <button
-                                            type="submit"
-                                            disabled={pending}
-                                            className="uppercase"
-                                            style={{
-                                                padding: "8px 16px",
-                                                background: pending ? "#4A5148" : "#9D0010",
-                                                color: "#fff",
-                                                border: "none",
-                                                borderRadius: 6,
-                                                fontSize: 11,
-                                                fontWeight: 700,
-                                                letterSpacing: 0.4,
-                                                cursor: pending ? "not-allowed" : "pointer",
-                                                fontFamily: "inherit",
-                                            }}
-                                        >
-                                            {pending ? t("action.saving") : isPredicted ? t("action.updatePick") : t("action.lockInPick")}
-                                        </button>
-                                    </Form>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsEditing(true)}
-                                        className="uppercase"
-                                        style={{
-                                            padding: "8px 16px",
-                                            background: "transparent",
-                                            color: "#9D0010",
-                                            border: "1.5px solid #9D0010",
-                                            borderRadius: 6,
-                                            fontSize: 11,
-                                            fontWeight: 700,
-                                            letterSpacing: 0.4,
-                                            cursor: "pointer",
-                                            fontFamily: "inherit",
-                                        }}
-                                    >
-                                        {t("action.editPick")}
-                                    </button>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                {showMessage && state?.message && (
-                    <div
-                        style={{
-                            marginTop: 12,
-                            padding: "8px 12px",
-                            borderRadius: 6,
-                            fontSize: 12,
-                            border: `1px solid ${state.success ? "#86EFAC" : "#FCA5A5"}`,
-                            background: state.success ? "#F0FDF4" : "#FEF2F2",
-                            color: state.success ? "#166534" : "#991B1B",
-                        }}
-                    >
-                        {state.message}
-                    </div>
-                )}
-
-                <div style={{ marginTop: 10, borderTop: "1px solid #F3F1EA", paddingTop: 10, textAlign: "right" }}>
-                    <Link
-                        href={`/match/${match.id}`}
-                        className="uppercase"
-                        style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            letterSpacing: 0.4,
-                            color: "#1E3A8A",
-                            textDecoration: "none",
-                        }}
-                    >
-                        {t("action.viewStats")}
-                    </Link>
-                </div>
-            </div>
-        </article>
     );
 }

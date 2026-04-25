@@ -1,7 +1,7 @@
 "use server";
 
 import { CompetitionsEntity } from "@/app/server/entities/CompetitionsEntity";
-import { Competition } from "@/app/server/modules/competitions/types";
+import { Competition, MatchdayTab } from "@/app/server/modules/competitions/types";
 import { CompetitionsService } from "@/app/server/services/auth/CompetitionsService";
 import { logError } from "@/app/lib/errors";
 
@@ -36,6 +36,16 @@ export async function getAllMatchDays(competitionId: number): Promise<number[]> 
         return await service.getAllCompetitionMatchDays(competitionId);
     } catch (err) {
         logError("actions/competitions.getAllMatchDays", err, { competitionId });
+        return [];
+    }
+}
+
+export async function getAllMatchTabs(competitionId: number): Promise<MatchdayTab[]> {
+    try {
+        const service = new CompetitionsService();
+        return await service.getAllCompetitionMatchTabs(competitionId);
+    } catch (err) {
+        logError("actions/competitions.getAllMatchTabs", err, { competitionId });
         return [];
     }
 }

@@ -1,7 +1,7 @@
 "use server";
 
-import { Match } from "@/app/server/modules/competitions/types";
-import { CompetitionsService } from "@/app/server/services/auth/CompetitionsService";
+import { Match, MatchdayTab } from "@/app/server/modules/competitions/types";
+import { CompetitionsService, type TeamFormResult } from "@/app/server/services/auth/CompetitionsService";
 import { getSession } from "@/app/actions/auth";
 import { friendlyMessage, logError } from "@/app/lib/errors";
 
@@ -14,19 +14,23 @@ type SaveMatchScoreState =
 
 export async function getCompetitionMatches(
     competitionId: number,
-    matchDay: number,
-): Promise<Match[]> {
+    tab: MatchdayTab,
+): Promise<{ matches: Match[]; formByTeam: Record<number, TeamFormResult[]> }> {
     try {
         const service = new CompetitionsService();
         const session = await getSession();
-        return await service.getCompetitionActiveMatches(
+        return await service.getCompetitionTabMatches(
             competitionId,
-            matchDay,
+            tab,
             session.user.userId,
         );
     } catch (err) {
-        logError("actions/matches.getCompetitionMatches", err, { competitionId, matchDay });
-        return [];
+        logError("actions/matches.getCompetitionMatches", err, {
+            competitionId,
+            tabKind: tab.kind,
+            tabValue: tab.kind === "matchday" ? tab.matchday : tab.stage,
+        });
+        return { matches: [], formByTeam: {} };
     }
 }
 
