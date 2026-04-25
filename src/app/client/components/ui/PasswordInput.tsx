@@ -8,10 +8,16 @@ export function PasswordInput({
     value,
     error,
     label,
+    hint,
+    onChange,
+    autoComplete,
 }: {
     value?: string;
-    error?: string;
+    error?: string | string[];
     label?: string;
+    hint?: string;
+    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    autoComplete?: string;
 }) {
     const [showPassword, setShowPassword] = useState(false);
 
@@ -25,6 +31,9 @@ export function PasswordInput({
                 placeHolder="••••••••"
                 label={label}
                 error={error}
+                hint={hint}
+                onChange={onChange}
+                autoComplete={autoComplete}
             />
             <button
                 type="button"

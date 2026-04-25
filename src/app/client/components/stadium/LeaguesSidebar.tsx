@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 const PLACEHOLDER_LEAGUES = [
     { id: "office", name: "Office League", members: 14, rank: 3, icon: "💼", points: 412 },
     { id: "uni", name: "Uni Mates", members: 8, rank: 1, icon: "🎓", points: 388 },
@@ -5,6 +9,7 @@ const PLACEHOLDER_LEAGUES = [
 ];
 
 export function LeaguesSidebar() {
+    const t = useTranslations();
     return (
         <div
             style={{
@@ -32,7 +37,7 @@ export function LeaguesSidebar() {
                         color: "#4A5148",
                     }}
                 >
-                    Your leagues
+                    {t("sidebar.yourLeagues")}
                 </span>
                 <span
                     className="uppercase"
@@ -45,9 +50,9 @@ export function LeaguesSidebar() {
                         padding: "2px 6px",
                         borderRadius: 3,
                     }}
-                    title="Friend pools — coming soon"
+                    title={t("leagues.friendPoolsTooltip")}
                 >
-                    Preview
+                    {t("common.preview")}
                 </span>
             </div>
             {PLACEHOLDER_LEAGUES.map((l, i) => (
@@ -79,14 +84,14 @@ export function LeaguesSidebar() {
                     <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13, fontWeight: 600 }}>{l.name}</div>
                         <div style={{ fontSize: 11, color: "#4A5148" }}>
-                            {l.members.toLocaleString()} members
+                            {t("sidebar.members", { count: l.members })}
                         </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
                         <div className="font-display" style={{ fontSize: 14, fontWeight: 700 }}>
                             #{l.rank}
                         </div>
-                        <div style={{ fontSize: 10, color: "#4A5148" }}>{l.points} pts</div>
+                        <div style={{ fontSize: 10, color: "#4A5148" }}>{l.points} {t("common.pointsShort")}</div>
                     </div>
                 </div>
             ))}
@@ -102,7 +107,7 @@ export function LeaguesSidebar() {
                     fontWeight: 600,
                 }}
             >
-                Friend pools launching soon
+                {t("sidebar.friendPoolsLaunching")}
             </div>
         </div>
     );

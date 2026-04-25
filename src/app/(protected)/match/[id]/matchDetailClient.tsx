@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
 import type { Match } from "@/app/server/modules/competitions/types";
 import type { TeamFormResult } from "@/app/server/services/auth/CompetitionsService";
 import type { CrowdBucket } from "@/app/server/services/auth/CrowdService";
@@ -35,26 +36,36 @@ function computeWDL(form: TeamFormResult[]): { w: number; d: number; l: number }
     );
 }
 
-function formatKickoff(utcDate: string, status: string): string {
-    if (status === "FINISHED") return "Finished";
-    const d = new Date(utcDate);
-    return d.toLocaleDateString("en-GB", {
-        weekday: "long",
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-    });
+function useFormatKickoff() {
+    const locale = useLocale();
+    const t = useTranslations("match");
+    return (utcDate: string, status: string) => {
+        if (status === "FINISHED") return t("finished");
+        const d = new Date(utcDate);
+        return d.toLocaleDateString(locale === "ru" ? "ru-RU" : "en-GB", {
+            weekday: "long",
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        });
+    };
 }
 
-function outcomeLabel(h: number, a: number, homeName: string, awayName: string): string {
-    if (h > a) return `${homeName} win`;
-    if (h < a) return `${awayName} win`;
-    return "Draw";
+function useOutcomeLabel() {
+    const t = useTranslations("match");
+    return (h: number, a: number, homeName: string, awayName: string): string => {
+        if (h > a) return t("win", { team: homeName });
+        if (h < a) return t("win", { team: awayName });
+        return t("draw");
+    };
 }
 
 export default function MatchDetailClient({ match, season, homeForm, awayForm, crowd, h2h }: MatchDetailClientProps) {
+    const t = useTranslations();
+    const formatKickoff = useFormatKickoff();
+    const outcomeLabel = useOutcomeLabel();
     const initialH = match.predictedScore?.isPredicted ? match.predictedScore.home : 1;
     const initialA = match.predictedScore?.isPredicted ? match.predictedScore.away : 1;
     const [h, setH] = useState(initialH);
@@ -92,15 +103,15 @@ export default function MatchDetailClient({ match, season, homeForm, awayForm, c
                         textDecoration: "none",
                     }}
                 >
-                    ← Back
+                    {t("action.back")}
                 </Link>
                 <div style={{ flex: 1 }} />
                 <Chip>{match.competition.name}</Chip>
-                <Chip>MD {match.matchday}</Chip>
+                <Chip>{t("match.mdShort", { md: match.matchday })}</Chip>
                 {match.status === "IN_PLAY" || match.status === "LIVE" || match.status === "PAUSED" ? (
-                    <Chip tone="live">Live</Chip>
+                    <Chip tone="live">{t("match.live")}</Chip>
                 ) : match.status === "FINISHED" ? (
-                    <Chip tone="final">Final</Chip>
+                    <Chip tone="final">{t("match.final")}</Chip>
                 ) : null}
             </div>
 
@@ -145,7 +156,7 @@ export default function MatchDetailClient({ match, season, homeForm, awayForm, c
                                 letterSpacing: 2,
                             }}
                         >
-                            VS
+                            {t("common.vs")}
                         </div>
                     )}
                     <TeamHero team={match.awayTeam} wdl={awayWDL} form={awayResults} reverse />
@@ -174,7 +185,7 @@ export default function MatchDetailClient({ match, season, homeForm, awayForm, c
                             textAlign: "center",
                         }}
                     >
-                        Your prediction
+                        {t("match.yourPrediction")}
                     </div>
 
                     <div
@@ -184,13 +195,13 @@ export default function MatchDetailClient({ match, season, homeForm, awayForm, c
                         <Stepper
                             value={h}
                             onChange={setH}
-                            label={match.homeTeam.tla || match.homeTeam.name || "Home"}
+                            label={match.homeTeam.tla || match.homeTeam.name || t("match.home")}
                             disabled={locked}
                         />
                         <Stepper
                             value={a}
                             onChange={setA}
-                            label={match.awayTeam.tla || match.awayTeam.name || "Away"}
+                            label={match.awayTeam.tla || match.awayTeam.name || t("match.away")}
                             disabled={locked}
                         />
                     </div>
@@ -215,10 +226,10 @@ export default function MatchDetailClient({ match, season, homeForm, awayForm, c
                                         letterSpacing: 0.5,
                                     }}
                                 >
-                                    If this holds
+                                    {t("match.ifThisHolds")}
                                 </div>
                                 <div style={{ fontSize: 13, marginTop: 2 }}>
-                                    {h}–{a} {outcomeLabel(h, a, match.homeTeam.name ?? "Home", match.awayTeam.name ?? "Away")}
+                                    {h}–{a} {outcomeLabel(h, a, match.homeTeam.name ?? t("match.home"), match.awayTeam.name ?? t("match.away"))}
                                 </div>
                             </div>
                             <div style={{ textAlign: "right" }}>
@@ -226,9 +237,9 @@ export default function MatchDetailClient({ match, season, homeForm, awayForm, c
                                     className="font-display"
                                     style={{ fontSize: 22, fontWeight: 700, color: "#1E3A8A" }}
                                 >
-                                    +{RULES.exact} pts
+                                    {t("match.predictionPoints", { pts: RULES.exact })}
                                 </div>
-                                <div style={{ fontSize: 10, color: "#4A5148" }}>max possible</div>
+                                <div style={{ fontSize: 10, color: "#4A5148" }}>{t("match.maxPossible")}</div>
                             </div>
                         </div>
                     )}
@@ -259,10 +270,10 @@ export default function MatchDetailClient({ match, season, homeForm, awayForm, c
                                 }}
                             >
                                 {pending
-                                    ? "Saving…"
+                                    ? t("action.saving")
                                     : match.predictedScore?.isPredicted
-                                      ? `Update pick · ${h}–${a}`
-                                      : `Lock in ${h}–${a}`}
+                                      ? t("match.updatePickLong", { home: h, away: a })
+                                      : t("match.lockInScore", { home: h, away: a })}
                             </button>
                             {state?.message && (
                                 <div
@@ -291,7 +302,7 @@ export default function MatchDetailClient({ match, season, homeForm, awayForm, c
                                 color: "#4A5148",
                             }}
                         >
-                            Your locked-in pick: {match.predictedScore.home}–{match.predictedScore.away}
+                            {t("match.lockedPick", { home: match.predictedScore.home, away: match.predictedScore.away })}
                         </div>
                     )}
                 </div>
@@ -316,14 +327,14 @@ export default function MatchDetailClient({ match, season, homeForm, awayForm, c
                             marginBottom: 12,
                         }}
                     >
-                        What the crowd picked
+                        {t("match.crowdPicks")}
                     </div>
                     <CrowdBars buckets={crowd} />
                 </div>
 
                 {/* The Tape: Form + H2H */}
                 <div style={{ marginTop: 24 }}>
-                    <SectionHead title="The Tape" chip="Form · H2H" />
+                    <SectionHead title={t("match.tape")} chip={t("match.formH2H")} />
                     <div
                         className="grid"
                         style={{
@@ -340,7 +351,7 @@ export default function MatchDetailClient({ match, season, homeForm, awayForm, c
                 </div>
 
                 <div style={{ marginTop: 24, fontSize: 11, color: "#4A5148", textAlign: "center" }}>
-                    Season {season} · Competition {match.competition.id}
+                    {t("match.footer", { season, competition: match.competition.id })}
                 </div>
             </div>
         </div>
@@ -358,6 +369,7 @@ function TeamHero({
     form: FormResult[];
     reverse?: boolean;
 }) {
+    const t = useTranslations("match");
     return (
         <div
             className="flex flex-col items-center"
@@ -390,7 +402,7 @@ function TeamHero({
                 {team.name}
             </div>
             <div style={{ fontSize: 11, color: "#4A5148" }}>
-                W {wdl.w} · D {wdl.d} · L {wdl.l}
+                {t("wdl", { w: wdl.w, d: wdl.d, l: wdl.l })}
             </div>
             <FormRibbon results={form} />
         </div>
@@ -398,6 +410,8 @@ function TeamHero({
 }
 
 function FormTile({ team, form }: { team: Match["homeTeam"]; form: TeamFormResult[] }) {
+    const t = useTranslations("match");
+    const tCommon = useTranslations("common");
     return (
         <div
             style={{
@@ -411,11 +425,11 @@ function FormTile({ team, form }: { team: Match["homeTeam"]; form: TeamFormResul
                 className="uppercase"
                 style={{ fontSize: 10, color: "#4A5148", fontWeight: 700, letterSpacing: 0.5 }}
             >
-                Last 5 · {team.name}
+                {t("lastFive", { team: team.name })}
             </div>
             {form.length === 0 ? (
                 <div style={{ fontSize: 12, color: "#4A5148", marginTop: 10 }}>
-                    No recent results yet this season.
+                    {t("noRecentResults")}
                 </div>
             ) : (
                 <div style={{ marginTop: 10 }}>
@@ -429,7 +443,7 @@ function FormTile({ team, form }: { team: Match["homeTeam"]; form: TeamFormResul
                                 fontSize: 12,
                             }}
                         >
-                            <span style={{ color: "#4A5148" }}>{f.isHome ? "vs" : "@"} {f.opponent}</span>
+                            <span style={{ color: "#4A5148" }}>{f.isHome ? tCommon("vs") : "@"} {f.opponent}</span>
                             <span className="flex items-center" style={{ gap: 8 }}>
                                 <span className="font-display" style={{ fontWeight: 700 }}>
                                     {f.scored}–{f.conceded}
@@ -471,6 +485,8 @@ function H2HTile({
     awayTeam: Match["awayTeam"];
     h2h: Match[];
 }) {
+    const t = useTranslations("match");
+    const tCommon = useTranslations("common");
     return (
         <div
             style={{
@@ -484,11 +500,11 @@ function H2HTile({
                 className="uppercase"
                 style={{ fontSize: 10, color: "#4A5148", fontWeight: 700, letterSpacing: 0.5 }}
             >
-                Head-to-head (this season)
+                {t("h2h")}
             </div>
             {h2h.length === 0 ? (
                 <div style={{ fontSize: 12, color: "#4A5148", marginTop: 10 }}>
-                    No previous meetings in the current season.
+                    {t("noH2H")}
                 </div>
             ) : (
                 <div style={{ marginTop: 10 }}>
@@ -504,7 +520,7 @@ function H2HTile({
                         >
                             <span style={{ color: "#4A5148" }}>
                                 {m.homeTeam.id === homeTeam.id ? homeTeam.name : awayTeam.name}
-                                {" vs "}
+                                {` ${tCommon("vs")} `}
                                 {m.awayTeam.id === homeTeam.id ? homeTeam.name : awayTeam.name}
                             </span>
                             <span className="font-display" style={{ fontWeight: 700 }}>

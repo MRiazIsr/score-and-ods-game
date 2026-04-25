@@ -1,6 +1,6 @@
 export class FormFieldsKeysEntity {
     static signUpGroup = {
-        NAME: 'name',
+        TAG: 'tag',
         EMAIL: 'email',
         USERNAME: 'userName',
         PASSWORD: 'password',

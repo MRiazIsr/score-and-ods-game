@@ -4,6 +4,7 @@ import { Competition, Match } from "@/app/server/modules/competitions/types";
 import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useState, useEffect, useCallback, useTransition, useRef } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { MatchScoreInput } from "@/app/client/components/ui/MatchScoreInput";
 import { getCompetitionMatches, saveMatchScore } from "@/app/actions/matches";
 import { Chip } from "@/app/client/components/stadium/Chip";
@@ -14,18 +15,22 @@ interface Props {
     matchDays: number[];
 }
 
-function formatKickoff(dateString: string) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
+function useFormatKickoff() {
+    const locale = useLocale();
+    return (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
 }
 
 export default function MatchesClient({ competition, matchDays }: Props) {
+    const t = useTranslations();
     const [selectedMatchDay, setSelectedMatchDay] = useState<number>(competition.activeMatchDay);
     const [matches, setMatches] = useState<Match[]>([]);
     const [pending, startTransition] = useTransition();
@@ -117,7 +122,7 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                             className="uppercase"
                             style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: "#4A5148" }}
                         >
-                            Match prediction · {competition.code || competition.type}
+                            {t("competition.matchPredictionLabel", { code: competition.code || competition.type })}
                         </div>
                         <h1 className="font-display" style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.8, marginTop: 2 }}>
                             {competition.name}
@@ -125,8 +130,8 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                     </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                    <Chip tone="brand">Matchday {selectedMatchDay}</Chip>
-                    <Chip>Lock in before kickoff</Chip>
+                    <Chip tone="brand">{t("competition.matchday", { matchday: selectedMatchDay })}</Chip>
+                    <Chip>{t("competition.lockInReminder")}</Chip>
                     {selectedMatchDay !== competition.activeMatchDay && (
                         <button
                             type="button"
@@ -147,7 +152,7 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                             }}
                         >
                             <span aria-hidden="true" style={{ fontSize: 11, lineHeight: 1 }}>←</span>
-                            Back to MD {competition.activeMatchDay}
+                            {t("competition.backToMD", { md: competition.activeMatchDay })}
                         </button>
                     )}
                 </div>
@@ -218,7 +223,7 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                                         flexShrink: 0,
                                     }}
                                 >
-                                    MD {md}
+                                    {t("competition.mdLabel", { md })}
                                     {isCurrent && (
                                         <span
                                             style={{
@@ -266,7 +271,7 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                         <button
                             type="button"
                             onClick={() => scrollTabs(-1)}
-                            aria-label="Scroll matchdays left"
+                            aria-label={t("aria.scrollLeft")}
                             style={{
                                 position: "absolute",
                                 top: "50%",
@@ -296,7 +301,7 @@ export default function MatchesClient({ competition, matchDays }: Props) {
                         <button
                             type="button"
                             onClick={() => scrollTabs(1)}
-                            aria-label="Scroll matchdays right"
+                            aria-label={t("aria.scrollRight")}
                             style={{
                                 position: "absolute",
                                 top: "50%",
@@ -354,6 +359,8 @@ interface MatchCardProps {
 }
 
 function MatchCard({ match }: MatchCardProps) {
+    const t = useTranslations();
+    const formatKickoff = useFormatKickoff();
     const [homeScore, setHomeScore] = useState<number>(match.predictedScore?.home ?? 0);
     const [awayScore, setAwayScore] = useState<number>(match.predictedScore?.away ?? 0);
     const [isPredicted, setIsPredicted] = useState<boolean>(match.predictedScore?.isPredicted ?? false);
@@ -403,9 +410,9 @@ function MatchCard({ match }: MatchCardProps) {
                 }}
             >
                 <span>
-                    {match.competition?.name ?? match.competition?.code ?? "League"} · MD {match.matchday}
+                    {match.competition?.name ?? match.competition?.code ?? t("nav.leagues")} · {t("competition.mdLabel", { md: match.matchday })}
                 </span>
-                {live ? <Chip tone="live">Live</Chip> : <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>{formatKickoff(match.utcDate)}</span>}
+                {live ? <Chip tone="live">{t("match.live")}</Chip> : <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0 }}>{formatKickoff(match.utcDate)}</span>}
             </div>
 
             {/* teams + score */}
@@ -513,7 +520,7 @@ function MatchCard({ match }: MatchCardProps) {
                                 letterSpacing: 0.3,
                             }}
                         >
-                            Locked in {homeScore}–{awayScore}
+                            {t("match.lockedInBadge", { home: homeScore, away: awayScore })}
                         </span>
                     )}
                     {live && (
@@ -528,7 +535,7 @@ function MatchCard({ match }: MatchCardProps) {
                                 borderRadius: 999,
                             }}
                         >
-                            Your pick: {homeScore}–{awayScore} · result pending
+                            {t("match.pickPending", { home: homeScore, away: awayScore })}
                         </span>
                     )}
                     {!live && !hasResult && !isPredicted && !isEditing && <span />}
@@ -561,7 +568,7 @@ function MatchCard({ match }: MatchCardProps) {
                                                 fontFamily: "inherit",
                                             }}
                                         >
-                                            {pending ? "Saving…" : isPredicted ? "Update pick" : "Lock in pick"}
+                                            {pending ? t("action.saving") : isPredicted ? t("action.updatePick") : t("action.lockInPick")}
                                         </button>
                                     </Form>
                                 ) : (
@@ -582,7 +589,7 @@ function MatchCard({ match }: MatchCardProps) {
                                             fontFamily: "inherit",
                                         }}
                                     >
-                                        Edit pick
+                                        {t("action.editPick")}
                                     </button>
                                 )}
                             </>
@@ -618,7 +625,7 @@ function MatchCard({ match }: MatchCardProps) {
                             textDecoration: "none",
                         }}
                     >
-                        View stats · crowd →
+                        {t("action.viewStats")}
                     </Link>
                 </div>
             </div>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk, Architects_Daughter, JetBrains_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import "./globals.css";
 
 const inter = Inter({
@@ -26,24 +28,32 @@ const jetbrainsMono = JetBrains_Mono({
     weight: ["400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-    title: "Pick The Score — Score Prediction Game",
-    description: "Your group. Your league. Predict every fixture before kickoff.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations("meta");
+    return {
+        title: t("title"),
+        description: t("description"),
+    };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const locale = await getLocale();
+    const messages = await getMessages();
+
     return (
-        <html lang="en">
+        <html lang={locale}>
         <body
             className={`${inter.variable} ${spaceGrotesk.variable} ${architectsDaughter.variable} ${jetbrainsMono.variable} antialiased`}
         >
-            <main className="min-h-screen bg-[#F4F2EC] text-[#0B0F0A]">
-                {children}
-            </main>
+            <NextIntlClientProvider locale={locale} messages={messages}>
+                <main className="min-h-screen bg-[#F4F2EC] text-[#0B0F0A]">
+                    {children}
+                </main>
+            </NextIntlClientProvider>
         </body>
         </html>
     );

@@ -96,7 +96,7 @@ export interface PredictedScore {
 export interface ScoreBoardEntry {
     userId: string;
     userName: string;
-    name: string;
+    tag: string | null;
     predictedCount: number;
     predictedDifference: number;
     predictedOutcome: number;

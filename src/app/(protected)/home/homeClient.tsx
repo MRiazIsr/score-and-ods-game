@@ -3,6 +3,7 @@
 import type { Competition } from "@/app/server/modules/competitions/types";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Chip } from "@/app/client/components/stadium/Chip";
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 
 export default function HomeClient({ competitions }: Props) {
     const router = useRouter();
+    const t = useTranslations();
 
     return (
         <div className="w-full" style={{ maxWidth: 1080, margin: "0 auto", padding: "32px 24px 48px" }}>
@@ -21,19 +23,19 @@ export default function HomeClient({ competitions }: Props) {
                         className="uppercase"
                         style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: "#4A5148" }}
                     >
-                        Matchday · Pick your ground
+                        {t("dashboard.matchdayLabel")}
                     </div>
                     <h1
                         className="font-display"
                         style={{ fontSize: 36, fontWeight: 700, letterSpacing: -0.8, marginTop: 6 }}
                     >
-                        Choose a competition.
+                        {t("dashboard.heading")}
                     </h1>
                     <div className="text-ink2" style={{ fontSize: 13, marginTop: 4 }}>
-                        Jump into a league, make your picks, climb the table.
+                        {t("dashboard.subheading")}
                     </div>
                 </div>
-                <Chip tone="brand">{competitions.length} active</Chip>
+                <Chip tone="brand">{t("dashboard.active", { count: competitions.length })}</Chip>
             </div>
 
             {/* grid */}
@@ -120,10 +122,13 @@ export default function HomeClient({ competitions }: Props) {
                             </div>
                             <div className="flex items-center justify-between" style={{ marginTop: 6 }}>
                                 <span className="text-ink2" style={{ fontSize: 11 }}>
-                                    Matchday {c.activeMatchDay ?? "—"} · {c.matchDays?.length ?? 0} rounds
+                                    {t("dashboard.competitionStats", {
+                                        matchday: c.activeMatchDay ?? "—",
+                                        rounds: c.matchDays?.length ?? 0,
+                                    })}
                                 </span>
                                 <span style={{ fontSize: 11, fontWeight: 700, color: "#9D0010" }}>
-                                    Predict →
+                                    {t("action.predict")}
                                 </span>
                             </div>
                         </div>

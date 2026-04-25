@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
 import type { Competition, Match } from "@/app/server/modules/competitions/types";
 import { SectionHead } from "@/app/client/components/stadium/SectionHead";
 import { SportToggle, type Sport } from "@/app/client/components/stadium/SportToggle";
@@ -20,24 +21,41 @@ interface LeaguesClientProps {
     leagues: LeagueSummary[];
 }
 
-const TABS = ["All", "Football", "Hockey", "Cups & Tournaments", "Private"] as const;
-type Tab = (typeof TABS)[number];
+const TAB_KEYS = ["all", "football", "hockey", "cups", "private"] as const;
+type Tab = (typeof TAB_KEYS)[number];
 
-function formatKickoff(utcDate: string): string {
-    const d = new Date(utcDate);
-    return d.toLocaleDateString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+function useFormatKickoff() {
+    const locale = useLocale();
+    return (utcDate: string) => {
+        const d = new Date(utcDate);
+        return d.toLocaleDateString(locale === "ru" ? "ru-RU" : "en-GB", {
+            weekday: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        });
+    };
 }
 
 export default function LeaguesClient({ leagues }: LeaguesClientProps) {
+    const t = useTranslations();
     const [sport, setSport] = useState<Sport>("football");
-    const [tab, setTab] = useState<Tab>("All");
+    const [tab, setTab] = useState<Tab>("all");
     const [activeId, setActiveId] = useState<number | null>(leagues[0]?.competition.id ?? null);
 
     const filtered = leagues.filter((l) => {
-        if (tab === "All" || tab === "Football") return true;
-        if (tab === "Cups & Tournaments") return l.competition.type === "CUP";
+        if (tab === "all" || tab === "football") return true;
+        if (tab === "cups") return l.competition.type === "CUP";
         return false;
     });
+
+    const tabLabels: Record<Tab, string> = {
+        all: t("leagues.tabs.all"),
+        football: t("leagues.tabs.football"),
+        hockey: t("leagues.tabs.hockey"),
+        cups: t("leagues.tabs.cups"),
+        private: t("leagues.tabs.private"),
+    };
 
     const active = filtered.find((l) => l.competition.id === activeId) ?? filtered[0] ?? null;
 
@@ -63,7 +81,7 @@ export default function LeaguesClient({ leagues }: LeaguesClientProps) {
                             textDecoration: "none",
                         }}
                     >
-                        ← Back to dashboard
+                        {t("action.backToDashboard")}
                     </Link>
                 </div>
 
@@ -77,13 +95,13 @@ export default function LeaguesClient({ leagues }: LeaguesClientProps) {
                             letterSpacing: 0.6,
                         }}
                     >
-                        Browse
+                        {t("leagues.browse")}
                     </div>
                     <div
                         className="font-display"
                         style={{ fontSize: 40, fontWeight: 800, letterSpacing: -1.2, marginTop: 4 }}
                     >
-                        Competitions
+                        {t("leagues.heading")}
                     </div>
                     <div
                         style={{
@@ -93,7 +111,7 @@ export default function LeaguesClient({ leagues }: LeaguesClientProps) {
                             maxWidth: 620,
                         }}
                     >
-                        Pick a league to browse fixtures and lock in your predictions. Friend pools are coming soon.
+                        {t("leagues.description")}
                     </div>
                 </div>
 
@@ -105,14 +123,14 @@ export default function LeaguesClient({ leagues }: LeaguesClientProps) {
                         marginTop: 20,
                     }}
                 >
-                    {TABS.map((t) => {
-                        const isActive = tab === t;
-                        const disabled = t === "Hockey" || t === "Private";
+                    {TAB_KEYS.map((tabKey) => {
+                        const isActive = tab === tabKey;
+                        const disabled = tabKey === "hockey" || tabKey === "private";
                         return (
                             <button
-                                key={t}
+                                key={tabKey}
                                 type="button"
-                                onClick={() => !disabled && setTab(t)}
+                                onClick={() => !disabled && setTab(tabKey)}
                                 disabled={disabled}
                                 style={{
                                     padding: "10px 14px",
@@ -126,9 +144,9 @@ export default function LeaguesClient({ leagues }: LeaguesClientProps) {
                                     cursor: disabled ? "not-allowed" : "pointer",
                                     fontFamily: "inherit",
                                 }}
-                                title={disabled ? "Coming soon" : undefined}
+                                title={disabled ? t("common.comingSoon") : undefined}
                             >
-                                {t}
+                                {tabLabels[tabKey]}
                                 {disabled && (
                                     <span
                                         className="uppercase"
@@ -143,7 +161,7 @@ export default function LeaguesClient({ leagues }: LeaguesClientProps) {
                                             color: "#4A5148",
                                         }}
                                     >
-                                        Soon
+                                        {t("common.soon")}
                                     </span>
                                 )}
                             </button>
@@ -179,7 +197,7 @@ export default function LeaguesClient({ leagues }: LeaguesClientProps) {
                     </div>
 
                     <div style={{ marginTop: 20 }}>
-                        <SectionHead title="Private leagues" chip="Preview" />
+                        <SectionHead title={t("leagues.privateLeagues")} chip={t("common.preview")} />
                         <LeaguesSidebar />
                     </div>
                 </div>
@@ -199,6 +217,7 @@ function LeagueTile({
     active: boolean;
     onClick: () => void;
 }) {
+    const t = useTranslations();
     const { competition } = league;
 
     return (
@@ -277,7 +296,7 @@ function LeagueTile({
                         letterSpacing: 0.4,
                     }}
                 >
-                    {league.fixturesCount} fixtures
+                    {t("leagues.fixtureCount", { count: league.fixturesCount })}
                 </span>
                 <span
                     className="uppercase"
@@ -291,7 +310,7 @@ function LeagueTile({
                         letterSpacing: 0.4,
                     }}
                 >
-                    Joined
+                    {t("leagues.joined")}
                 </span>
             </div>
         </button>
@@ -299,6 +318,8 @@ function LeagueTile({
 }
 
 function LeagueDetailPane({ league }: { league: LeagueSummary }) {
+    const t = useTranslations();
+    const formatKickoff = useFormatKickoff();
     const { competition, userPoints, fixturesCount, nextFixtures } = league;
 
     return (
@@ -354,7 +375,7 @@ function LeagueDetailPane({ league }: { league: LeagueSummary }) {
                             letterSpacing: 0.5,
                         }}
                     >
-                        {competition.code || competition.type} · Matchday {competition.activeMatchDay ?? "—"}
+                        {competition.code || competition.type} · {t("competition.matchday", { matchday: competition.activeMatchDay ?? "—" })}
                     </div>
                     <div
                         className="font-display"
@@ -383,7 +404,7 @@ function LeagueDetailPane({ league }: { league: LeagueSummary }) {
                         textDecoration: "none",
                     }}
                 >
-                    Open →
+                    {t("action.openArrow")}
                 </Link>
             </div>
 
@@ -396,9 +417,9 @@ function LeagueDetailPane({ league }: { league: LeagueSummary }) {
                     borderBottom: "1px solid #E4E1D6",
                 }}
             >
-                <Stat label="Fixtures" value={String(fixturesCount)} />
-                <Stat label="Matchdays" value={String(competition.matchDays?.length ?? 0)} />
-                <Stat label="Your points" value={String(userPoints)} />
+                <Stat label={t("stats.fixtures")} value={String(fixturesCount)} />
+                <Stat label={t("stats.matchdays")} value={String(competition.matchDays?.length ?? 0)} />
+                <Stat label={t("stats.yourPoints")} value={String(userPoints)} />
             </div>
 
             <div style={{ padding: "16px 0 6px" }}>
@@ -412,11 +433,11 @@ function LeagueDetailPane({ league }: { league: LeagueSummary }) {
                         marginBottom: 10,
                     }}
                 >
-                    Next fixtures · {competition.name}
+                    {t("competition.nextFixtures", { name: competition.name })}
                 </div>
                 {nextFixtures.length === 0 ? (
                     <div style={{ fontSize: 12, color: "#4A5148", padding: "12px 0" }}>
-                        No scheduled fixtures.
+                        {t("competition.noFixtures")}
                     </div>
                 ) : (
                     nextFixtures.map((m, i) => (
@@ -456,7 +477,7 @@ function LeagueDetailPane({ league }: { league: LeagueSummary }) {
                                 >
                                     {m.homeTeam.name}
                                 </span>
-                                <span style={{ fontSize: 10, color: "#4A5148" }}>vs</span>
+                                <span style={{ fontSize: 10, color: "#4A5148" }}>{t("common.vs")}</span>
                                 <span
                                     style={{
                                         fontSize: 12,
@@ -493,7 +514,7 @@ function LeagueDetailPane({ league }: { league: LeagueSummary }) {
                                         letterSpacing: 0.3,
                                     }}
                                 >
-                                    Open
+                                    {t("action.open")}
                                 </span>
                             )}
                         </Link>

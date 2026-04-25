@@ -1,9 +1,19 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { AppLogo } from "@/app/client/components/stadium/Logo";
 import { HeroGallery } from "@/app/client/components/stadium/HeroGallery";
 import { Chip } from "@/app/client/components/stadium/Chip";
+import { LanguageSwitcher } from "@/app/client/components/ui/LanguageSwitcher";
 
 export default function Landing() {
+    const t = useTranslations();
+
+    const scoringRows = [
+        { pts: 3, label: t("landing.scoring.exact"), ex: t("landing.scoring.exactExample") },
+        { pts: 2, label: t("landing.scoring.goalDiff"), ex: t("landing.scoring.goalDiffExample") },
+        { pts: 1, label: t("landing.scoring.outcome"), ex: t("landing.scoring.outcomeExample") },
+    ];
+
     return (
         <div className="min-h-screen bg-paper text-ink font-sans">
             {/* nav */}
@@ -13,12 +23,13 @@ export default function Landing() {
             >
                 <AppLogo />
                 <div className="hidden md:flex gap-7 text-ink2" style={{ fontSize: 13, fontWeight: 500 }}>
-                    <span>Private leagues</span>
-                    <span>Widgets</span>
-                    <span>Telegram app</span>
-                    <span>Scoring</span>
+                    <span>{t("nav.landing.privateLeagues")}</span>
+                    <span>{t("nav.landing.widgets")}</span>
+                    <span>{t("nav.landing.telegramApp")}</span>
+                    <span>{t("nav.landing.scoring")}</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    <LanguageSwitcher />
                     <Link
                         href="/login"
                         className="inline-flex items-center"
@@ -31,7 +42,7 @@ export default function Landing() {
                             color: "#0B0F0A",
                         }}
                     >
-                        Log in
+                        {t("auth.login.linkLogIn")}
                     </Link>
                     <Link
                         href="/signup"
@@ -44,7 +55,7 @@ export default function Landing() {
                             fontWeight: 600,
                         }}
                     >
-                        Start a league
+                        {t("cta.startLeague")}
                     </Link>
                 </div>
             </nav>
@@ -68,16 +79,16 @@ export default function Landing() {
                         className="inline-flex items-center gap-2 uppercase"
                         style={{ fontSize: 10, fontWeight: 700, color: "#9D0010", letterSpacing: 0.6 }}
                     >
-                        <span style={{ width: 18, height: 2, background: "#9D0010" }} /> 01 · Private leagues
+                        <span style={{ width: 18, height: 2, background: "#9D0010" }} /> {t("landing.feature1.label")}
                     </div>
                     <h3
                         className="font-display"
                         style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.6, marginTop: 10, lineHeight: 1.1 }}
                     >
-                        Create a league with one link.
+                        {t("landing.feature1.heading")}
                     </h3>
                     <p className="text-ink2" style={{ fontSize: 13, lineHeight: 1.5, marginTop: 8 }}>
-                        Name it, pick a competition, send the invite. No app store, no credit card. Custom rules, private leaderboard, private trash talk.
+                        {t("landing.feature1.description")}
                     </p>
 
                     {/* preview card */}
@@ -110,10 +121,10 @@ export default function Landing() {
                                 </div>
                                 <div>
                                     <div className="font-display" style={{ fontSize: 14, fontWeight: 700 }}>
-                                        Office League
+                                        {t("landing.preview.leagueName")}
                                     </div>
                                     <div className="text-ink2" style={{ fontSize: 11 }}>
-                                        42 members · Premier League
+                                        {t("landing.preview.leagueStats")}
                                     </div>
                                 </div>
                             </div>
@@ -129,7 +140,7 @@ export default function Landing() {
                                     letterSpacing: 0.3,
                                 }}
                             >
-                                Your league
+                                {t("landing.preview.badge")}
                             </span>
                         </div>
                         <div
@@ -158,31 +169,42 @@ export default function Landing() {
                         className="inline-flex items-center gap-2 uppercase"
                         style={{ fontSize: 10, fontWeight: 700, color: "#FCA5A5", letterSpacing: 0.6 }}
                     >
-                        <span style={{ width: 18, height: 2, background: "#FCA5A5" }} /> 02 · Export anywhere
+                        <span style={{ width: 18, height: 2, background: "#FCA5A5" }} /> {t("landing.feature2.label")}
                     </div>
                     <h3
                         className="font-display"
                         style={{ fontSize: 28, fontWeight: 700, letterSpacing: -0.6, marginTop: 10, lineHeight: 1.1 }}
                     >
-                        Match cards as widgets
-                        <br />
-                        and <span style={{ color: "#FCA5A5" }}>Telegram mini-apps.</span>
+                        {t("landing.feature2.heading")
+                            .split("\n")
+                            .map((line, i, arr) => (
+                                <span key={i}>
+                                    {i === arr.length - 1 ? (
+                                        <span style={{ color: "#FCA5A5" }}>{line}</span>
+                                    ) : (
+                                        <>
+                                            {line}
+                                            <br />
+                                        </>
+                                    )}
+                                </span>
+                            ))}
                     </h3>
                     <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", lineHeight: 1.5, marginTop: 8 }}>
-                        Drop a fixture on your blog, Notion, or Substack. Or bring the whole league inside Telegram — friends predict straight from the chat.
+                        {t("landing.feature2.description")}
                     </p>
 
                     <div className="grid grid-cols-2 gap-2.5" style={{ marginTop: 22 }}>
                         {/* widget preview */}
                         <div style={{ background: "#fff", color: "#0B0F0A", borderRadius: 8, padding: 12 }}>
                             <div className="uppercase text-ink2" style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.4 }}>
-                                Widget · Embed
+                                {t("landing.preview.widgetLabel")}
                             </div>
                             <div className="flex items-center gap-1.5" style={{ marginTop: 8 }}>
                                 <span style={{ width: 18, height: 18, borderRadius: 9, background: "#3D195B" }} />
                                 <span style={{ fontSize: 11, fontWeight: 600 }}>ARS</span>
                                 <span className="text-ink2" style={{ fontSize: 9 }}>
-                                    vs
+                                    {t("common.vs")}
                                 </span>
                                 <span style={{ width: 18, height: 18, borderRadius: 9, background: "#DA020E" }} />
                                 <span style={{ fontSize: 11, fontWeight: 600 }}>LIV</span>
@@ -217,7 +239,7 @@ export default function Landing() {
                                 </span>
                             </div>
                             <div className="text-ink2" style={{ fontSize: 9, marginTop: 6 }}>
-                                847 predictions
+                                {t("landing.preview.predictions")}
                             </div>
                         </div>
 
@@ -227,7 +249,7 @@ export default function Landing() {
                                 className="uppercase"
                                 style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", fontWeight: 700, letterSpacing: 0.4 }}
                             >
-                                Telegram · Mini-app
+                                {t("landing.preview.telegramLabel")}
                             </div>
                             <div
                                 style={{
@@ -238,8 +260,10 @@ export default function Landing() {
                                     fontSize: 11,
                                 }}
                             >
-                                <div style={{ color: "#6AB3F3", fontWeight: 600, fontSize: 10 }}>Pick The Score Bot</div>
-                                <div style={{ marginTop: 2 }}>🏟 ARS vs LIV · picks close in 18m</div>
+                                <div style={{ color: "#6AB3F3", fontWeight: 600, fontSize: 10 }}>
+                                    {t("landing.preview.botName")}
+                                </div>
+                                <div style={{ marginTop: 2 }}>{t("landing.preview.botMessage")}</div>
                             </div>
                             <button
                                 type="button"
@@ -255,7 +279,7 @@ export default function Landing() {
                                     fontWeight: 600,
                                 }}
                             >
-                                Open Pick The Score
+                                {t("cta.openPickTheScore")}
                             </button>
                         </div>
                     </div>
@@ -279,10 +303,10 @@ export default function Landing() {
                     className="flex items-center justify-between"
                 >
                     <span className="text-ink2" style={{ fontSize: 11 }}>
-                        Free for groups up to 100 · paid tier for bigger communities
+                        {t("landing.pricing")}
                     </span>
                     <Link href="/signup" style={{ fontSize: 11, fontWeight: 700, color: "#9D0010" }}>
-                        Start a league →
+                        {t("cta.startLeagueArrow")}
                     </Link>
                 </div>
                 <div
@@ -297,10 +321,10 @@ export default function Landing() {
                     className="flex items-center justify-between"
                 >
                     <span className="font-mono" style={{ fontSize: 11, color: "rgba(255,255,255,0.55)" }}>
-                        {'<script src="pickthescore.app/embed.js" data-match="ars-liv"/>'}
+                        {t("landing.embedCode")}
                     </span>
                     <button type="button" style={{ fontSize: 11, fontWeight: 700, color: "#FCA5A5", background: "transparent", border: "none" }}>
-                        Copy
+                        {t("action.copy")}
                     </button>
                 </div>
             </section>
@@ -308,13 +332,13 @@ export default function Landing() {
             {/* soft CTA */}
             <section className="mx-auto text-center" style={{ maxWidth: 720, margin: "72px auto 0", padding: "0 32px" }}>
                 <div className="uppercase text-ink2" style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6 }}>
-                    Already convinced?
+                    {t("landing.softCta")}
                 </div>
                 <h2 className="font-display" style={{ fontSize: 40, fontWeight: 800, letterSpacing: -1, marginTop: 8 }}>
-                    You can also just <span style={{ color: "#9D0010", fontStyle: "italic" }}>predict.</span>
+                    {t("landing.softCtaHeading")}
                 </h2>
                 <p className="text-ink2" style={{ fontSize: 15, lineHeight: 1.5, marginTop: 10 }}>
-                    Jump into the global ladder for this weekend&apos;s Premier League fixtures. No league required.
+                    {t("landing.softCtaDescription")}
                 </p>
                 <div className="flex gap-2.5 justify-center" style={{ marginTop: 24 }}>
                     <Link
@@ -329,7 +353,7 @@ export default function Landing() {
                             letterSpacing: 0.2,
                         }}
                     >
-                        Predict now →
+                        {t("cta.predictNowArrow")}
                     </Link>
                     <a
                         href="#scoring"
@@ -343,7 +367,7 @@ export default function Landing() {
                             fontWeight: 700,
                         }}
                     >
-                        How scoring works
+                        {t("cta.scoringWorks")}
                     </a>
                 </div>
             </section>
@@ -362,20 +386,16 @@ export default function Landing() {
                     <div className="flex justify-between items-center" style={{ marginBottom: 20 }}>
                         <div>
                             <div className="font-display" style={{ fontSize: 18, fontWeight: 700 }}>
-                                Scoring, plain and simple
+                                {t("landing.scoring.heading")}
                             </div>
                             <div className="text-ink2" style={{ fontSize: 12, marginTop: 2 }}>
-                                Three ways to earn points per match.
+                                {t("landing.scoring.subheading")}
                             </div>
                         </div>
-                        <Chip tone="brand">Max 3 pts</Chip>
+                        <Chip tone="brand">{t("landing.scoring.maxPoints")}</Chip>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {[
-                            { pts: 3, label: "Exact score", ex: "You: 2–1  ·  Final: 2–1" },
-                            { pts: 2, label: "Goal difference", ex: "You: 2–0  ·  Final: 3–1" },
-                            { pts: 1, label: "Right outcome", ex: "You: 1–0  ·  Final: 3–0" },
-                        ].map((r) => (
+                        {scoringRows.map((r) => (
                             <div
                                 key={r.pts}
                                 style={{
@@ -404,8 +424,8 @@ export default function Landing() {
             {/* footer */}
             <footer className="border-t border-line text-ink2" style={{ padding: "24px 32px" }}>
                 <div className="mx-auto flex items-center justify-between" style={{ maxWidth: 1080, fontSize: 11 }}>
-                    <span>© Pick The Score · Call the score.</span>
-                    <span className="font-mono">pickthescore.app</span>
+                    <span>{t("footer.copyright")}</span>
+                    <span className="font-mono">{t("footer.domain")}</span>
                 </div>
             </footer>
         </div>

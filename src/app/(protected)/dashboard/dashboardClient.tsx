@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { DashboardFeed, UserStats } from "@/app/server/services/auth/DashboardService";
 import { StatCard } from "@/app/client/components/stadium/StatCard";
 import { SectionHead } from "@/app/client/components/stadium/SectionHead";
@@ -15,6 +16,7 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ feed, stats }: DashboardClientProps) {
+    const t = useTranslations();
     const [sport, setSport] = useState<Sport>("football");
     const { live, upcoming, settled } = feed;
 
@@ -30,12 +32,12 @@ export default function DashboardClient({ feed, stats }: DashboardClientProps) {
                 <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
                     <SportToggle value={sport} onChange={setSport} />
                     <div style={{ fontSize: 11, color: "#4A5148" }}>
-                        Week{" "}
+                        {t("dashboard.weekLabel")}{" "}
                         <span
                             className="font-display"
                             style={{ color: "#0B0F0A", fontWeight: 700 }}
                         >
-                            +{stats.weekly}
+                            {t("dashboard.weekPoints", { weekly: stats.weekly })}
                         </span>
                     </div>
                 </div>
@@ -49,21 +51,27 @@ export default function DashboardClient({ feed, stats }: DashboardClientProps) {
                 >
                     <StatCard
                         hero
-                        label="Total points"
+                        label={t("stats.totalPoints")}
                         value={stats.total}
-                        sub={`${live.length + upcoming.length + settled.length} tracked matches`}
+                        sub={t("stats.trackedMatches", {
+                            count: live.length + upcoming.length + settled.length,
+                        })}
                     />
                     <StatCard
-                        label="Weekly"
+                        label={t("stats.weekly")}
                         value={`+${stats.weekly}`}
-                        sub="This week (Mon–Sun)"
+                        sub={t("stats.weeklyDescription")}
                     />
                     <StatCard
-                        label="Streak"
+                        label={t("stats.streak")}
                         value={`${stats.streak}${stats.streak > 0 ? " 🔥" : ""}`}
-                        sub={stats.streak > 0 ? "Keep it alive" : "Start a run"}
+                        sub={stats.streak > 0 ? t("stats.streakActive") : t("stats.streakInactive")}
                     />
-                    <StatCard label="Hit rate" value={`${stats.hitRate}%`} sub="Last 25 picks" />
+                    <StatCard
+                        label={t("stats.hitRate")}
+                        value={`${stats.hitRate}%`}
+                        sub={t("stats.hitRateDescription")}
+                    />
                 </div>
             </div>
 
@@ -81,7 +89,10 @@ export default function DashboardClient({ feed, stats }: DashboardClientProps) {
                 <div>
                     {live.length > 0 && (
                         <>
-                            <SectionHead title="Live now" chip={`${live.length} in play`} />
+                            <SectionHead
+                                title={t("dashboard.liveNow")}
+                                chip={t("dashboard.liveCount", { count: live.length })}
+                            />
                             <div className="grid" style={{ gap: 10, marginBottom: 20 }}>
                                 {live.map((m) => (
                                     <MatchCard key={m.id} match={m} />
@@ -91,8 +102,12 @@ export default function DashboardClient({ feed, stats }: DashboardClientProps) {
                     )}
 
                     <SectionHead
-                        title="Upcoming"
-                        chip={upcoming.length ? `${upcoming.length} open` : "Nothing scheduled"}
+                        title={t("dashboard.upcoming")}
+                        chip={
+                            upcoming.length
+                                ? t("dashboard.upcomingCount", { count: upcoming.length })
+                                : t("dashboard.nothingScheduled")
+                        }
                     />
                     {upcoming.length > 0 ? (
                         <div className="grid" style={{ gap: 10 }}>
@@ -101,15 +116,15 @@ export default function DashboardClient({ feed, stats }: DashboardClientProps) {
                             ))}
                         </div>
                     ) : (
-                        <EmptyState message="No upcoming fixtures in the tracked competitions. Check back after the next update." />
+                        <EmptyState message={t("dashboard.emptyUpcoming")} />
                     )}
 
                     {settled.length > 0 && (
                         <>
                             <div style={{ height: 28 }} />
                             <SectionHead
-                                title="Recently settled"
-                                chip={`${settled.length} match${settled.length === 1 ? "" : "es"}`}
+                                title={t("dashboard.recentlySettled")}
+                                chip={t("dashboard.settledCount", { count: settled.length })}
                             />
                             <div className="grid" style={{ gap: 10 }}>
                                 {settled.map((m) => (

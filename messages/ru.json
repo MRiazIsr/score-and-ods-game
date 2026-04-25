@@ -1,0 +1,342 @@
+{
+    "common": {
+        "language": "Язык",
+        "languageRu": "Русский",
+        "languageEn": "English",
+        "vs": "vs",
+        "preview": "Превью",
+        "soon": "Скоро",
+        "comingSoon": "Скоро",
+        "pointsShort": "очк."
+    },
+    "meta": {
+        "title": "Pick The Score — игра в прогнозы счёта",
+        "description": "Ваша компания. Ваша лига. Прогнозируйте счёт каждого матча до стартового свистка."
+    },
+    "nav": {
+        "dashboard": "Главная",
+        "leagues": "Лиги",
+        "scoreboard": "Глобальный рейтинг",
+        "landing": {
+            "privateLeagues": "Приватные лиги",
+            "widgets": "Виджеты",
+            "telegramApp": "Telegram-приложение",
+            "scoring": "Подсчёт очков"
+        }
+    },
+    "auth": {
+        "login": {
+            "eyebrow": "С возвращением",
+            "headlineBlue": "Рады",
+            "headlineItalic": "видеть.",
+            "sub": "Войдите, чтобы проверить свои прогнозы и подняться выше в лиге.",
+            "submit": "Войти",
+            "rememberMe": "Запомнить меня на этом устройстве",
+            "forgotPassword": "Забыли пароль?",
+            "newHere": "Впервые здесь?",
+            "createAccount": "Создать аккаунт",
+            "linkLogIn": "Войти",
+            "fields": {
+                "userName": "Никнейм",
+                "userNamePlaceholder": "markriaz",
+                "password": "Пароль"
+            }
+        },
+        "signup": {
+            "eyebrow": "Новый игрок",
+            "headlineBlue": "Заводим",
+            "headlineItalic": "аккаунт.",
+            "sub": "30 секунд — и можно делать прогнозы, спорить с друзьями и забирать топ лиги.",
+            "submit": "Создать аккаунт",
+            "haveAccount": "Уже есть аккаунт?",
+            "signIn": "Войти",
+            "termsPrefix": "Согласен с",
+            "terms": "условиями",
+            "termsAnd": "и",
+            "privacy": "политикой конфиденциальности",
+            "fields": {
+                "email": "Email",
+                "emailPlaceholder": "you@example.com",
+                "emailHint": "На этот адрес мы отправим уведомления и через него можно будет восстановить пароль.",
+                "userName": "Никнейм",
+                "userNamePlaceholder": "markriaz",
+                "userNameHint": "Так вас будут видеть другие игроки. Латиница, цифры и _, уникальный.",
+                "tag": "Тег (опционально)",
+                "tagPlaceholder": "@markriaz",
+                "tagHint": "Можно оставить пустым — будет показано как @{userName}. Позже сюда подтянется ваш Telegram-тег.",
+                "tagHintFallback": "никнейм",
+                "password": "Пароль",
+                "passwordHint": "Минимум 8 символов: буква, цифра и спецсимвол."
+            }
+        },
+        "validation": {
+            "checking": "Проверяем…",
+            "usernameFormat": "Только латиница, цифры и _, 2–32 символа.",
+            "usernameTaken": "Этот никнейм уже занят.",
+            "usernameAvailable": "Никнейм свободен.",
+            "emailFormat": "Похоже, это не email.",
+            "emailTaken": "Этот email уже зарегистрирован.",
+            "emailAvailable": "Email свободен."
+        },
+        "errors": {
+            "fixHighlighted": "Пожалуйста, исправьте отмеченные поля.",
+            "registrationFailed": "Не удалось зарегистрироваться. Попробуйте ещё раз.",
+            "signInFailed": "Не удалось войти. Попробуйте ещё раз.",
+            "checkInputs": "Проверьте введённые данные.",
+            "invalidCredentials": "Неверный никнейм или пароль.",
+            "usernameTaken": "Пользователь с таким никнеймом уже существует.",
+            "emailTaken": "Пользователь с таким email уже существует.",
+            "accountSuspended": "Аккаунт заблокирован."
+        },
+        "social": {
+            "continueGoogle": "Войти через Google",
+            "continueTelegram": "Войти через Telegram",
+            "or": "или",
+            "notConfigured": "Этот способ входа пока недоступен",
+            "stateMismatch": "Сессия входа истекла. Попробуйте ещё раз.",
+            "emailUnverified": "Google не подтвердил ваш email.",
+            "failed": "Не удалось войти через провайдера. Попробуйте ещё раз."
+        }
+    },
+    "header": {
+        "signedIn": "В аккаунте",
+        "signedInAs": "Вы вошли как",
+        "signOut": "Выйти",
+        "signingOut": "Выходим…"
+    },
+    "aria": {
+        "homeLink": "На главную",
+        "toggleMenu": "Открыть меню",
+        "scrollLeft": "Прокрутить туры влево",
+        "scrollRight": "Прокрутить туры вправо",
+        "decrease": "Уменьшить {label}",
+        "increase": "Увеличить {label}",
+        "back": "Назад"
+    },
+    "action": {
+        "back": "← Назад",
+        "backToDashboard": "← На главную",
+        "predict": "Прогноз →",
+        "predictNow": "Сделать прогноз",
+        "open": "Открыть",
+        "openArrow": "Открыть →",
+        "copy": "Копировать",
+        "saving": "Сохраняем…",
+        "updatePick": "Обновить прогноз",
+        "lockInPick": "Зафиксировать прогноз",
+        "editPick": "Изменить прогноз",
+        "viewStats": "Статистика толпы →"
+    },
+    "cta": {
+        "startLeague": "Создать лигу",
+        "startLeagueArrow": "Создать лигу →",
+        "predictNow": "Сделать прогноз",
+        "predictNowArrow": "Сделать прогноз →",
+        "scoringWorks": "Как работает подсчёт очков",
+        "seeALiveLeague": "Посмотреть живую лигу",
+        "openPickTheScore": "Открыть Pick The Score"
+    },
+    "landing": {
+        "feature1": {
+            "label": "01 · Приватные лиги",
+            "heading": "Создайте лигу одной ссылкой.",
+            "description": "Назовите её, выберите соревнование, отправьте инвайт. Без сторов, без карточек. Свои правила, приватная таблица, приватные подколы."
+        },
+        "feature2": {
+            "label": "02 · Экспортируйте куда угодно",
+            "heading": "Карточки матчей — как виджеты\nи мини-приложение в Telegram.",
+            "description": "Встройте матч в блог, Notion или Substack. Или запускайте всю лигу прямо в Telegram — друзья делают прогнозы не выходя из чата."
+        },
+        "preview": {
+            "leagueName": "Office League",
+            "leagueStats": "42 участника · Premier League",
+            "badge": "Ваша лига",
+            "widgetLabel": "Виджет · Embed",
+            "telegramLabel": "Telegram · Mini-app",
+            "botName": "Pick The Score Bot",
+            "botMessage": "🏟 ARS vs LIV · прогнозы закрываются через 18 мин",
+            "predictions": "847 прогнозов"
+        },
+        "embedCode": "<script src=\"pickthescore.app/embed.js\" data-match=\"ars-liv\"/>",
+        "pricing": "Бесплатно для групп до 100 человек · платный тариф для больших сообществ",
+        "softCta": "Уже убедились?",
+        "softCtaHeading": "Можно просто прогнозировать.",
+        "softCtaDescription": "Включайтесь в глобальный рейтинг по матчам Premier League на эти выходные. Лига не нужна.",
+        "scoring": {
+            "heading": "Подсчёт очков — просто",
+            "subheading": "Три способа заработать очки в матче.",
+            "maxPoints": "Макс. 3 очка",
+            "exact": "Точный счёт",
+            "exactExample": "Вы: 2–1  ·  Итог: 2–1",
+            "goalDiff": "Разница голов",
+            "goalDiffExample": "Вы: 2–0  ·  Итог: 3–1",
+            "outcome": "Правильный исход",
+            "outcomeExample": "Вы: 1–0  ·  Итог: 3–0"
+        }
+    },
+    "hero": {
+        "frame1": {
+            "eyebrow": "Для компаний друзей, офисов и сообществ",
+            "h1a": "Ваша компания.",
+            "h1b": "Ваша лига.",
+            "copy": "Поднимите приватную лигу прогнозов за 30 секунд. Публикуйте карточки матчей виджетами на сайте или запустите всё в Telegram как мини-приложение — друзья прогнозируют не выходя из чата.",
+            "label": "Продукт"
+        },
+        "frame2": {
+            "eyebrow": "Хвастовство. Подводим итоги еженедельно.",
+            "h1a": "Сделайте прогноз.",
+            "h1b": "Возглавьте лигу.",
+            "copy": "Прогнозируйте каждую игру до стартового свистка. Точный счёт даёт +3 очка — этого хватит чтобы перепрыгнуть весь чат за одну субботу. Серии, подколы, чеки.",
+            "label": "Игра"
+        },
+        "frameIndicator": "{n} / 02 ·"
+    },
+    "dashboard": {
+        "matchdayLabel": "Тур · Выберите площадку",
+        "heading": "Выберите соревнование.",
+        "subheading": "Заходите в лигу, делайте прогнозы, поднимайтесь в таблице.",
+        "active": "{count, plural, one {# активное} few {# активных} many {# активных} other {# активных}}",
+        "competitionStats": "Тур {matchday} · {rounds} {rounds, plural, one {круг} few {круга} many {кругов} other {кругов}}",
+        "weekLabel": "Неделя",
+        "weekPoints": "+{weekly}",
+        "liveNow": "Сейчас в эфире",
+        "liveCount": "{count, plural, one {# в игре} few {# в игре} many {# в игре} other {# в игре}}",
+        "upcoming": "Скоро",
+        "upcomingCount": "{count, plural, one {# открытый} few {# открытых} many {# открытых} other {# открытых}}",
+        "nothingScheduled": "Ничего не запланировано",
+        "emptyUpcoming": "В отслеживаемых соревнованиях нет ближайших матчей. Загляните после следующего обновления.",
+        "recentlySettled": "Недавно завершённые",
+        "settledCount": "{count, plural, one {# матч} few {# матча} many {# матчей} other {# матчей}}"
+    },
+    "stats": {
+        "totalPoints": "Всего очков",
+        "trackedMatches": "{count, plural, one {# отслеживаемый матч} few {# отслеживаемых матча} many {# отслеживаемых матчей} other {# отслеживаемых матчей}}",
+        "weekly": "За неделю",
+        "weeklyDescription": "Эта неделя (Пн–Вс)",
+        "streak": "Серия",
+        "streakActive": "Поддерживайте",
+        "streakInactive": "Начните серию",
+        "hitRate": "Процент попаданий",
+        "hitRateDescription": "Последние 25 прогнозов",
+        "fixtures": "Матчей",
+        "matchdays": "Туров",
+        "yourPoints": "Ваши очки"
+    },
+    "leagues": {
+        "browse": "Каталог",
+        "heading": "Соревнования",
+        "description": "Выберите лигу, чтобы изучить матчи и зафиксировать прогнозы. Дружеские пулы — скоро.",
+        "tabs": {
+            "all": "Все",
+            "football": "Футбол",
+            "hockey": "Хоккей",
+            "cups": "Кубки и турниры",
+            "private": "Приватные"
+        },
+        "privateLeagues": "Приватные лиги",
+        "joined": "Вы участвуете",
+        "fixtureCount": "{count, plural, one {# матч} few {# матча} many {# матчей} other {# матчей}}",
+        "friendPoolsTooltip": "Дружеские пулы — скоро",
+        "friendPoolsLaunching": "Скоро запускаем дружеские пулы"
+    },
+    "competition": {
+        "matchPredictionLabel": "Прогноз матча · {code}",
+        "matchday": "Тур {matchday}",
+        "lockInReminder": "Зафиксируйте до стартового свистка",
+        "backToMD": "К туру {md}",
+        "mdLabel": "Тур {md}",
+        "nextFixtures": "Ближайшие матчи · {name}",
+        "noFixtures": "Запланированных матчей нет."
+    },
+    "scoreboard": {
+        "label": "Сезон · Таблица лиги",
+        "heading": "Лидерборд",
+        "subheading": "Кто угадывает счёт — а кто на разборе полётов.",
+        "you": "Вы",
+        "ranked": "Вы на",
+        "rankedWith": "с",
+        "loadFailed": "Не удалось загрузить лидерборд. Попробуйте ещё раз.",
+        "empty": {
+            "heading": "Таблица ждёт.",
+            "message": "Пока ни один матч с прогнозами не завершился. Как только это случится — сюда подтянется толпа."
+        },
+        "statsExact": "Точно {count}",
+        "statsDiff": "Разница {count}",
+        "statsResult": "Исход {count}"
+    },
+    "time": {
+        "week": "Неделя",
+        "season": "Сезон",
+        "allTime": "За всё время"
+    },
+    "scoring": {
+        "label": "Очки",
+        "exactLabel": "+3 точный счёт ·",
+        "diffLabel": "+2 разница голов ·",
+        "outcomeLabel": "+1 правильный исход"
+    },
+    "match": {
+        "finished": "Завершён",
+        "live": "В эфире",
+        "final": "Итог",
+        "draw": "Ничья",
+        "win": "{team} побеждает",
+        "home": "Дома",
+        "away": "В гостях",
+        "mdShort": "Тур {md}",
+        "wdl": "В {w} · Н {d} · П {l}",
+        "predictionPoints": "+{pts} {pts, plural, one {очко} few {очка} many {очков} other {очков}}",
+        "yourPrediction": "Ваш прогноз",
+        "ifThisHolds": "Если так и сложится",
+        "maxPossible": "макс. возможно",
+        "crowdPicks": "Что выбрала толпа",
+        "tape": "Сводка",
+        "formH2H": "Форма · Личные встречи",
+        "lastFive": "Последние 5 · {team}",
+        "noRecentResults": "В этом сезоне результатов пока нет.",
+        "h2h": "Личные встречи (этот сезон)",
+        "noH2H": "В текущем сезоне команды ещё не встречались.",
+        "footer": "Сезон {season} · Соревнование {competition}",
+        "yourPick": "Ваш прогноз: {home}–{away}",
+        "noPts": "Нет очков",
+        "liveResultPending": "В эфире · ждём результат",
+        "lockedPick": "Зафиксированный прогноз: {home}–{away}",
+        "lockedInBadge": "Зафиксировано {home}–{away}",
+        "pickPending": "Ваш прогноз: {home}–{away} · ждём результат",
+        "noRecentForm": "Нет последних результатов",
+        "updatePickShort": "Обновить · {home}–{away}",
+        "updatePickLong": "Обновить прогноз · {home}–{away}",
+        "lockInScore": "Зафиксировать {home}–{away}"
+    },
+    "sport": {
+        "football": "⚽ Футбол",
+        "hockey": "🏒 Хоккей"
+    },
+    "sidebar": {
+        "yourLeagues": "Ваши лиги",
+        "members": "{count, plural, one {# участник} few {# участника} many {# участников} other {# участников}}",
+        "friendPoolsLaunching": "Скоро запускаем дружеские пулы",
+        "trashTalk": "Подколы",
+        "trashTalkPreview": "Превью · Office League"
+    },
+    "crowd": {
+        "noPicks": "Прогнозов пока нет — будьте первым."
+    },
+    "table": {
+        "rank": "#",
+        "player": "Игрок",
+        "exact": "Точно",
+        "diff": "Разница",
+        "result": "Исход",
+        "total": "Итого",
+        "pointsShort": "Очк."
+    },
+    "form": {
+        "required": "*",
+        "validating": "Проверяем…"
+    },
+    "footer": {
+        "copyright": "© Pick The Score · Угадай счёт.",
+        "domain": "pickthescore.app"
+    }
+}

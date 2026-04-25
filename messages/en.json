@@ -1,0 +1,342 @@
+{
+    "common": {
+        "language": "Language",
+        "languageRu": "Русский",
+        "languageEn": "English",
+        "vs": "vs",
+        "preview": "Preview",
+        "soon": "Soon",
+        "comingSoon": "Coming soon",
+        "pointsShort": "pts"
+    },
+    "meta": {
+        "title": "Pick The Score — Score Prediction Game",
+        "description": "Your group. Your league. Predict every fixture before kickoff."
+    },
+    "nav": {
+        "dashboard": "Dashboard",
+        "leagues": "Leagues",
+        "scoreboard": "Global Leaderboard",
+        "landing": {
+            "privateLeagues": "Private leagues",
+            "widgets": "Widgets",
+            "telegramApp": "Telegram app",
+            "scoring": "Scoring"
+        }
+    },
+    "auth": {
+        "login": {
+            "eyebrow": "Welcome back",
+            "headlineBlue": "Good to",
+            "headlineItalic": "see you.",
+            "sub": "Sign in to check your picks and climb your league.",
+            "submit": "Sign in",
+            "rememberMe": "Keep me signed in on this device",
+            "forgotPassword": "Forgot password?",
+            "newHere": "New here?",
+            "createAccount": "Create account",
+            "linkLogIn": "Log in",
+            "fields": {
+                "userName": "Username",
+                "userNamePlaceholder": "markriaz",
+                "password": "Password"
+            }
+        },
+        "signup": {
+            "eyebrow": "New player",
+            "headlineBlue": "Create your",
+            "headlineItalic": "account.",
+            "sub": "30 seconds, one invite link. Predict, climb, talk trash.",
+            "submit": "Create account",
+            "haveAccount": "Already have an account?",
+            "signIn": "Sign in",
+            "termsPrefix": "I agree to the",
+            "terms": "Terms",
+            "termsAnd": "and",
+            "privacy": "Privacy Policy",
+            "fields": {
+                "email": "Email",
+                "emailPlaceholder": "you@example.com",
+                "emailHint": "We'll send notifications here and use it to recover your password.",
+                "userName": "Username",
+                "userNamePlaceholder": "markriaz",
+                "userNameHint": "How other players will see you. Lowercase letters, digits and underscore, unique.",
+                "tag": "Tag (optional)",
+                "tagPlaceholder": "@markriaz",
+                "tagHint": "Leave empty and we'll show you as @{userName}. Later this links to your Telegram handle.",
+                "tagHintFallback": "username",
+                "password": "Password",
+                "passwordHint": "At least 8 characters: a letter, a digit and a special symbol."
+            }
+        },
+        "validation": {
+            "checking": "Checking…",
+            "usernameFormat": "Only lowercase letters, digits and underscore, 2–32 characters.",
+            "usernameTaken": "This username is already taken.",
+            "usernameAvailable": "Username is available.",
+            "emailFormat": "That doesn't look like an email.",
+            "emailTaken": "This email is already registered.",
+            "emailAvailable": "Email is available."
+        },
+        "errors": {
+            "fixHighlighted": "Please fix the highlighted fields.",
+            "registrationFailed": "Registration failed. Please try again.",
+            "signInFailed": "Sign-in failed. Please try again.",
+            "checkInputs": "Please check your inputs.",
+            "invalidCredentials": "Invalid username or password.",
+            "usernameTaken": "User with this username already exists.",
+            "emailTaken": "User with this email already exists.",
+            "accountSuspended": "Account suspended."
+        },
+        "social": {
+            "continueGoogle": "Continue with Google",
+            "continueTelegram": "Continue with Telegram",
+            "or": "or",
+            "notConfigured": "This sign-in method is not configured yet",
+            "stateMismatch": "Login session expired. Please try again.",
+            "emailUnverified": "Google did not verify your email.",
+            "failed": "Provider sign-in failed. Please try again."
+        }
+    },
+    "header": {
+        "signedIn": "Signed in",
+        "signedInAs": "Signed in as",
+        "signOut": "Sign out",
+        "signingOut": "Signing out…"
+    },
+    "aria": {
+        "homeLink": "Pick The Score home",
+        "toggleMenu": "Toggle menu",
+        "scrollLeft": "Scroll matchdays left",
+        "scrollRight": "Scroll matchdays right",
+        "decrease": "Decrease {label}",
+        "increase": "Increase {label}",
+        "back": "Back home"
+    },
+    "action": {
+        "back": "← Back",
+        "backToDashboard": "← Back to dashboard",
+        "predict": "Predict →",
+        "predictNow": "Predict now",
+        "open": "Open",
+        "openArrow": "Open →",
+        "copy": "Copy",
+        "saving": "Saving…",
+        "updatePick": "Update pick",
+        "lockInPick": "Lock in pick",
+        "editPick": "Edit pick",
+        "viewStats": "View stats · crowd →"
+    },
+    "cta": {
+        "startLeague": "Start a league",
+        "startLeagueArrow": "Start a league →",
+        "predictNow": "Predict now",
+        "predictNowArrow": "Predict now →",
+        "scoringWorks": "How scoring works",
+        "seeALiveLeague": "See a live league",
+        "openPickTheScore": "Open Pick The Score"
+    },
+    "landing": {
+        "feature1": {
+            "label": "01 · Private leagues",
+            "heading": "Create a league with one link.",
+            "description": "Name it, pick a competition, send the invite. No app store, no credit card. Custom rules, private leaderboard, private trash talk."
+        },
+        "feature2": {
+            "label": "02 · Export anywhere",
+            "heading": "Match cards as widgets\nand Telegram mini-apps.",
+            "description": "Drop a fixture on your blog, Notion, or Substack. Or bring the whole league inside Telegram — friends predict straight from the chat."
+        },
+        "preview": {
+            "leagueName": "Office League",
+            "leagueStats": "42 members · Premier League",
+            "badge": "Your league",
+            "widgetLabel": "Widget · Embed",
+            "telegramLabel": "Telegram · Mini-app",
+            "botName": "Pick The Score Bot",
+            "botMessage": "🏟 ARS vs LIV · picks close in 18m",
+            "predictions": "847 predictions"
+        },
+        "embedCode": "<script src=\"pickthescore.app/embed.js\" data-match=\"ars-liv\"/>",
+        "pricing": "Free for groups up to 100 · paid tier for bigger communities",
+        "softCta": "Already convinced?",
+        "softCtaHeading": "You can also just predict.",
+        "softCtaDescription": "Jump into the global ladder for this weekend's Premier League fixtures. No league required.",
+        "scoring": {
+            "heading": "Scoring, plain and simple",
+            "subheading": "Three ways to earn points per match.",
+            "maxPoints": "Max 3 pts",
+            "exact": "Exact score",
+            "exactExample": "You: 2–1  ·  Final: 2–1",
+            "goalDiff": "Goal difference",
+            "goalDiffExample": "You: 2–0  ·  Final: 3–1",
+            "outcome": "Right outcome",
+            "outcomeExample": "You: 1–0  ·  Final: 3–0"
+        }
+    },
+    "hero": {
+        "frame1": {
+            "eyebrow": "For friend groups, offices & communities",
+            "h1a": "Your group.",
+            "h1b": "Your league.",
+            "copy": "Spin up a private prediction league in 30 seconds. Post match cards as widgets on your site, or run the whole thing inside Telegram as a mini-app — friends predict without leaving the chat.",
+            "label": "The product"
+        },
+        "frame2": {
+            "eyebrow": "Bragging rights. Settled weekly.",
+            "h1a": "Make the pick.",
+            "h1b": "Crash the league.",
+            "copy": "Call every fixture before kickoff. Exact scores land +3 pts — enough to leapfrog the group chat in a single Saturday. Streaks, trash talk, receipts.",
+            "label": "The game"
+        },
+        "frameIndicator": "{n} / 02 ·"
+    },
+    "dashboard": {
+        "matchdayLabel": "Matchday · Pick your ground",
+        "heading": "Choose a competition.",
+        "subheading": "Jump into a league, make your picks, climb the table.",
+        "active": "{count, plural, one {# active} other {# active}}",
+        "competitionStats": "Matchday {matchday} · {rounds, plural, one {# round} other {# rounds}}",
+        "weekLabel": "Week",
+        "weekPoints": "+{weekly}",
+        "liveNow": "Live now",
+        "liveCount": "{count, plural, one {# in play} other {# in play}}",
+        "upcoming": "Upcoming",
+        "upcomingCount": "{count, plural, one {# open} other {# open}}",
+        "nothingScheduled": "Nothing scheduled",
+        "emptyUpcoming": "No upcoming fixtures in the tracked competitions. Check back after the next update.",
+        "recentlySettled": "Recently settled",
+        "settledCount": "{count, plural, one {# match} other {# matches}}"
+    },
+    "stats": {
+        "totalPoints": "Total points",
+        "trackedMatches": "{count, plural, one {# tracked match} other {# tracked matches}}",
+        "weekly": "Weekly",
+        "weeklyDescription": "This week (Mon–Sun)",
+        "streak": "Streak",
+        "streakActive": "Keep it alive",
+        "streakInactive": "Start a run",
+        "hitRate": "Hit rate",
+        "hitRateDescription": "Last 25 picks",
+        "fixtures": "Fixtures",
+        "matchdays": "Matchdays",
+        "yourPoints": "Your points"
+    },
+    "leagues": {
+        "browse": "Browse",
+        "heading": "Competitions",
+        "description": "Pick a league to browse fixtures and lock in your predictions. Friend pools are coming soon.",
+        "tabs": {
+            "all": "All",
+            "football": "Football",
+            "hockey": "Hockey",
+            "cups": "Cups & Tournaments",
+            "private": "Private"
+        },
+        "privateLeagues": "Private leagues",
+        "joined": "Joined",
+        "fixtureCount": "{count, plural, one {# fixture} other {# fixtures}}",
+        "friendPoolsTooltip": "Friend pools — coming soon",
+        "friendPoolsLaunching": "Friend pools launching soon"
+    },
+    "competition": {
+        "matchPredictionLabel": "Match prediction · {code}",
+        "matchday": "Matchday {matchday}",
+        "lockInReminder": "Lock in before kickoff",
+        "backToMD": "Back to MD {md}",
+        "mdLabel": "MD {md}",
+        "nextFixtures": "Next fixtures · {name}",
+        "noFixtures": "No scheduled fixtures."
+    },
+    "scoreboard": {
+        "label": "Season · League table",
+        "heading": "Leaderboard",
+        "subheading": "Who's calling the scores right — and who's on cleanup duty.",
+        "you": "You",
+        "ranked": "You're ranked",
+        "rankedWith": "with",
+        "loadFailed": "Failed to load scoreboard data. Please try again.",
+        "empty": {
+            "heading": "The table is waiting.",
+            "message": "No matches have finished with predictions yet. As soon as one does, the crowd shows up here."
+        },
+        "statsExact": "Exact {count}",
+        "statsDiff": "Diff {count}",
+        "statsResult": "Result {count}"
+    },
+    "time": {
+        "week": "Week",
+        "season": "Season",
+        "allTime": "All-time"
+    },
+    "scoring": {
+        "label": "Scoring",
+        "exactLabel": "+3 exact score ·",
+        "diffLabel": "+2 goal difference ·",
+        "outcomeLabel": "+1 right outcome"
+    },
+    "match": {
+        "finished": "Finished",
+        "live": "Live",
+        "final": "Final",
+        "draw": "Draw",
+        "win": "{team} win",
+        "home": "Home",
+        "away": "Away",
+        "mdShort": "MD {md}",
+        "wdl": "W {w} · D {d} · L {l}",
+        "predictionPoints": "+{pts, plural, one {# pt} other {# pts}}",
+        "yourPrediction": "Your prediction",
+        "ifThisHolds": "If this holds",
+        "maxPossible": "max possible",
+        "crowdPicks": "What the crowd picked",
+        "tape": "The Tape",
+        "formH2H": "Form · H2H",
+        "lastFive": "Last 5 · {team}",
+        "noRecentResults": "No recent results yet this season.",
+        "h2h": "Head-to-head (this season)",
+        "noH2H": "No previous meetings in the current season.",
+        "footer": "Season {season} · Competition {competition}",
+        "yourPick": "Your pick: {home}–{away}",
+        "noPts": "No pts",
+        "liveResultPending": "Live · result pending",
+        "lockedPick": "Your locked-in pick: {home}–{away}",
+        "lockedInBadge": "Locked in {home}–{away}",
+        "pickPending": "Your pick: {home}–{away} · result pending",
+        "noRecentForm": "No recent form",
+        "updatePickShort": "Update · {home}–{away}",
+        "updatePickLong": "Update pick · {home}–{away}",
+        "lockInScore": "Lock in {home}–{away}"
+    },
+    "sport": {
+        "football": "⚽ Football",
+        "hockey": "🏒 Hockey"
+    },
+    "sidebar": {
+        "yourLeagues": "Your leagues",
+        "members": "{count, plural, one {# member} other {# members}}",
+        "friendPoolsLaunching": "Friend pools launching soon",
+        "trashTalk": "Trash talk",
+        "trashTalkPreview": "Preview · Office League"
+    },
+    "crowd": {
+        "noPicks": "No picks yet — be the first to lock one in."
+    },
+    "table": {
+        "rank": "#",
+        "player": "Player",
+        "exact": "Exact",
+        "diff": "Diff",
+        "result": "Result",
+        "total": "Total",
+        "pointsShort": "Pts"
+    },
+    "form": {
+        "required": "*",
+        "validating": "Checking…"
+    },
+    "footer": {
+        "copyright": "© Pick The Score · Call the score.",
+        "domain": "pickthescore.app"
+    }
+}

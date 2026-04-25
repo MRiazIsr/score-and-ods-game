@@ -128,7 +128,7 @@ export class CompetitionsService {
             entries.push({
                 userId: user.id,
                 userName: user.username,
-                name: user.name,
+                tag: user.tag,
                 predictedCount: a?.predictedCount ?? 0,
                 predictedDifference: a?.predictedDifference ?? 0,
                 predictedOutcome: a?.predictedOutcome ?? 0,

@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 const PLACEHOLDER_MESSAGES = [
     { who: "Diego R.", avatar: "DR", msg: "Calling 3-1 Liverpool, book it 📖", ts: "2m" },
     { who: "Mira Chen", avatar: "MC", msg: "ARS vs City is a coin flip tbh", ts: "18m" },
@@ -5,6 +9,7 @@ const PLACEHOLDER_MESSAGES = [
 ];
 
 export function TrashTalk() {
+    const t = useTranslations("sidebar");
     return (
         <div
             style={{
@@ -25,9 +30,9 @@ export function TrashTalk() {
                         color: "#4A5148",
                     }}
                 >
-                    Trash talk
+                    {t("trashTalk")}
                 </div>
-                <div style={{ fontSize: 10, color: "#4A5148", marginTop: 2 }}>Preview · Office League</div>
+                <div style={{ fontSize: 10, color: "#4A5148", marginTop: 2 }}>{t("trashTalkPreview")}</div>
             </div>
             {PLACEHOLDER_MESSAGES.map((c, i) => (
                 <div

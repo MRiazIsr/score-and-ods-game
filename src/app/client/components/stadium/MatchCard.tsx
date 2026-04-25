@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
 import type { Match } from "@/app/server/modules/competitions/types";
 import { Chip } from "./Chip";
 import { calculatePoints as computePoints } from "@/app/server/services/ScoringService";
@@ -16,15 +19,18 @@ function matchVariant(match: Match): CardVariant {
     return "scheduled";
 }
 
-function formatKickoff(utcDate: string): string {
-    const d = new Date(utcDate);
-    const weekday = d.toLocaleDateString("en-GB", { weekday: "short" });
-    const time = d.toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-    });
-    return `${weekday} · ${time}`;
+function useFormatKickoff() {
+    const locale = useLocale();
+    return (utcDate: string): string => {
+        const d = new Date(utcDate);
+        const weekday = d.toLocaleDateString(locale === "ru" ? "ru-RU" : "en-GB", { weekday: "short" });
+        const time = d.toLocaleTimeString(locale === "ru" ? "ru-RU" : "en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        });
+        return `${weekday} · ${time}`;
+    };
 }
 
 function TeamBlock({
@@ -38,7 +44,7 @@ function TeamBlock({
     crest?: string | null;
     align: "left" | "right";
 }) {
-    const displayName = name ?? "TBD";
+    const displayName = name ?? "—";
     const initials = (tla || name || "?").slice(0, 2).toUpperCase();
 
     const crestNode = crest ? (
@@ -115,12 +121,14 @@ function TeamBlock({
 }
 
 export function MatchCard({ match }: MatchCardProps) {
+    const t = useTranslations();
+    const formatKickoff = useFormatKickoff();
     const variant = matchVariant(match);
     const hasPick = !!match.predictedScore?.isPredicted;
 
     const headerRight = (() => {
-        if (variant === "live") return <Chip tone="live">Live</Chip>;
-        if (variant === "final") return <Chip tone="final">Final</Chip>;
+        if (variant === "live") return <Chip tone="live">{t("match.live")}</Chip>;
+        if (variant === "final") return <Chip tone="final">{t("match.final")}</Chip>;
         return (
             <span style={{ fontWeight: 500, fontSize: 10, color: "#4A5148" }}>{formatKickoff(match.utcDate)}</span>
         );
@@ -138,7 +146,7 @@ export function MatchCard({ match }: MatchCardProps) {
                         letterSpacing: 2,
                     }}
                 >
-                    VS
+                    {t("common.vs").toUpperCase()}
                 </div>
             );
         }
@@ -175,13 +183,13 @@ export function MatchCard({ match }: MatchCardProps) {
                     }}
                 >
                     <span style={{ fontSize: 11, fontWeight: 600, color: fg }}>
-                        Your pick: {match.predictedScore!.home}–{match.predictedScore!.away}
+                        {t("match.yourPick", { home: match.predictedScore!.home, away: match.predictedScore!.away })}
                     </span>
                     <span
                         className="font-display"
                         style={{ fontSize: 16, fontWeight: 700, color: fg }}
                     >
-                        {points > 0 ? `+${points} pts` : "No pts"}
+                        {points > 0 ? t("match.predictionPoints", { pts: points }) : t("match.noPts")}
                     </span>
                 </div>
             );
@@ -198,9 +206,9 @@ export function MatchCard({ match }: MatchCardProps) {
                     }}
                 >
                     <span style={{ fontSize: 11, color: "#92400E", fontWeight: 600 }}>
-                        Your pick: {match.predictedScore!.home}–{match.predictedScore!.away}
+                        {t("match.yourPick", { home: match.predictedScore!.home, away: match.predictedScore!.away })}
                     </span>
-                    <span style={{ fontSize: 11, color: "#92400E" }}>Live · result pending</span>
+                    <span style={{ fontSize: 11, color: "#92400E" }}>{t("match.liveResultPending")}</span>
                 </div>
             );
         }
@@ -224,8 +232,8 @@ export function MatchCard({ match }: MatchCardProps) {
                         }}
                     >
                         {hasPick
-                            ? `Update · ${match.predictedScore!.home}–${match.predictedScore!.away}`
-                            : "Lock in pick"}
+                            ? t("match.updatePickShort", { home: match.predictedScore!.home, away: match.predictedScore!.away })
+                            : t("action.lockInPick")}
                     </Link>
                 </div>
             );
@@ -255,7 +263,7 @@ export function MatchCard({ match }: MatchCardProps) {
                 }}
             >
                 <span>
-                    {match.competition.name} · MD {match.matchday}
+                    {match.competition.name} · {t("competition.mdLabel", { md: match.matchday })}
                 </span>
                 {headerRight}
             </div>

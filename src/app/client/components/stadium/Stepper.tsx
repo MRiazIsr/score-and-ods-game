@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 interface StepperProps {
     value: number;
     onChange: (n: number) => void;
@@ -19,6 +21,7 @@ export function Stepper({
     label,
     disabled = false,
 }: StepperProps) {
+    const t = useTranslations("aria");
     const bump = (delta: number) => {
         if (disabled) return;
         const next = Math.max(min, Math.min(max, value + delta));
@@ -46,7 +49,7 @@ export function Stepper({
                 {label}
             </div>
             <div className="flex items-center justify-center" style={{ gap: 10 }}>
-                <button type="button" onClick={() => bump(-1)} style={btn} aria-label={`Decrease ${label}`}>
+                <button type="button" onClick={() => bump(-1)} style={btn} aria-label={t("decrease", { label })}>
                     −
                 </button>
                 <div
@@ -61,7 +64,7 @@ export function Stepper({
                 >
                     {value}
                 </div>
-                <button type="button" onClick={() => bump(1)} style={btn} aria-label={`Increase ${label}`}>
+                <button type="button" onClick={() => bump(1)} style={btn} aria-label={t("increase", { label })}>
                     +
                 </button>
             </div>

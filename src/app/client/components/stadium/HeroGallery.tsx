@@ -2,33 +2,37 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-
-const frames = [
-    {
-        eyebrow: "For friend groups, offices & communities",
-        h1a: "Your group.",
-        h1b: "Your league.",
-        copy: "Spin up a private prediction league in 30 seconds. Post match cards as widgets on your site, or run the whole thing inside Telegram as a mini-app — friends predict without leaving the chat.",
-        ctaPrimary: { label: "Start a league", href: "/signup" },
-        ctaSecondary: { label: "See a live league", href: "#scoring" },
-    },
-    {
-        eyebrow: "Bragging rights. Settled weekly.",
-        h1a: "Make the pick.",
-        h1b: "Crash the league.",
-        copy: "Call every fixture before kickoff. Exact scores land +3 pts — enough to leapfrog the group chat in a single Saturday. Streaks, trash talk, receipts.",
-        ctaPrimary: { label: "Predict now", href: "/signup" },
-        ctaSecondary: { label: "How scoring works", href: "#scoring" },
-    },
-];
+import { useTranslations } from "next-intl";
 
 export function HeroGallery() {
+    const t = useTranslations();
     const [i, setI] = useState(0);
 
+    const frames = [
+        {
+            eyebrow: t("hero.frame1.eyebrow"),
+            h1a: t("hero.frame1.h1a"),
+            h1b: t("hero.frame1.h1b"),
+            copy: t("hero.frame1.copy"),
+            label: t("hero.frame1.label"),
+            ctaPrimary: { label: t("cta.startLeague"), href: "/signup" },
+            ctaSecondary: { label: t("cta.seeALiveLeague"), href: "#scoring" },
+        },
+        {
+            eyebrow: t("hero.frame2.eyebrow"),
+            h1a: t("hero.frame2.h1a"),
+            h1b: t("hero.frame2.h1b"),
+            copy: t("hero.frame2.copy"),
+            label: t("hero.frame2.label"),
+            ctaPrimary: { label: t("cta.predictNow"), href: "/signup" },
+            ctaSecondary: { label: t("cta.scoringWorks"), href: "#scoring" },
+        },
+    ];
+
     useEffect(() => {
-        const t = setInterval(() => setI((v) => (v + 1) % frames.length), 5600);
-        return () => clearInterval(t);
-    }, []);
+        const timer = setInterval(() => setI((v) => (v + 1) % frames.length), 5600);
+        return () => clearInterval(timer);
+    }, [frames.length]);
 
     const f = frames[i];
 
@@ -106,14 +110,13 @@ export function HeroGallery() {
                 </div>
             </div>
 
-            {/* dot indicators */}
             <div className="flex gap-1.5 justify-center" style={{ marginTop: 28 }}>
                 {frames.map((_, n) => (
                     <button
                         key={n}
                         type="button"
                         onClick={() => setI(n)}
-                        aria-label={`Show frame ${n + 1}`}
+                        aria-label={`${n + 1}`}
                         style={{
                             width: n === i ? 28 : 8,
                             height: 8,
@@ -128,7 +131,7 @@ export function HeroGallery() {
             </div>
             <div className="text-center text-ink2" style={{ marginTop: 10, fontSize: 11, letterSpacing: 0.3 }}>
                 <span style={{ fontWeight: 700, color: "#0B0F0A" }}>{String(i + 1).padStart(2, "0")}</span> / 02 ·{" "}
-                {i === 0 ? "The product" : "The game"}
+                {f.label}
             </div>
         </section>
     );

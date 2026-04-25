@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 export type FormResult = "W" | "D" | "L";
 
 interface FormRibbonProps {
@@ -12,9 +16,10 @@ const toneMap: Record<FormResult, { bg: string; fg: string }> = {
 };
 
 export function FormRibbon({ results, align = "center" }: FormRibbonProps) {
+    const t = useTranslations("match");
     if (!results.length) {
         return (
-            <div style={{ fontSize: 11, color: "#4A5148", textAlign: align }}>No recent form</div>
+            <div style={{ fontSize: 11, color: "#4A5148", textAlign: align }}>{t("noRecentForm")}</div>
         );
     }
 

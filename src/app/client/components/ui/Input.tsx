@@ -2,20 +2,36 @@
 
 import { InputProps } from "@/app/client/components/types";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export function Input({
     label,
     name,
+    id,
     type = "text",
     value,
     placeHolder,
     onChange,
+    onBlur,
     error,
+    hint,
+    success,
+    validating,
     required = false,
+    autoComplete,
 }: InputProps) {
     const [focused, setFocused] = useState(false);
-    const inputId = `${name}-input`;
+    const t = useTranslations("form");
+    const inputId = id || `${name}-input`;
     const errorText = Array.isArray(error) ? error[0] : error;
+
+    const borderColor = errorText
+        ? "#9D0010"
+        : success && !validating
+            ? "#15803D"
+            : focused
+                ? "#1E3A8A"
+                : "#E4E1D6";
 
     return (
         <div style={{ marginBottom: 14 }}>
@@ -44,11 +60,17 @@ export function Input({
                     defaultValue={value}
                     placeholder={placeHolder}
                     onChange={onChange}
+                    onBlur={(e) => {
+                        setFocused(false);
+                        onBlur?.(e);
+                    }}
                     required={required}
+                    autoComplete={autoComplete}
                     onFocus={() => setFocused(true)}
-                    onBlur={() => setFocused(false)}
                     aria-invalid={!!errorText}
-                    aria-describedby={errorText ? `${inputId}-error` : undefined}
+                    aria-describedby={
+                        errorText ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined
+                    }
                     style={{
                         width: "100%",
                         padding: "12px 14px",
@@ -56,16 +78,34 @@ export function Input({
                         color: "#0B0F0A",
                         fontSize: 14,
                         fontFamily: "inherit",
-                        border: `1.5px solid ${errorText ? "#9D0010" : focused ? "#1E3A8A" : "#E4E1D6"}`,
+                        border: `1.5px solid ${borderColor}`,
                         borderRadius: 6,
                         outline: "none",
                         transition: "border-color 0.15s, box-shadow 0.15s",
                         boxShadow: focused ? "0 0 0 3px rgba(30,58,138,0.12)" : "none",
                     }}
                 />
-                {errorText && (
+                {validating && (
+                    <p style={{ marginTop: 6, fontSize: 12, color: "#4A5148" }}>
+                        {t("validating")}
+                    </p>
+                )}
+                {!validating && errorText && (
                     <p id={`${inputId}-error`} style={{ marginTop: 6, fontSize: 12, color: "#9D0010" }}>
                         {errorText}
+                    </p>
+                )}
+                {!validating && !errorText && success && (
+                    <p style={{ marginTop: 6, fontSize: 12, color: "#15803D" }}>
+                        {success}
+                    </p>
+                )}
+                {!validating && !errorText && !success && hint && (
+                    <p
+                        id={`${inputId}-hint`}
+                        style={{ marginTop: 6, fontSize: 12, color: "#4A5148", lineHeight: 1.4 }}
+                    >
+                        {hint}
                     </p>
                 )}
             </div>

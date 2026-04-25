@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 export type Sport = "football" | "hockey";
 
 interface SportToggleProps {
@@ -8,6 +10,7 @@ interface SportToggleProps {
 }
 
 export function SportToggle({ value, onChange }: SportToggleProps) {
+    const t = useTranslations();
     const pill = (active: boolean, disabled: boolean): React.CSSProperties => ({
         padding: "5px 10px",
         borderRadius: 3,
@@ -39,10 +42,10 @@ export function SportToggle({ value, onChange }: SportToggleProps) {
                 style={pill(value === "football", false)}
                 onClick={() => onChange?.("football")}
             >
-                ⚽ Football
+                {t("sport.football")}
             </button>
-            <button type="button" style={pill(false, true)} disabled aria-disabled="true" title="Coming soon">
-                🏒 Hockey
+            <button type="button" style={pill(false, true)} disabled aria-disabled="true" title={t("common.comingSoon")}>
+                {t("sport.hockey")}
                 <span
                     className="uppercase"
                     style={{
@@ -55,7 +58,7 @@ export function SportToggle({ value, onChange }: SportToggleProps) {
                         color: "#4A5148",
                     }}
                 >
-                    Soon
+                    {t("common.soon")}
                 </span>
             </button>
         </div>

@@ -32,9 +32,11 @@ RUN npx prisma generate
 RUN --mount=type=secret,id=session_password \
     --mount=type=secret,id=session_cookie_name \
     --mount=type=secret,id=api_key \
+    --mount=type=secret,id=next_public_telegram_bot_username \
     export SESSION_PASSWORD="$(cat /run/secrets/session_password)" && \
     export SESSION_COOKIE_NAME="$(cat /run/secrets/session_cookie_name)" && \
     export API_KEY="$(cat /run/secrets/api_key)" && \
+    export NEXT_PUBLIC_TELEGRAM_BOT_USERNAME="$(cat /run/secrets/next_public_telegram_bot_username 2>/dev/null || echo '')" && \
     npm run build
 
 # Bundle fetcher to a single node-compatible .js file.

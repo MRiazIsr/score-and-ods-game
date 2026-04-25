@@ -44,6 +44,12 @@ services:
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME}
       API_KEY: ${API_KEY}
       API_URL: https://api.football-data.org/v4
+      # OAuth runtime secrets (populated by deploy.yml from GitHub Secrets).
+      # Empty if not yet configured — providers surface "not configured" in UI.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
     # Expose ONLY to loopback — the host-level Caddy reaches us via 127.0.0.1:3000.
     # This prevents direct access to port 3000 from outside the server.
     ports:

@@ -1,14 +1,15 @@
 export type SessionUser = {
     userId: string;
     userName: string;
-    name: string;
-    email: string;
+    tag: string | null;
+    email: string | null;
     isAdmin: boolean;
 };
 
 export type SessionData = {
     user: SessionUser;
     isLoggedIn: boolean;
+    locale?: string;
 };
 
 export type SessionOptions = {
@@ -21,7 +22,7 @@ export type SessionOptions = {
 
 /** Input shape for sign-up form validation. */
 export type SignUpInput = {
-    name: string;
+    tag?: string;
     email: string;
     userName: string;
     password: string;
@@ -36,7 +37,7 @@ export type SignInInput = {
 export const EMPTY_SESSION_USER: SessionUser = {
     userId: "",
     userName: "",
-    name: "",
-    email: "",
+    tag: null,
+    email: null,
     isAdmin: false,
 };

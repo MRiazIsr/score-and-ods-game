@@ -9,8 +9,13 @@ export interface InputProps {
     placeHolder: string;
     required?: boolean;
     label?: string;
+    hint?: string;
     error?: string[] | string;
+    success?: string;
+    validating?: boolean;
+    autoComplete?: string;
     onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
     validation?: (value: string) => string;
 }
 

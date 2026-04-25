@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Competition, ScoreBoardData } from "@/app/server/modules/competitions/types";
 import { CompetitionDropdown } from "@/app/client/components/ui/CompetitionDropdown";
 import { ScoreBoardTable } from "@/app/client/components/ui/ScoreBoardTable";
@@ -20,6 +21,7 @@ export default function ScoreBoardClient({
     defaultCompetitionId,
     currentUserId,
 }: ScoreboardClientProps) {
+    const t = useTranslations();
     const [selectedCompetitionId, setSelectedCompetitionId] = useState(defaultCompetitionId);
     const [scoreBoardData, setScoreBoardData] = useState<ScoreBoardData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -36,7 +38,7 @@ export default function ScoreBoardClient({
                 if (!cancelled) setScoreBoardData(data);
             } catch (err) {
                 console.error("Error fetching scoreboard data:", err);
-                if (!cancelled) setError("Failed to load scoreboard data. Please try again.");
+                if (!cancelled) setError(t("scoreboard.loadFailed"));
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -45,7 +47,7 @@ export default function ScoreBoardClient({
         return () => {
             cancelled = true;
         };
-    }, [selectedCompetitionId]);
+    }, [selectedCompetitionId, t]);
 
     return (
         <div style={{ display: "grid", gap: 24 }}>
@@ -56,16 +58,16 @@ export default function ScoreBoardClient({
                         className="uppercase"
                         style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: "#4A5148" }}
                     >
-                        Season · League table
+                        {t("scoreboard.label")}
                     </div>
                     <h1
                         className="font-display"
                         style={{ fontSize: 36, fontWeight: 700, letterSpacing: -0.8, marginTop: 6 }}
                     >
-                        Leaderboard
+                        {t("scoreboard.heading")}
                     </h1>
                     <div className="text-ink2" style={{ fontSize: 13, marginTop: 4 }}>
-                        Who&apos;s calling the scores right — and who&apos;s on cleanup duty.
+                        {t("scoreboard.subheading")}
                     </div>
                 </div>
 
@@ -82,9 +84,9 @@ export default function ScoreBoardClient({
                         }}
                     >
                         {([
-                            { id: "week", label: "Week" },
-                            { id: "season", label: "Season" },
-                            { id: "all", label: "All-time" },
+                            { id: "week", label: t("time.week") },
+                            { id: "season", label: t("time.season") },
+                            { id: "all", label: t("time.allTime") },
                         ] as const).map((tab) => {
                             const active = tab.id === timeFilter;
                             return (
@@ -127,11 +129,11 @@ export default function ScoreBoardClient({
                     padding: "10px 14px",
                 }}
             >
-                <Chip tone="brand">Scoring</Chip>
+                <Chip tone="brand">{t("scoring.label")}</Chip>
                 <span className="text-ink2" style={{ fontSize: 12 }}>
-                    <strong style={{ color: "#1E3A8A", fontWeight: 700 }}>+3</strong> exact score ·{" "}
-                    <strong style={{ color: "#1E3A8A", fontWeight: 700 }}>+2</strong> goal difference ·{" "}
-                    <strong style={{ color: "#1E3A8A", fontWeight: 700 }}>+1</strong> right outcome
+                    <strong style={{ color: "#1E3A8A", fontWeight: 700 }}>+3</strong> {t("landing.scoring.exact")} ·{" "}
+                    <strong style={{ color: "#1E3A8A", fontWeight: 700 }}>+2</strong> {t("landing.scoring.goalDiff")} ·{" "}
+                    <strong style={{ color: "#1E3A8A", fontWeight: 700 }}>+1</strong> {t("landing.scoring.outcome")}
                 </span>
             </div>
 

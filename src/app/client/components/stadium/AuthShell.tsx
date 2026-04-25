@@ -1,7 +1,11 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { AppLogo } from "./Logo";
 import { AuthPreviewPanel } from "./AuthPreviewPanel";
+import { LanguageSwitcher } from "@/app/client/components/ui/LanguageSwitcher";
 
 interface AuthShellProps {
     eyebrow: string;
@@ -15,22 +19,26 @@ interface AuthShellProps {
 }
 
 export function AuthShell({ eyebrow, headline, sub, children, footer }: AuthShellProps) {
+    const t = useTranslations();
     return (
         <div className="min-h-screen bg-paper">
             <div className="grid min-h-screen md:grid-cols-[1.05fr_1fr] grid-cols-1 items-stretch">
                     {/* form panel */}
                     <section className="flex flex-col min-h-screen" style={{ padding: "32px 40px" }}>
                         <div className="flex items-center justify-between">
-                            <Link href="/" aria-label="Back home">
+                            <Link href="/" aria-label={t("aria.back")}>
                                 <AppLogo />
                             </Link>
-                            <Link
-                                href="/"
-                                className="uppercase text-ink2 hover:text-ink"
-                                style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5 }}
-                            >
-                                ← Back
-                            </Link>
+                            <div className="flex items-center" style={{ gap: 16 }}>
+                                <LanguageSwitcher />
+                                <Link
+                                    href="/"
+                                    className="uppercase text-ink2 hover:text-ink"
+                                    style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5 }}
+                                >
+                                    {t("action.back")}
+                                </Link>
+                            </div>
                         </div>
 
                         <div
@@ -73,7 +81,7 @@ export function AuthShell({ eyebrow, headline, sub, children, footer }: AuthShel
                             className="uppercase text-ink2"
                             style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5 }}
                         >
-                            © Pick The Score · Call the score.
+                            {t("footer.copyright")}
                         </div>
                     </section>
 

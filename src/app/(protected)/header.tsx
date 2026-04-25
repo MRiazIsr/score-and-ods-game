@@ -5,7 +5,9 @@ import { useActionState, useEffect, useState } from "react";
 import { signOut } from "@/app/actions/auth";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { AppLogo } from "@/app/client/components/stadium/Logo";
+import { LanguageSwitcher } from "@/app/client/components/ui/LanguageSwitcher";
 
 function useIsNarrowViewport(): boolean {
     const [isNarrow, setIsNarrow] = useState(false);
@@ -19,11 +21,12 @@ function useIsNarrowViewport(): boolean {
     return isNarrow;
 }
 
-function navItems() {
+function useNavItems() {
+    const t = useTranslations("nav");
     return [
-        { href: "/dashboard", label: "Dashboard" },
-        { href: "/leagues", label: "Leagues" },
-        { href: "/scoreboard", label: "Global Leaderboard" },
+        { href: "/dashboard", label: t("dashboard") },
+        { href: "/leagues", label: t("leagues") },
+        { href: "/scoreboard", label: t("scoreboard") },
     ];
 }
 
@@ -34,9 +37,14 @@ export default function Header() {
     const router = useRouter();
     const [menuOpen, setMenuOpen] = useState(false);
     const isNarrow = useIsNarrowViewport();
+    const t = useTranslations();
+    const navItemsList = useNavItems();
 
-    const name = session?.user?.name || "Player";
-    const initial = name.slice(0, 2).toUpperCase();
+    const name =
+        session?.user?.tag ||
+        (session?.user?.userName ? `@${session.user.userName}` : "") ||
+        "Player";
+    const initial = name.replace(/^@/, "").slice(0, 2).toUpperCase();
 
     const go = (path: string) => {
         router.push(path);
@@ -58,12 +66,12 @@ export default function Header() {
             >
                 {/* left: logo + primary nav */}
                 <div className="flex items-center gap-6">
-                    <Link href="/dashboard" aria-label="Pick The Score home">
+                    <Link href="/dashboard" aria-label={t("aria.homeLink")}>
                         <AppLogo />
                     </Link>
 
                     <nav className="flex gap-1" style={{ display: isNarrow ? "none" : "flex" }}>
-                        {navItems().map((item) => {
+                        {navItemsList.map((item) => {
                             const active = pathname === item.href || pathname.startsWith(item.href + "/");
                             return (
                                 <button
@@ -92,9 +100,10 @@ export default function Header() {
 
                 {/* right: avatar + sign out */}
                 <div className="items-center gap-3" style={{ display: isNarrow ? "none" : "flex" }}>
+                    <LanguageSwitcher />
                     <div className="text-ink2 text-right" style={{ fontSize: 12, lineHeight: 1.2 }}>
                         <div className="uppercase" style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5 }}>
-                            Signed in
+                            {t("header.signedIn")}
                         </div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: "#0B0F0A" }}>{name}</div>
                     </div>
@@ -130,7 +139,7 @@ export default function Header() {
                                 fontFamily: "inherit",
                             }}
                         >
-                            {pending ? "Signing out…" : "Sign out"}
+                            {pending ? t("header.signingOut") : t("header.signOut")}
                         </button>
                     </form>
                 </div>
@@ -140,7 +149,7 @@ export default function Header() {
                     <button
                         type="button"
                         onClick={() => setMenuOpen((v) => !v)}
-                        aria-label="Toggle menu"
+                        aria-label={t("aria.toggleMenu")}
                         style={{
                             width: 36,
                             height: 36,
@@ -175,10 +184,13 @@ export default function Header() {
                     }}
                 >
                     <div className="text-ink2" style={{ fontSize: 11, marginBottom: 10 }}>
-                        Signed in as <strong style={{ color: "#0B0F0A" }}>{name}</strong>
+                        {t("header.signedInAs")} <strong style={{ color: "#0B0F0A" }}>{name}</strong>
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                        <LanguageSwitcher />
                     </div>
                     <div className="grid gap-2">
-                        {navItems().map((item) => {
+                        {navItemsList.map((item) => {
                             const active = pathname === item.href || pathname.startsWith(item.href + "/");
                             return (
                                 <button
@@ -219,7 +231,7 @@ export default function Header() {
                                     fontFamily: "inherit",
                                 }}
                             >
-                                {pending ? "Signing out…" : "Sign out"}
+                                {pending ? t("header.signingOut") : t("header.signOut")}
                             </button>
                         </form>
                     </div>

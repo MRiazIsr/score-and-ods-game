@@ -45,6 +45,7 @@ jobs:
           echo -n "${{ secrets.SESSION_PASSWORD }}" > /tmp/session_password
           echo -n "${{ secrets.SESSION_COOKIE_NAME }}" > /tmp/session_cookie_name
           echo -n "${{ secrets.API_KEY }}" > /tmp/api_key
+          echo -n "${{ secrets.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME }}" > /tmp/next_public_telegram_bot_username
 
       - name: Build & push
         uses: docker/build-push-action@v5
@@ -60,10 +61,11 @@ jobs:
             session_password=/tmp/session_password
             session_cookie_name=/tmp/session_cookie_name
             api_key=/tmp/api_key
+            next_public_telegram_bot_username=/tmp/next_public_telegram_bot_username
 
       - name: Cleanup build secrets
         if: always()
-        run: rm -f /tmp/session_password /tmp/session_cookie_name /tmp/api_key
+        run: rm -f /tmp/session_password /tmp/session_cookie_name /tmp/api_key /tmp/next_public_telegram_bot_username
 
   deploy-to-hetzner:
     runs-on: ubuntu-latest
@@ -91,6 +93,10 @@ jobs:
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
           ACTOR: ${{ github.actor }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
           ssh -i ~/.ssh/deploy_key \
               -o ConnectTimeout=15 \
@@ -100,7 +106,10 @@ jobs:
               -o PreferredAuthentications=publickey \
               -o IdentitiesOnly=yes \
               "${HETZNER_USER}@${HETZNER_HOST}" \
-              "GHCR_TOKEN='${GHCR_TOKEN}' REPO='${REPO}' SHA='${SHA}' ACTOR='${ACTOR}' bash -s" <<'REMOTE'
+              "GHCR_TOKEN='${GHCR_TOKEN}' REPO='${REPO}' SHA='${SHA}' ACTOR='${ACTOR}' \
+               GOOGLE_CLIENT_ID='${GOOGLE_CLIENT_ID}' GOOGLE_CLIENT_SECRET='${GOOGLE_CLIENT_SECRET}' \
+               GOOGLE_REDIRECT_URI='${GOOGLE_REDIRECT_URI}' TELEGRAM_BOT_TOKEN='${TELEGRAM_BOT_TOKEN}' \
+               bash -s" <<'REMOTE'
           set -euo pipefail
           cd /opt/pckthscr
 
@@ -120,6 +129,22 @@ jobs:
           grep -v '^IMAGE_TAG=' .env > .env.tmp || true
           echo "IMAGE_TAG=${SHA}" >> .env.tmp
           mv .env.tmp .env
+          chmod 600 .env
+
+          # 2b. Sync OAuth runtime secrets into .env (idempotent upsert).
+          # Empty values are skipped so we never blank an existing entry by accident.
+          for kv in \
+            "GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
+            "GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}" \
+            "GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}" \
+            "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}"; do
+              key="${kv%%=*}"
+              value="${kv#*=}"
+              [ -z "${value}" ] && continue
+              grep -v "^${key}=" .env > .env.tmp || true
+              echo "${kv}" >> .env.tmp
+              mv .env.tmp .env
+          done
           chmod 600 .env
 
           # 3. Log in to ghcr.io.

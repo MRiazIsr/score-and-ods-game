@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 export interface CrowdBucket {
     score: string;
     count: number;
@@ -15,10 +19,11 @@ function formatCount(n: number): string {
 }
 
 export function CrowdBars({ buckets }: CrowdBarsProps) {
+    const t = useTranslations("crowd");
     if (!buckets.length) {
         return (
             <div style={{ fontSize: 12, color: "#4A5148", textAlign: "center", padding: "12px 0" }}>
-                No picks yet — be the first to lock one in.
+                {t("noPicks")}
             </div>
         );
     }

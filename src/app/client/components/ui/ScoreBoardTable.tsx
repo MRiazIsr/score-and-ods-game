@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ScoreBoardData, ScoreBoardEntry } from "@/app/server/modules/competitions/types";
 
 interface ScoreBoardTableProps {
@@ -14,7 +15,12 @@ function avatarLabel(name: string) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+function displayName(entry: { tag: string | null; userName: string }): string {
+    return entry.tag && entry.tag.length > 0 ? entry.tag : `@${entry.userName}`;
+}
+
 export function ScoreBoardTable({ data, currentUserId }: ScoreBoardTableProps) {
+    const t = useTranslations();
     const entries = data.entries || [];
     const hasEntries = entries.length > 0;
 
@@ -34,10 +40,10 @@ export function ScoreBoardTable({ data, currentUserId }: ScoreBoardTableProps) {
                     className="font-display"
                     style={{ fontSize: 22, fontWeight: 700, color: "#0B0F0A", letterSpacing: -0.3 }}
                 >
-                    The table is waiting.
+                    {t("scoreboard.empty.heading")}
                 </div>
                 <p style={{ fontSize: 13, lineHeight: 1.5, marginTop: 8, maxWidth: 420, marginLeft: "auto", marginRight: "auto" }}>
-                    No matches have finished with predictions yet. As soon as one does, the crowd shows up here.
+                    {t("scoreboard.empty.message")}
                 </p>
             </div>
         );
@@ -85,10 +91,10 @@ export function ScoreBoardTable({ data, currentUserId }: ScoreBoardTableProps) {
                                         fontSize: 14,
                                     }}
                                 >
-                                    {avatarLabel(p.name)}
+                                    {avatarLabel(displayName(p))}
                                 </div>
                                 <div style={{ fontSize: 12, fontWeight: 600, color: "#0B0F0A" }}>
-                                    {p.name}
+                                    {displayName(p)}
                                     {isMe && <span style={{ color: "#1E3A8A" }}> · You</span>}
                                 </div>
                                 <div
@@ -142,12 +148,12 @@ export function ScoreBoardTable({ data, currentUserId }: ScoreBoardTableProps) {
                         letterSpacing: 0.5,
                     }}
                 >
-                    <div>#</div>
-                    <div>Player</div>
-                    <div style={{ textAlign: "right" }}>Exact</div>
-                    <div style={{ textAlign: "right" }}>Diff</div>
-                    <div style={{ textAlign: "right" }}>Result</div>
-                    <div style={{ textAlign: "right" }}>Total</div>
+                    <div>{t("table.rank")}</div>
+                    <div>{t("table.player")}</div>
+                    <div style={{ textAlign: "right" }}>{t("table.exact")}</div>
+                    <div style={{ textAlign: "right" }}>{t("table.diff")}</div>
+                    <div style={{ textAlign: "right" }}>{t("table.result")}</div>
+                    <div style={{ textAlign: "right" }}>{t("table.total")}</div>
                 </div>
 
                 {/* Desktop rows */}
@@ -190,16 +196,18 @@ export function ScoreBoardTable({ data, currentUserId }: ScoreBoardTableProps) {
                                             fontFamily: "var(--font-display), Inter, sans-serif",
                                         }}
                                     >
-                                        {avatarLabel(entry.name)}
+                                        {avatarLabel(displayName(entry))}
                                     </span>
                                     <div>
                                         <div style={{ fontWeight: isMe ? 700 : 600 }}>
-                                            {entry.name}
-                                            {isMe && " · You"}
+                                            {displayName(entry)}
+                                            {isMe && ` · ${t("scoreboard.you")}`}
                                         </div>
-                                        <div className="text-ink2" style={{ fontSize: 10, color: isMe ? "#1E3A8A" : "#4A5148" }}>
-                                            @{entry.userName}
-                                        </div>
+                                        {entry.tag && (
+                                            <div className="text-ink2" style={{ fontSize: 10, color: isMe ? "#1E3A8A" : "#4A5148" }}>
+                                                @{entry.userName}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="font-display" style={{ textAlign: "right", fontWeight: 600 }}>
@@ -233,8 +241,8 @@ export function ScoreBoardTable({ data, currentUserId }: ScoreBoardTableProps) {
                             justifyContent: "space-between",
                         }}
                     >
-                        <span>Player</span>
-                        <span>Pts</span>
+                        <span>{t("table.player")}</span>
+                        <span>{t("table.pointsShort")}</span>
                     </div>
                     {entries.map((entry, index) => {
                         const rank = index + 1;
@@ -272,11 +280,11 @@ export function ScoreBoardTable({ data, currentUserId }: ScoreBoardTableProps) {
                                                 fontFamily: "var(--font-display), Inter, sans-serif",
                                             }}
                                         >
-                                            {avatarLabel(entry.name)}
+                                            {avatarLabel(displayName(entry))}
                                         </span>
                                         <span style={{ fontSize: 13, fontWeight: isMe ? 700 : 600, color: isMe ? "#1E3A8A" : "#0B0F0A" }}>
-                                            {entry.name}
-                                            {isMe && " · You"}
+                                            {displayName(entry)}
+                                            {isMe && ` · ${t("scoreboard.you")}`}
                                         </span>
                                     </div>
                                     <span
@@ -290,9 +298,9 @@ export function ScoreBoardTable({ data, currentUserId }: ScoreBoardTableProps) {
                                     className="flex gap-4 text-ink2"
                                     style={{ marginTop: 6, paddingLeft: 54, fontSize: 11 }}
                                 >
-                                    <span>Exact {entry.predictedCount}</span>
-                                    <span>Diff {entry.predictedDifference}</span>
-                                    <span>Result {entry.predictedOutcome}</span>
+                                    <span>{t("scoreboard.statsExact", { count: entry.predictedCount })}</span>
+                                    <span>{t("scoreboard.statsDiff", { count: entry.predictedDifference })}</span>
+                                    <span>{t("scoreboard.statsResult", { count: entry.predictedOutcome })}</span>
                                 </div>
                             </div>
                         );
@@ -306,8 +314,8 @@ export function ScoreBoardTable({ data, currentUserId }: ScoreBoardTableProps) {
                     className="text-ink2"
                     style={{ fontSize: 11, textAlign: "center", letterSpacing: 0.2 }}
                 >
-                    You&apos;re ranked <span style={{ color: "#1E3A8A", fontWeight: 700 }}>#{meRank}</span> with{" "}
-                    <span style={{ color: "#1E3A8A", fontWeight: 700 }}>{meEntry.points.toLocaleString()}</span> pts.
+                    {t("scoreboard.ranked")} <span style={{ color: "#1E3A8A", fontWeight: 700 }}>#{meRank}</span> {t("scoreboard.rankedWith")}{" "}
+                    <span style={{ color: "#1E3A8A", fontWeight: 700 }}>{meEntry.points.toLocaleString()}</span> {t("common.pointsShort")}.
                 </div>
             )}
         </div>
