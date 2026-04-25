@@ -1,21 +1,23 @@
 # syntax=docker/dockerfile:1.7
 ARG NODE_VERSION=20
+ARG BUN_VERSION=1
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 1. deps — install all npm deps (prod + dev), needed for build.
+# 1. deps — install all bun deps (prod + dev), needed for build.
 #    libc6-compat + openssl cover Prisma engines on Alpine.
+#    python3 + make + g++ cover argon2 in the rare case prebuilt binaries miss.
 # ──────────────────────────────────────────────────────────────────────────────
-FROM node:${NODE_VERSION}-alpine AS deps
+FROM oven/bun:${BUN_VERSION}-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache libc6-compat openssl python3 make g++
-COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --include=dev
+COPY package.json bun.lockb ./
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 2. builder — prisma generate + next build + fetcher bundle.
 # ──────────────────────────────────────────────────────────────────────────────
-FROM node:${NODE_VERSION}-alpine AS builder
+FROM oven/bun:${BUN_VERSION}-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache libc6-compat openssl
 COPY --from=deps /app/node_modules ./node_modules
@@ -25,10 +27,10 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
 
 # Prisma generate — produces .prisma/client and @prisma/client types.
-RUN npx prisma generate
+RUN bunx prisma generate
 
 # Build Next.js (secrets forwarded via build args — only needed at compile time
-# for iron-session password validation).
+# for iron-session password validation and NEXT_PUBLIC_* inlining).
 RUN --mount=type=secret,id=session_password \
     --mount=type=secret,id=session_cookie_name \
     --mount=type=secret,id=api_key \
@@ -37,13 +39,15 @@ RUN --mount=type=secret,id=session_password \
     export SESSION_COOKIE_NAME="$(cat /run/secrets/session_cookie_name)" && \
     export API_KEY="$(cat /run/secrets/api_key)" && \
     export NEXT_PUBLIC_TELEGRAM_BOT_USERNAME="$(cat /run/secrets/next_public_telegram_bot_username 2>/dev/null || echo '')" && \
-    npm run build
+    bun run build
 
 # Bundle fetcher to a single node-compatible .js file.
-RUN npm run fetcher:build
+RUN bun run fetcher:build
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 3. runtime — minimal image running Next.js server + carries fetcher binary.
+# 3. runtime — minimal node image running Next.js server + carries fetcher binary.
+#    We keep node here (not bun) because we only `node server.js`; bun in runtime
+#    would just bloat the image without benefit.
 # ──────────────────────────────────────────────────────────────────────────────
 FROM node:${NODE_VERSION}-alpine AS runtime
 WORKDIR /app
