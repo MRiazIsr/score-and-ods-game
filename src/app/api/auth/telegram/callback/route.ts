@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/app/actions/auth";
 import { verifyTelegramAuth } from "@/app/lib/oauth/telegram";
+import { buildAppUrl } from "@/app/lib/oauth/url";
 import { logError } from "@/app/lib/errors";
 import { AuthService } from "@/app/server/services/auth/AuthService";
 
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
     }
 
     const failure = (reason: string) =>
-        NextResponse.redirect(new URL(`/login?error=${reason}`, request.url));
+        NextResponse.redirect(buildAppUrl(request, `/login?error=${reason}`));
 
     const verified = verifyTelegramAuth(query);
     if (!verified.ok) {
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
         session.user = sessionUser;
         await session.save();
 
-        return NextResponse.redirect(new URL("/dashboard", request.url));
+        return NextResponse.redirect(buildAppUrl(request, "/dashboard"));
     } catch (err) {
         logError("api/auth/telegram/callback", err, { telegramId: verified.data.id });
         return failure("oauth_failed");

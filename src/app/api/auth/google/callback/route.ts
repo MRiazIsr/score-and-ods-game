@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/app/actions/auth";
 import { exchangeCode, fetchProfile, getGoogleConfig } from "@/app/lib/oauth/google";
+import { buildAppUrl } from "@/app/lib/oauth/url";
 import { logError } from "@/app/lib/errors";
 import { AuthService } from "@/app/server/services/auth/AuthService";
 
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
         ?.split("=")[1];
 
     const failure = (reason: string) =>
-        NextResponse.redirect(new URL(`/login?error=${reason}`, request.url));
+        NextResponse.redirect(buildAppUrl(request, `/login?error=${reason}`));
 
     const config = getGoogleConfig();
     if (!config) return failure("oauth_not_configured");
@@ -49,7 +50,7 @@ export async function GET(request: Request) {
         session.user = sessionUser;
         await session.save();
 
-        const response = NextResponse.redirect(new URL("/dashboard", request.url));
+        const response = NextResponse.redirect(buildAppUrl(request, "/dashboard"));
         response.cookies.delete(STATE_COOKIE);
         return response;
     } catch (err) {
